@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARCIA TAXI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .main-gradient {
+            background: linear-gradient(135deg, #3b82f6, #a855f7);
+        }
+        .button-gradient {
+            background: linear-gradient(to right, #6d28d9, #4f46e5);
+        }
+        .button-gradient:hover {
+            background: linear-gradient(to right, #4f46e5, #6d28d9);
+        }
+        .card-gradient {
+             background: linear-gradient(135deg, #1f2937, #374151);
+        }
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #6d28d9;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .pac-container {
+            background-color: #374151;
+            border-radius: 8px;
+            border: 1px solid #4b5563;
+        }
+        .pac-item {
+            padding: 10px;
+            font-size: 14px;
+            color: #d1d5db;
+            cursor: pointer;
+        }
+        .pac-item:hover {
+            background-color: #4b5563;
+        }
+        .pac-item-query {
+            font-weight: 600;
+            color: #f3f4f6;
+        }
+        #heatmap-canvas {
+            height: 60vh;
+            width: 100%;
+            border-radius: 0.5rem;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ef4444;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #22c55e;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Custom styles for status badges */
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px; /* Full rounded corners */
+            font-weight: 600;
+            font-size: 0.875rem; /* text-sm */
+            text-align: center;
+        }
+        .status-requested { background-color: #2563eb; color: #ffffff; } /* Blue */
+        .status-assigned { background-color: #f59e0b; color: #ffffff; } /* Amber */
+        .status-accepted { background-color: #10b981; color: #ffffff; } /* Emerald */
+        .status-arrived_pickup { background-color: #d946ef; color: #ffffff; } /* Fuchsia */
+        .status-in_progress { background-color: #8b5cf6; color: #ffffff; } /* Violet */
+        .status-completed { background-color: #10b981; color: #ffffff; } /* Emerald */
+        .status-canceled { background-color: #ef4444; color: #ffffff; } /* Red */
+    </style>
+</head>
+<body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
+
+    <div id="countdown-timer" class="fixed top-4 right-4 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full"></div>
+
+    <div id="app-container" class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- TELA INICIAL -->
+        <div id="initial-screen" class="screen active text-center">
+            <div class="flex justify-center items-center gap-4 mb-2">
+                <div id="app-icon-container" class="h-12 w-12"></div>
+                <h1 class="text-4xl sm:text-5xl font-bold text-black">GARCIAS TAXI</h1>
+            </div>
+            <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
+            <div class="space-y-4 max-w-md mx-auto">
+                <button onclick="showScreen('admin-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.602-3.751m-.228-1.024A11.953 11.953 0 0012 2.75a11.953 11.953 0 00-8.172 3.024" />
+                    </svg>
+                    ÁREA DO ADMIN
+                </button>
+                <button onclick="showScreen('user-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-sky-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    PASSAGEIRO
+                </button>
+                <button onclick="showScreen('driver-selection-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6m-6 0v-2a1 1 0 011-1h2a1 1 0 011 1v2m-6 0h6" />
+                    </svg>
+                    MOTORISTA
+                </button>
+            </div>
+        </div>
+        
+        <!-- TELA DE LOGIN ADMIN -->
+        <div id="admin-login-screen" class="screen">
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
+            <h2 class="text-3xl font-bold mb-6 text-center">Login Administrador</h2>
+             <div class="max-w-md mx-auto">
+                <div class="mb-4">
+                    <label for="admin-password" class="block mb-2 text-sm font-medium">Senha</label>
+                    <input type="password" id="admin-password" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite a senha">
+                </div>
+                <button onclick="loginAdmin()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
+                <p id="admin-login-error" class="text-red-500 text-center mt-4 hidden">Senha incorreta!</p>
+            </div>
+        </div>
+
+        <!-- TELA DE LOGIN USUÁRIO -->
+        <div id="user-login-screen" class="screen">
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
+            <h2 class="text-3xl font-bold mb-6 text-center">Login do Usuário</h2>
+            <div class="max-w-md mx-auto">
+                <div class="mb-4">
+                    <label for="user-id" class="block mb-2 text-sm font-medium">Matrícula</label>
+                    <input type="text" id="user-id" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite sua matrícula">
+                </div>
+                <div class="mb-4">
+                    <label for="user-password" class="block mb-2 text-sm font-medium">Senha</label>
+                    <input type="password" id="user-password" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite sua senha">
+                </div>
+                <button onclick="loginUser()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
+                <p id="user-login-error" class="text-red-500 text-center mt-4 hidden">Matrícula ou senha incorreta!</p>
+            </div>
+        </div>
+
+        <!-- TELA DE SELEÇÃO DE MOTORISTA -->
+        <div id="driver-selection-screen" class="screen">
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
+            <h2 class="text-3xl font-bold mb-1 text-center">Selecionar Motorista</h2>
+            <p id="driver-selection-timestamp" class="text-center text-gray-300 text-sm mb-6"></p>
+            <div id="driver-list-selection" class="space-y-3 max-w-md mx-auto"></div>
+        </div>
+
+        <!-- TELA DO USUÁRIO -->
+        <div id="user-screen" class="screen">
+             <div class="max-w-md mx-auto">
+                <button onclick="logoutUser()" class="mb-4 text-yellow-300">&larr; Sair</button>
+                <h2 class="text-3xl font-bold mb-6 text-center">Área do Usuário</h2>
+                <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6">
+                    <h3 class="font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
+                    <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-300 font-semibold"></p>
+                    <div class="mb-4">
+                        <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
+                        <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço completo">
+                    </div>
+                    <button onclick="requestRide()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                        SOLICITAR TAXI
+                    </button>
+                </div>
+                <div id="user-status" class="hidden mt-8 text-center">
+                    <!-- Ícones de Status da Viagem -->
+                    <div id="status-icon-searching" class="hidden mx-auto mb-2">
+                        <div class="loader mx-auto"></div>
+                    </div>
+                    <div id="status-icon-en-route" class="hidden mx-auto mb-2">
+                        <!-- Este conteúdo será substituído pela imagem PNG -->
+                    </div>
+                    <div id="status-icon-arrived-pickup" class="hidden mx-auto mb-2">
+                        <!-- Este conteúdo será substituído pela imagem PNG -->
+                    </div>
+                    <div id="status-icon-in-progress" class="hidden mx-auto mb-2">
+                        <!-- Este conteúdo será substituído pela imagem PNG -->
+                    </div>
+                    <p id="user-status-message" class="mt-4 text-lg"></p>
+                    <button id="cancel-ride-btn" onclick="cancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700">CANCELAR SOLICITAÇÃO</button>
+                </div>
+                <div class="card-gradient p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold text-xl">Minhas Solicitações</h3>
+                        <button onclick="exportUserRidesToExcel()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700">Exportar</button>
+                    </div>
+                    <div id="user-ride-history" class="overflow-x-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA DO ADMIN -->
+        <div id="admin-screen" class="screen">
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <h2 class="text-3xl font-bold mb-6 text-center">Painel do Administrador</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                 <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Gerenciar Motoristas</button>
+                <button onclick="showScreen('admin-user-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Gerenciar Usuários</button>
+                 <button onclick="showScreen('admin-requests-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Ver Solicitações de Corrida</button>
+                <button onclick="showScreen('admin-heatmap-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Ver Mapa de Calor</button>
+                <button onclick="showScreen('admin-customize-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Personalizar App</button>
+                <!-- NEW BUTTON FOR RECORDS -->
+                <button onclick="openRecordsTab()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Registros</button>
+            </div>
+        </div>
+        
+        <!-- TELA ADMIN - SOLICITAÇÕES -->
+        <div id="admin-requests-screen" class="screen">
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="showScreen('admin-screen')" class="text-yellow-300">&larr; Voltar ao Painel</button>
+                <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
+                <div class="w-32"></div> <!-- Espaçador -->
+            </div>
+            
+            <!-- Painel Superior de Resumo -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                 <!-- Card Status das Corridas -->
+                <div class="card-gradient p-4 rounded-lg w-full">
+                    <h3 class="font-semibold mb-2 text-center">Status das Corridas</h3>
+                    <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-2xl font-bold text-blue-400" id="requested-requests-count">0</p>
+                            <p class="text-xs text-gray-300">Solicitado</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-yellow-300" id="in-progress-requests-count">0</p>
+                            <p class="text-xs text-gray-300">Em Andamento</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-green-400" id="completed-requests-count">0</p>
+                            <p class="text-xs text-gray-300">Concluídas</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card Motoristas -->
+                <div class="card-gradient p-4 rounded-lg flex items-center justify-center gap-4 w-full">
+                    <div class="text-center md:text-left">
+                        <h3 class="font-semibold mb-2">Motoristas</h3>
+                        <p class="text-xs text-gray-300">Total: <span id="total-drivers-count" class="font-bold">0</span></p>
+                        <p class="text-xs text-green-400">Ativos: <span id="active-drivers-count" class="font-bold">0</span></p>
+                        <p class="text-xs text-red-400">Inativos: <span id="inactive-drivers-count" class="font-bold">0</span></p>
+                    </div>
+                    <div class="w-24 h-24">
+                        <canvas id="driver-status-chart"></canvas>
+                    </div>
+                </div>
+                <!-- Card Exportar Relatório -->
+                <div class="card-gradient p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Exportar Relatório de Corridas</h3>
+                    <div class="space-y-3">
+                        <div class="w-full">
+                            <label for="start-date" class="text-sm">Data Inicial</label>
+                            <input type="date" id="start-date" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mt-1">
+                        </div>
+                        <div class="w-full">
+                            <label for="end-date" class="text-sm">Data Final</label>
+                            <input type="date" id="end-date" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mt-1">
+                        </div>
+                    </div>
+                    <button onclick="exportRidesToExcel()" class="w-full mt-3 py-2 px-4 font-semibold rounded-lg button-gradient">Exportar para Excel</button>
+                </div>
+            </div>
+
+            <!-- Área de Conteúdo com Rolagem -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
+                <!-- Coluna para Novas Solicitações -->
+                <div class="lg:col-span-1">
+                    <h3 class="text-2xl font-bold mb-4">Novas Solicitações</h3>
+                    <div id="admin-requests-list" class="space-y-4">
+                        <!-- Cards de novas solicitações aqui -->
+                    </div>
+                </div>
+
+                <!-- Coluna para Corridas em Andamento -->
+                <div class="lg:col-span-2">
+                    <h3 class="text-2xl font-bold mb-4">Corridas em Andamento</h3>
+                    <div id="admin-ongoing-rides-table" class="card-gradient p-4 rounded-lg overflow-x-auto">
+                        <!-- Tabela de corridas em andamento aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TELA ADMIN - CRUD MOTORISTAS -->
+        <div id="admin-driver-crud-screen" class="screen">
+            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <h2 class="text-3xl font-bold mb-6 text-center">Cadastro de Motoristas</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="card-gradient p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Adicionar Novo Motorista</h3>
+                    <input type="text" id="new-driver-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Nome Completo">
+                    <input type="tel" id="new-driver-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Telefone">
+                    <input type="text" id="new-driver-plate" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Placa do Carro">
+                    <input type="password" id="new-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Senha">
+                    <button onclick="addDriver()" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">Adicionar</button>
+                </div>
+                <div class="card-gradient p-4 rounded-lg md:col-span-2">
+                    <h3 class="font-semibold mb-4">Motoristas Cadastrados</h3>
+                    <div id="driver-crud-list" class="max-h-[60vh] overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA ADMIN - CRUD USUÁRIOS -->
+        <div id="admin-user-crud-screen" class="screen">
+            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <h2 class="text-3xl font-bold mb-6 text-center">Cadastro de Usuários</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="space-y-6">
+                    <div class="card-gradient p-4 rounded-lg">
+                        <h3 class="font-semibold mb-2">Importar Usuários (Excel)</h3>
+                        <p class="text-sm text-gray-300 mb-3">Baixe o template, preencha e faça o upload.</p>
+                        <div class="flex gap-2 mb-3">
+                            <button onclick="downloadUserTemplate()" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700">Baixar Template</button>
+                        </div>
+                        <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
+                        <button onclick="importUsersFromExcel()" class="w-full mt-3 py-2 px-4 font-semibold rounded-lg button-gradient">Importar Arquivo</button>
+                    </div>
+                     <div class="card-gradient p-4 rounded-lg">
+                        <h3 class="font-semibold mb-2">Adicionar Novo Usuário</h3>
+                        <input type="text" id="new-user-id" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Matrícula">
+                        <input type="text" id="new-user-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Nome Completo">
+                        <input type="password" id="new-user-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Senha">
+                        <input type="text" id="new-user-company" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Empresa">
+                        <input type="text" id="new-user-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Endereço">
+                        <input type="tel" id="new-user-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Telefone">
+                        <button onclick="addUser()" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">Adicionar</button>
+                    </div>
+                </div>
+
+                <div class="card-gradient p-4 rounded-lg md:col-span-2">
+                    <h3 class="font-semibold mb-4">Usuários Cadastrados</h3>
+                    <div id="user-crud-list" class="max-h-[60vh] overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA ADMIN - MAPA DE CALOR -->
+        <div id="admin-heatmap-screen" class="screen">
+            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <h2 class="text-3xl font-bold mb-6 text-center">Mapa de Calor de Usuários</h2>
+            <div id="heatmap-canvas"></div>
+        </div>
+
+        <!-- TELA ADMIN - PERSONALIZAR APP -->
+        <div id="admin-customize-screen" class="screen">
+            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <h2 class="text-3xl font-bold mb-6 text-center">Personalizar App</h2>
+            <div class="card-gradient p-4 rounded-lg max-w-md mx-auto">
+                <h3 class="font-semibold mb-2">Ícone do Aplicativo</h3>
+                <p class="text-sm text-gray-300 mb-3">Faça o upload de uma imagem para ser o ícone na tela inicial (recomendado: PNG transparente).</p>
+                <input type="file" id="icon-file-input" accept="image/*" onchange="uploadAppIcon()" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
+            </div>
+        </div>
+
+        <!-- TELA DO MOTORISTA -->
+        <div id="driver-screen" class="screen">
+            <div class="max-w-md mx-auto">
+                <button onclick="showScreen('driver-selection-screen')" class="mb-4 text-yellow-300">&larr; Trocar Motorista</button>
+                <h2 class="text-3xl font-bold mb-2 text-center">Minhas Corridas</h2>
+                <p id="driver-name-display" class="text-center text-yellow-300 mb-1"></p>
+                <p id="driver-stats-display" class="text-center text-red-500 font-semibold text-sm mb-6"></p>
+                <div class="flex items-center justify-between mb-4 card-gradient p-3 rounded-lg">
+                    <span class="font-semibold text-lg">Meu Status</span>
+                    <div class="flex items-center gap-3">
+                        <span id="driver-status-label" class="font-bold"></span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="driver-status-toggle" onchange="toggleDriverStatus()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <button id="silence-btn" onclick="stopBeeping()" class="hidden w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900">Silenciar Alerta</button>
+                <div id="driver-jobs-list" class="space-y-4"></div>
+                <div class="card-gradient p-4 rounded-lg mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold text-xl">Histórico de Corridas</h3>
+                        <button onclick="exportDriverRidesToExcel()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700">Exportar</button>
+                    </div>
+                    <div id="driver-ride-history" class="overflow-x-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA ADMIN - TODOS OS REGISTROS -->
+        <div id="admin-records-screen" class="screen">
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="showScreen('admin-screen')" class="text-yellow-300">&larr; Voltar ao Painel</button>
+                <h2 class="text-3xl font-bold text-center">Todos os Registros</h2>
+                <div class="w-32"></div> <!-- Espaçador -->
+            </div>
+
+            <!-- Date Filter Inputs -->
+            <div class="flex justify-center gap-4 mb-6">
+                <div>
+                    <label for="records-start-date" class="block mb-2 text-sm font-medium">Data Inicial</label>
+                    <input type="date" id="records-start-date" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none">
+                </div>
+                <div>
+                    <label for="records-end-date" class="block mb-2 text-sm font-medium">Data Final</label>
+                    <input type="date" id="records-end-date" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none">
+                </div>
+                 <button onclick="filterRecordsByDate()" class="py-2 px-4 font-semibold rounded-lg button-gradient h-fit self-end">Filtrar</button>
+            </div>
+
+            <!-- Records Table -->
+            <div class="card-gradient p-4 rounded-lg overflow-x-auto">
+                <table id="all-records-table" class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Data Solicitação</th>
+                            <th scope="col" class="px-4 py-3">Usuário</th>
+                            <th scope="col" class="px-4 py-3">Empresa</th>
+                            <th scope="col" class="px-4 py-3">Destino</th>
+                            <th scope="col" class="px-4 py-3">Motorista</th>
+                            <th scope="col" class="px-4 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-records-body">
+                        <!-- Records will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL DE ALERTA / EDIÇÃO -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
+            <p id="modal-message" class="mb-4 text-lg"></p>
+            <div id="modal-input-container" class="hidden mb-4 space-y-2">
+                <input type="text" id="modal-input-matricula" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Matrícula">
+                <input type="text" id="modal-input-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Nome">
+                <input type="tel" id="modal-input-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Telefone">
+                <input type="text" id="modal-input-plate" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Placa do Carro">
+                <input type="password" id="modal-input-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Nova Senha (deixe em branco para manter)">
+                <select id="modal-input-status" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none">
+                    <option value="active">Ativo</option>
+                    <option value="inactive">Inativo</option>
+                </select>
+                <input type="text" id="modal-input-company" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Empresa">
+                <input type="text" id="modal-input-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Endereço">
+                <input type="password" id="modal-input-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Senha">
+                <input type="password" id="modal-input-admin-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Senha do Admin">
+            </div>
+            <div id="modal-buttons" class="flex justify-center gap-4">
+                 <button id="modal-cancel" onclick="closeModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
+                 <button id="modal-confirm" class="py-2 px-8 font-semibold rounded-lg button-gradient">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÃO INICIAL E DADOS MOCADOS ---
+        let driverWatchId = null; 
+        let audioCtx;
+        let beepInterval = null;
+        let map;
+        let heatmap;
+        let tempDriverId = null; // Para login do motorista
+        let driverChart = null; // Para o gráfico de pizza
+        let countdownInterval = null;
+        let countdownSeconds = 5;
+
+        let state = {
+            rides: [],
+            drivers: [],
+            users: [],
+            appIcon: localStorage.getItem('appIcon') || null,
+            currentDriverId: null,
+            currentUserRideId: null,
+            currentUserId: null,
+            userStatusInterval: null
+        };
+
+        // --- CONFIGURAÇÃO DO SUPABASE ---
+        const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- LÓGICA DE ÁUDIO ---
+        function playBeep() {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.error("Web Audio API is not supported in this browser");
+                    return;
+                }
+            }
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function startBeeping() {
+            stopBeeping(); 
+            beepInterval = setInterval(playBeep, 3000);
+            document.getElementById('silence-btn').classList.remove('hidden');
+        }
+
+        function stopBeeping() {
+            if (beepInterval) {
+                clearInterval(beepInterval);
+                beepInterval = null;
+            }
+            document.getElementById('silence-btn').classList.add('hidden');
+        }
+
+        // --- LÓGICA DE MODAL ---
+        function showModal(message, onConfirm, showCancel = false, content = {}) {
+            document.getElementById('modal-message').textContent = message;
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+            const inputContainer = document.getElementById('modal-input-container');
+            Array.from(inputContainer.children).forEach(child => child.style.display = 'none');
+
+            if (content.type) {
+                inputContainer.classList.remove('hidden');
+                if(content.type === 'edit-driver') {
+                    document.getElementById('modal-input-name').style.display = 'block';
+                    document.getElementById('modal-input-phone').style.display = 'block';
+                    document.getElementById('modal-input-plate').style.display = 'block';
+                    document.getElementById('modal-input-password').style.display = 'block';
+                    document.getElementById('modal-input-status').style.display = 'block';
+                    document.getElementById('modal-input-name').value = content.name;
+                    document.getElementById('modal-input-phone').value = content.phone;
+                    document.getElementById('modal-input-plate').value = content.plate;
+                    document.getElementById('modal-input-status').value = content.status;
+                } else if (content.type === 'edit-user') {
+                    document.getElementById('modal-input-matricula').style.display = 'block';
+                    document.getElementById('modal-input-name').style.display = 'block';
+                    document.getElementById('modal-input-password').style.display = 'block';
+                    document.getElementById('modal-input-company').style.display = 'block';
+                    document.getElementById('modal-input-address').style.display = 'block';
+                    document.getElementById('modal-input-phone').style.display = 'block';
+                    document.getElementById('modal-input-matricula').value = content.matricula;
+                    document.getElementById('modal-input-name').value = content.name;
+                    document.getElementById('modal-input-company').value = content.company;
+                    document.getElementById('modal-input-address').value = content.address;
+                    document.getElementById('modal-input-phone').value = content.phone;
+                } else if(content.type === 'driver-password') {
+                    document.getElementById('modal-input-driver-password').style.display = 'block';
+                } else if(content.type === 'delete-with-password') {
+                    document.getElementById('modal-input-admin-password').style.display = 'block';
+                }
+            } else {
+                 inputContainer.classList.add('hidden');
+            }
+            confirmBtn.onclick = onConfirm;
+            cancelBtn.style.display = showCancel ? 'inline-block' : 'none';
+            confirmBtn.textContent = showCancel ? 'Confirmar' : 'OK';
+            if (!showCancel) confirmBtn.onclick = closeModal;
+            
+            const modal = document.getElementById('modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            Array.from(document.getElementById('modal-input-container').children).forEach(child => {
+                if(child.tagName === 'INPUT') child.value = '';
+            });
+        }
+
+        // --- LÓGICA DE LOGIN ---
+        async function loginAdmin() { 
+            const password = document.getElementById('admin-password').value;
+            const errorEl = document.getElementById('admin-login-error');
+            if (password === '789512') {
+                errorEl.classList.add('hidden');
+                document.getElementById('admin-password').value = '';
+                showScreen('admin-screen');
+            } else {
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        async function loginUser() {
+            const matricula = document.getElementById('user-id').value;
+            const password = document.getElementById('user-password').value;
+            const errorEl = document.getElementById('user-login-error');
+
+            console.log('Tentando login para matrícula:', matricula); 
+
+            const { data: user, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('matricula', matricula)
+                .eq('password', password)
+                .single();
+            
+            if (error) {
+                console.error('Erro no Supabase ao tentar login:', error);
+                errorEl.textContent = 'Erro de comunicação com o servidor. Por favor, tente novamente.';
+                errorEl.classList.remove('hidden');
+                return; 
+            }
+
+            if (user) {
+                console.log('Usuário logado com sucesso:', user);
+                state.currentUserId = user.id;
+                localStorage.setItem('loggedInUserId', user.id);
+                errorEl.classList.add('hidden');
+                document.getElementById('user-id').value = '';
+                document.getElementById('user-password').value = '';
+                showScreen('user-screen');
+            } else {
+                console.log('Nenhum usuário encontrado ou credenciais incorretas.');
+                errorEl.textContent = 'Matrícula ou senha incorreta!';
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function logoutUser() {
+            state.currentUserId = null;
+            localStorage.removeItem('loggedInUserId');
+            showScreen('initial-screen');
+        }
+
+        // --- NAVEGAÇÃO ENTRE TELAS ---
+        function showScreen(screenId) {
+            const body = document.body;
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            stopBeeping(); 
+
+            // For full-screen admin views, remove vertical centering to use all space
+            const fullHeightScreens = ['admin-requests-screen', 'admin-driver-crud-screen', 'admin-user-crud-screen', 'admin-heatmap-screen'];
+            if (fullHeightScreens.includes(screenId)) {
+                body.classList.remove('items-center');
+            } else {
+                if (!body.classList.contains('items-center')) {
+                    body.classList.add('items-center');
+                }
+            }
+
+            if (screenId === 'admin-requests-screen') {
+                loadAdminRequests();
+                renderOngoingRidesTable();
+            }
+            if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
+            if (screenId === 'admin-user-crud-screen') renderUserCrudList();
+            if (screenId === 'admin-heatmap-screen') initHeatmap();
+            if (screenId === 'driver-selection-screen') populateDriverSelection();
+            if (screenId === 'driver-screen') {
+                loadDriverJobs();
+                renderDriverRideHistory();
+            }
+            if (screenId === 'user-screen') {
+                checkUserRideStatus();
+                updateAvailableDriversCount(); 
+                renderUserRideHistory();
+            }
+            // --- INTEGRATION FOR NEW RECORDS SCREEN ---
+            if (screenId === 'admin-records-screen') {
+                loadAllRecords();
+                // Reset date filters when opening
+                document.getElementById('records-start-date').value = '';
+                document.getElementById('records-end-date').value = '';
+            }
+        }
+
+        // --- LÓGICA DO USUÁRIO ---
+        async function requestRide() {
+            const destination = document.getElementById('destination').value;
+            if (!destination) {
+                showModal('Por favor, insira um destino.');
+                return;
+            }
+
+            document.getElementById('user-request-form').classList.add('hidden');
+            document.getElementById('user-status').classList.remove('hidden');
+            document.getElementById('user-status-message').textContent = 'Obtendo sua localização...';
+
+            if (!navigator.geolocation) {
+                showModal('Geolocalização não é suportada pelo seu navegador.');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const userLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
+                const currentUser = state.users.find(u => u.id === state.currentUserId);
+
+                const newRide = {
+                    destination: destination,
+                    status: 'requested',
+                    userId: currentUser.id,
+                    userName: currentUser.name,
+                    userCompany: currentUser.company,
+                    requestTime: new Date().toISOString(),
+                    userLocation: userLocation 
+                };
+
+                const { data, error } = await supabaseClient.from('rides').insert([newRide]).select().single();
+
+                if (error) {
+                    console.error("Erro ao solicitar corrida:", error);
+                    showModal("Não foi possível solicitar a corrida.");
+                    return;
+                }
+
+                state.currentUserRideId = data.id;
+                document.getElementById('user-status-message').textContent = 'Aguardando um motorista aceitar...';
+                startUserStatusCheck();
+
+            }, (error) => { // Captura o erro da geolocalização
+                console.error("Erro ao obter localização do usuário:", error);
+                showModal('Não foi possível obter sua localização. Verifique as permissões de localização no seu dispositivo/navegador.');
+                document.getElementById('user-request-form').classList.remove('hidden');
+                document.getElementById('user-status').classList.add('hidden');
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000, // Tentar por 10 segundos
+                maximumAge: 0 // Não usar cache de localização
+            });
+        }
+        
+        function checkUserRideStatus() {
+             if (state.currentUserRideId) {
+                const myRide = state.rides.find(r => r.id === state.currentUserRideId);
+                if (myRide) {
+                    document.getElementById('user-request-form').classList.add('hidden');
+                    document.getElementById('user-status').classList.remove('hidden');
+                    updateUserStatusMessage(myRide);
+                    startUserStatusCheck();
+                } else {
+                    // Se a corrida não for encontrada, significa que foi finalizada ou cancelada
+                    state.currentUserRideId = null;
+                    document.getElementById('user-request-form').classList.remove('hidden');
+                    document.getElementById('user-status').classList.add('hidden');
+                    // A mensagem já será definida pelo setTimeout em 'completed' ou 'cancelRide'
+                    document.getElementById('user-status-message').textContent = 'Sua viagem foi finalizada ou cancelada.';
+                }
+            }
+        }
+
+        function startUserStatusCheck() {
+            if (state.userStatusInterval) clearInterval(state.userStatusInterval);
+            state.userStatusInterval = setInterval(async () => {
+                if (!state.currentUserRideId) {
+                    clearInterval(state.userStatusInterval);
+                    return;
+                }
+                const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
+                if (myRide) {
+                   updateUserStatusMessage(myRide);
+                } else {
+                    // Se a corrida não for encontrada no DB, ela foi deletada ou finalizada por outro meio
+                    clearInterval(state.userStatusInterval);
+                    state.currentUserRideId = null;
+                    document.getElementById('user-request-form').classList.remove('hidden');
+                    document.getElementById('user-status').classList.add('hidden');
+                    document.getElementById('user-status-message').textContent = 'Sua viagem foi finalizada ou cancelada (pelo sistema).';
+                }
+            }, 5000);
+        }
+        
+        function updateUserStatusMessage(ride) {
+            const searchingIconContainer = document.getElementById('status-icon-searching');
+            const enRouteIconContainer = document.getElementById('status-icon-en-route');
+            const arrivedPickupIconContainer = document.getElementById('status-icon-arrived-pickup');
+            const inProgressIconContainer = document.getElementById('status-icon-in-progress');
+
+            const cancelRideBtn = document.getElementById('cancel-ride-btn');
+            let message = 'Aguardando um motorista...';
+
+            // Esconde e limpa todos os ícones por padrão
+            searchingIconContainer.classList.add('hidden');
+            enRouteIconContainer.classList.add('hidden');
+            arrivedPickupIconContainer.classList.add('hidden');
+            inProgressIconContainer.classList.add('hidden');
+
+            enRouteIconContainer.innerHTML = ''; 
+            arrivedPickupIconContainer.innerHTML = '';
+            inProgressIconContainer.innerHTML = '';
+
+            // Gerencia a visibilidade do botão Cancelar Corrida
+            if (ride.status === 'requested' || ride.status === 'assigned' || ride.status === 'accepted' || ride.status === 'arrived_pickup') {
+                cancelRideBtn.classList.remove('hidden');
+            } else {
+                cancelRideBtn.classList.add('hidden');
+            }
+
+            switch(ride.status) {
+                case 'assigned':
+                    message = `Motorista ${ride.driverName} foi designado. Aguardando aceite...`;
+                    searchingIconContainer.classList.remove('hidden');
+                    break;
+                case 'accepted':
+                    message = `Motorista ${ride.driverName} está a caminho!`;
+                    if (ride.driverCurrentLocation && ride.userLocation) {
+                        const distance = getDistanceFromLatLonInKm(
+                            ride.userLocation.lat, ride.userLocation.lon,
+                            ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon
+                        );
+                        message += ` Distância: ${distance.toFixed(2)} km`;
+                    }
+                    const acceptedImg = document.createElement('img');
+                    acceptedImg.src = 'images/aceitou.png'; 
+                    acceptedImg.alt = 'Motorista Aceitou';
+                    acceptedImg.className = 'h-20 w-20 mx-auto'; 
+                    enRouteIconContainer.appendChild(acceptedImg);
+                    enRouteIconContainer.classList.remove('hidden');
+                    break;
+                case 'arrived_pickup':
+                    message = `Seu motorista, ${ride.driverName}, chegou no local de embarque.`;
+                    const arrivedImg = document.createElement('img');
+                    arrivedImg.src = 'images/final.png'; 
+                    arrivedImg.alt = 'Motorista Chegou';
+                    arrivedImg.className = 'h-20 w-20 mx-auto';
+                    arrivedPickupIconContainer.appendChild(arrivedImg);
+                    arrivedPickupIconContainer.classList.remove('hidden');
+                    break;
+                case 'in_progress':
+                     message = `Viagem para ${ride.destination} em andamento.`;
+                     const inProgressImg = document.createElement('img');
+                     inProgressImg.src = 'images/destino.png'; 
+                     inProgressImg.alt = 'Viagem Iniciada';
+                     inProgressImg.className = 'h-20 w-20 mx-auto animate-bounce'; 
+                     inProgressIconContainer.appendChild(inProgressImg);
+                     inProgressIconContainer.classList.remove('hidden');
+                     cancelRideBtn.classList.add('hidden');
+                     break;
+                 case 'completed':
+                    message = `Viagem finalizada! Obrigado por escolher a GARCIA TAXI.`;
+                    clearInterval(state.userStatusInterval);
+                    state.currentUserRideId = null;
+                    setTimeout(() => {
+                        document.getElementById('user-request-form').classList.remove('hidden');
+                        document.getElementById('user-status').classList.add('hidden');
+                        document.getElementById('destination').value = '';
+                        renderUserRideHistory();
+                    }, 5000);
+                    break;
+                case 'canceled':
+                    message = `Sua viagem foi cancelada.`;
+                    clearInterval(state.userStatusInterval);
+                    state.currentUserRideId = null;
+                     setTimeout(() => {
+                        document.getElementById('user-request-form').classList.remove('hidden');
+                        document.getElementById('user-status').classList.add('hidden');
+                        document.getElementById('destination').value = '';
+                        renderUserRideHistory();
+                    }, 3000); // Mostrar por menos tempo se cancelada
+                    break;
+            }
+            document.getElementById('user-status-message').textContent = message;
+        }
+
+        async function cancelRide() {
+            if (state.currentUserRideId) {
+                // Ao cancelar, também limpamos o rastreamento do motorista se estiver ativo para essa corrida
+                if (driverWatchId) {
+                    navigator.geolocation.clearWatch(driverWatchId);
+                    driverWatchId = null;
+                }
+                const { error } = await supabaseClient.from('rides').update({ status: 'canceled' }).eq('id', state.currentUserRideId);
+                if (error) {
+                    showModal('Não foi possível cancelar a corrida.');
+                } else {
+                    // A função updateUserStatusMessage já lida com o feedback de cancelamento
+                    // e a transição da tela após alguns segundos.
+                }
+            }
+        }
+
+        // --- LÓGICA DO ADMIN ---
+        function loadAdminRequests() {
+            const list = document.getElementById('admin-requests-list');
+            list.innerHTML = '';
+            const requestedRides = state.rides.filter(r => r.status === 'requested');
+            const inProgressRides = state.rides.filter(r => ['assigned', 'accepted', 'arrived_pickup', 'in_progress'].includes(r.status));
+            const completedRides = state.rides.filter(r => r.status === 'completed');
+            const activeDriversCount = state.drivers.filter(d => d.status === 'active').length;
+            const totalDriversCount = state.drivers.length;
+
+            document.getElementById('requested-requests-count').textContent = requestedRides.length;
+            document.getElementById('in-progress-requests-count').textContent = inProgressRides.length;
+            document.getElementById('completed-requests-count').textContent = completedRides.length;
+            document.getElementById('total-drivers-count').textContent = totalDriversCount;
+            document.getElementById('active-drivers-count').textContent = activeDriversCount;
+            document.getElementById('inactive-drivers-count').textContent = totalDriversCount - activeDriversCount;
+            
+            renderDriverStatusChart(activeDriversCount, totalDriversCount - activeDriversCount);
+
+            if (requestedRides.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-400">Nenhuma nova solicitação.</p>';
+            } else {
+                 requestedRides.forEach(ride => {
+                    const activeDrivers = state.drivers.filter(d => d.status === 'active');
+                    let driverOptions = activeDrivers.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                    if(activeDrivers.length === 0) driverOptions = `<option value="" disabled>Nenhum motorista ativo</option>`;
+
+                    const card = document.createElement('div');
+                    card.className = 'card-gradient p-4 rounded-lg shadow-md';
+                    card.innerHTML = `
+                        <p class="font-semibold">Destino: <span class="font-normal">${ride.destination}</span></p>
+                        <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
+                        <p class="text-sm text-gray-300">Solicitado em: ${new Date(ride.requestTime).toLocaleTimeString()}</p>
+                        <div class="mt-4 flex gap-2">
+                            <select id="driver-select-${ride.id}" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none">
+                                <option value="">Selecione um motorista</option>
+                                ${driverOptions}
+                            </select>
+                            <button onclick="assignDriver(${ride.id})" class="py-2 px-4 font-semibold rounded-lg button-gradient whitespace-nowrap">Marcar</button>
+                        </div>
+                    `;
+                    list.appendChild(card);
+                });
+            }
+        }
+        
+        function renderOngoingRidesTable() {
+            const tableContainer = document.getElementById('admin-ongoing-rides-table');
+            tableContainer.innerHTML = '';
+            
+            const ongoingRides = state.rides.filter(r => !['requested', 'completed', 'canceled'].includes(r.status));
+
+            if (ongoingRides.length === 0) {
+                tableContainer.innerHTML = '<p class="text-center text-gray-400">Nenhuma corrida em andamento no momento.</p>';
+                return;
+            }
+            
+            let tableHTML = `
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-300 uppercase bg-gray-900/30">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Usuário</th>
+                            <th scope="col" class="px-4 py-3">Destino</th>
+                            <th scope="col" class="px-4 py-3">Motorista</th>
+                            <th scope="col" class="px-4 py-3">Status</th>
+                            <th scope="col" class="px-4 py-3">Horário</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            ongoingRides.sort((a, b) => new Date(a.requestTime) - new Date(b.requestTime));
+
+            ongoingRides.forEach(ride => {
+                const statusInfo = translateStatus(ride.status); // Obter texto e cor do status
+                tableHTML += `
+                    <tr class="border-b border-gray-700 hover:bg-gray-800/20">
+                        <td class="px-4 py-3 font-medium">${ride.userName}</td>
+                        <td class="px-4 py-3">${ride.destination}</td>
+                        <td class="px-4 py-3">${ride.driverName || 'N/A'}</td>
+                        <td class="px-4 py-3">
+                            <span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span>
+                        </td>
+                        <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleTimeString()}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `</tbody></table>`;
+            tableContainer.innerHTML = tableHTML;
+        }
+
+        async function assignDriver(rideId) {
+            const selectedDriverId = document.getElementById(`driver-select-${rideId}`).value;
+            if (!selectedDriverId) {
+                showModal('Por favor, selecione um motorista.');
+                return;
+            }
+            const driver = state.drivers.find(d => d.id == selectedDriverId);
+            const { error } = await supabaseClient.from('rides').update({ status: 'assigned', driverId: parseInt(driver.id), driverName: driver.name }).eq('id', rideId);
+            if (error) {
+                console.error("Erro ao designar motorista:", error);
+                showModal("Não foi possível designar o motorista.");
+            }
+        }
+        
+        // --- ADMIN CRUD MOTORISTAS ---
+        function renderDriverCrudList() {
+            const listContainer = document.getElementById('driver-crud-list');
+            listContainer.innerHTML = '';
+            if (state.drivers.length === 0) {
+                listContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum motorista cadastrado.</p>';
+                return;
+            }
+            const table = document.createElement('table');
+            table.className = 'w-full text-sm text-left';
+            table.innerHTML = `
+                <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Motorista</th>
+                        <th scope="col" class="px-4 py-3">Placa</th>
+                        <th scope="col" class="px-4 py-3 text-right">Ações</th>
+                    </tr>
+                </thead>`;
+            const tbody = document.createElement('tbody');
+            state.drivers.forEach(driver => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700 hover:bg-gray-800/20';
+                row.innerHTML = `
+                    <td class="px-4 py-3 font-medium">
+                        <div class="flex items-center gap-3">
+                           <label class="toggle-switch">
+                                <input type="checkbox" onchange="toggleDriverStatusAdmin(${driver.id})" ${driver.status === 'active' ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div>
+                                <div>${driver.name}</div>
+                                <div class="text-xs text-gray-400">${driver.phone}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">${driver.plate}</td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="editDriver(${driver.id})" class="font-medium text-yellow-400 hover:underline mr-3">Editar</button>
+                        <button onclick="promptDeleteDriver(${driver.id})" class="font-medium text-red-500 hover:underline">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            listContainer.appendChild(table);
+        }
+
+        async function addDriver() {
+            const nameInput = document.getElementById('new-driver-name');
+            const phoneInput = document.getElementById('new-driver-phone');
+            const plateInput = document.getElementById('new-driver-plate');
+            const passwordInput = document.getElementById('new-driver-password');
+            const name = nameInput.value.trim(); const phone = phoneInput.value.trim();
+            const plate = plateInput.value.trim(); const password = passwordInput.value.trim();
+            if (!name || !phone || !plate || !password) { showModal('Todos os campos são obrigatórios.'); return; }
+            const { error } = await supabaseClient.from('drivers').insert([{ name, phone, plate, password, status: 'inactive' }]);
+            if (error) { console.error('Error adding driver:', error); showModal('Erro ao adicionar motorista.'); } 
+            else { nameInput.value = phoneInput.value = plateInput.value = passwordInput.value = ''; showModal('Motorista adicionado com sucesso!'); }
+        }
+
+        function editDriver(driverId) {
+            const driver = state.drivers.find(d => d.id === driverId);
+            if (!driver) return;
+            const onConfirm = async () => {
+                const newName = document.getElementById('modal-input-name').value.trim();
+                const newPhone = document.getElementById('modal-input-phone').value.trim();
+                const newPlate = document.getElementById('modal-input-plate').value.trim();
+                const newPassword = document.getElementById('modal-input-password').value.trim();
+                const newStatus = document.getElementById('modal-input-status').value;
+                if (newName && newPhone && newPlate) {
+                    const updateData = { name: newName, phone: newPhone, plate: newPlate, status: newStatus };
+                    if (newPassword) updateData.password = newPassword;
+                    const { error } = await supabaseClient.from('drivers').update(updateData).eq('id', driverId);
+                    if (error) { console.error('Error updating driver:', error); showModal('Erro ao atualizar motorista.'); } 
+                    else { closeModal(); }
+                } else { showModal('Nome, Telefone e Placa são obrigatórios.'); }
+            };
+            showModal('Editar dados do motorista:', onConfirm, true, { type: 'edit-driver', name: driver.name, phone: driver.phone, plate: driver.plate, status: driver.status });
+        }
+
+        function promptDeleteDriver(driverId) {
+            const onConfirm = async () => {
+                const password = document.getElementById('modal-input-admin-password').value;
+                if (password === '789512') { deleteDriver(driverId); } 
+                else { showModal('Senha incorreta!'); }
+            };
+            showModal('Digite a senha do admin para excluir:', onConfirm, true, { type: 'delete-with-password' });
+        }
+
+        async function deleteDriver(driverId) {
+            const { error } = await supabaseClient.from('drivers').delete().eq('id', driverId);
+            if (error) { console.error('Error deleting driver:', error); showModal('Erro ao excluir motorista.'); } 
+            else { closeModal(); }
+        }
+
+        // --- ADMIN CRUD USUÁRIOS ---
+        function downloadUserTemplate() {
+            const headers = [["matricula", "nome", "senha", "empresa", "endereco", "telefone"]];
+            const ws = XLSX.utils.aoa_to_sheet(headers);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
+            XLSX.writeFile(wb, "template_usuarios.xlsx");
+        }
+
+        function importUsersFromExcel() {
+            const fileInput = document.getElementById('excel-file-input');
+            const file = fileInput.files[0];
+            if (!file) { showModal("Por favor, selecione um arquivo Excel."); return; }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const usersJson = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (usersJson.length === 0) { showModal("O arquivo Excel está vazio."); return; }
+                    
+                    const header = Object.keys(usersJson[0]);
+                    const expectedHeader = ['matricula', 'nome', 'senha', 'empresa', 'endereco', 'telefone'];
+                    if (JSON.stringify(header.sort()) !== JSON.stringify(expectedHeader.sort())) {
+                        showModal(`Cabeçalho inválido. O esperado é: ${expectedHeader.join(',')}`);
+                        return;
+                    }
+
+                    let importedCount = 0;
+                    usersJson.forEach(user => {
+                        if (user.matricula && user.nome && user.senha && user.telefone) {
+                            state.users.push({
+                                id: Date.now() + Math.random(),
+                                matricula: String(user.matricula).trim(),
+                                name: String(user.nome).trim(),
+                                password: String(user.senha).trim(),
+                                company: String(user.empresa || '').trim(),
+                                address: String(user.endereco || '').trim(),
+                                phone: String(user.telefone).trim()
+                            });
+                            importedCount++;
+                        }
+                    });
+
+                    if (importedCount > 0) {
+                        renderUserCrudList();
+                        showModal(`${importedCount} usuários foram importados com sucesso!`);
+                    } else {
+                        showModal("Nenhum usuário válido encontrado no arquivo para importar.");
+                    }
+                    fileInput.value = '';
+                } catch (error) {
+                    showModal("Ocorreu um erro ao processar o arquivo. Verifique se o formato está correto.");
+                }
+            };
+            reader.onerror = function() { showModal("Ocorreu um erro ao ler o arquivo."); };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderUserCrudList() {
+            const listContainer = document.getElementById('user-crud-list');
+            listContainer.innerHTML = ''; 
+            if (state.users.length > 10) listContainer.classList.add('max-h-[400px]', 'overflow-y-auto');
+            else listContainer.classList.remove('max-h-[400px]', 'overflow-y-auto');
+
+            if (state.users.length === 0) {
+                listContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum usuário cadastrado.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'w-full text-sm text-left';
+            table.innerHTML = `
+                <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Nome</th>
+                        <th scope="col" class="px-4 py-3">Telefone</th>
+                        <th scope="col" class="px-4 py-3 text-right">Ações</th>
+                    </tr>
+                </thead>`;
+            const tbody = document.createElement('tbody');
+            state.users.forEach(user => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700 hover:bg-gray-800/20';
+                row.innerHTML = `
+                    <td class="px-4 py-3 font-medium">
+                        <div>${user.name}</div>
+                        <div class="text-xs text-gray-400">${user.company || ''}</div>
+                    </td>
+                    <td class="px-4 py-3">${user.phone}</td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="editUser(${user.id})" class="font-medium text-yellow-400 hover:underline mr-3">Editar</button>
+                        <button onclick="deleteUser(${user.id})" class="font-medium text-red-500 hover:underline">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            listContainer.appendChild(table);
+        }
+
+        async function addUser() {
+            const idInput = document.getElementById('new-user-id'); const nameInput = document.getElementById('new-user-name');
+            const passwordInput = document.getElementById('new-user-password'); const companyInput = document.getElementById('new-user-company');
+            const addressInput = document.getElementById('new-user-address'); const phoneInput = document.getElementById('new-user-phone');
+            const matricula = idInput.value.trim(); const name = nameInput.value.trim();
+            const password = passwordInput.value.trim(); const company = companyInput.value.trim();
+            const address = addressInput.value.trim(); const phone = phoneInput.value.trim();
+            if (!matricula || !name || !password || !phone) { showModal('Matrícula, Nome, Senha e Telefone são obrigatórios.'); return; }
+            const { error } = await supabaseClient.from('users').insert([{ matricula, name, password, company, address, phone }]);
+            if (error) { console.error('Error adding user:', error); showModal('Erro ao adicionar usuário.'); } 
+            else { idInput.value = nameInput.value = passwordInput.value = companyInput.value = addressInput.value = phoneInput.value = ''; showModal('Usuário adicionado com sucesso!'); }
+        }
+
+        function editUser(userId) {
+            const user = state.users.find(u => u.id === userId);
+            if (!user) return;
+            const onConfirm = async () => {
+                const newMatricula = document.getElementById('modal-input-matricula').value.trim();
+                const newName = document.getElementById('modal-input-name').value.trim();
+                const newPassword = document.getElementById('modal-input-password').value.trim();
+                const newCompany = document.getElementById('modal-input-company').value.trim();
+                const newAddress = document.getElementById('modal-input-address').value.trim();
+                const newPhone = document.getElementById('modal-input-phone').value.trim();
+
+                if (newName && newPhone) {
+                    const updateData = { matricula: newMatricula, name: newName, company: newCompany, address: newAddress, phone: newPhone };
+                    if (newPassword) updateData.password = newPassword;
+                    const { error } = await supabaseClient.from('users').update(updateData).eq('id', userId);
+                    if (error) { console.error('Error updating user:', error); showModal('Erro ao atualizar usuário.'); } 
+                    else { closeModal(); }
+                } else { showModal('Nome completo e telefone são obrigatórios.'); }
+            };
+            showModal('Editar dados do usuário:', onConfirm, true, { type: 'edit-user', matricula: user.matricula, name: user.name, company: user.company, address: user.address, phone: user.phone });
+        }
+
+        async function deleteUser(userId) {
+            const onConfirm = async () => {
+                const { error } = await supabaseClient.from('users').delete().eq('id', userId);
+                if (error) { console.error('Error deleting user:', error); showModal('Erro ao excluir usuário.'); } 
+                else { closeModal(); }
+            };
+            showModal('Tem certeza que deseja excluir este usuário?', onConfirm, true);
+        }
+
+        // --- LÓGICA DO MOTORISTA ---
+        function populateDriverSelection() {
+            const list = document.getElementById('driver-list-selection');
+            const timestampEl = document.getElementById('driver-selection-timestamp');
+            list.innerHTML = '';
+            const timestamp = new Date().toLocaleString('pt-BR');
+            timestampEl.textContent = `Status atualizado em ${timestamp}`;
+
+            state.drivers.forEach(driver => {
+                // Modificado: Motorista está ocupado se tiver uma corrida com status diferente de 'completed' ou 'canceled'
+                const isDriverBusy = state.rides.some(ride => ride.driverId === driver.id && ride.status !== 'completed' && ride.status !== 'canceled');
+                const button = document.createElement('button');
+                button.className = 'w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg transform hover:scale-105 transition-transform flex justify-between items-center';
+                button.onclick = () => selectDriver(driver.id);
+                button.innerHTML = `
+                    <span>${driver.name}</span>
+                    <span class="text-sm font-bold py-1 px-3 rounded-full ${driver.status === 'active' && !isDriverBusy ? 'bg-green-500 text-white' : 'bg-red-600 text-white'}">
+                        ${driver.status === 'active' && !isDriverBusy ? 'Livre' : 'Ocupado'}
+                    </span>
+                `;
+                list.appendChild(button);
+            });
+        }
+
+        function selectDriver(driverId) {
+            tempDriverId = driverId;
+            const driver = state.drivers.find(d => d.id === driverId);
+            if (!driver) return;
+            const onConfirm = () => {
+                const passwordInput = document.getElementById('modal-input-driver-password');
+                if (passwordInput.value === driver.password) {
+                    state.currentDriverId = driverId;
+                    document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
+                    updateDriverStatusButton();
+                    showScreen('driver-screen');
+                    closeModal();
+                } else {
+                    document.getElementById('modal-message').textContent = "Senha Incorreta!";
+                }
+            };
+            showModal(`Login para ${driver.name}`, onConfirm, true, { type: 'driver-password' });
+        }
+
+        function loadDriverJobs() {
+            if (!state.currentDriverId) return;
+            const list = document.getElementById('driver-jobs-list');
+            list.innerHTML = '';
+            const myJobs = state.rides.filter(r => r.driverId === state.currentDriverId && r.status !== 'completed' && r.status !== 'canceled');
+            const statsDisplay = document.getElementById('driver-stats-display');
+            const jobCount = myJobs.length;
+            const timestamp = new Date().toLocaleString('pt-BR');
+            statsDisplay.textContent = `${jobCount} solicitações carregadas em ${timestamp}`;
+
+            if (myJobs.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-400">Nenhuma corrida para você no momento.</p>';
+                stopBeeping();
+                // Parar o rastreamento do motorista se não houver corridas ativas
+                if (driverWatchId) {
+                    navigator.geolocation.clearWatch(driverWatchId);
+                    driverWatchId = null;
+                }
+                return;
+            }
+
+            let hasAssignedJob = false;
+            myJobs.forEach(ride => {
+                const card = document.createElement('div');
+                card.className = 'card-gradient p-4 rounded-lg shadow-md';
+                const requestDateTime = new Date(ride.requestTime).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                let content = `
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="font-semibold pr-2">Destino Final: <span class="font-normal">${ride.destination}</span></p>
+                        <p class="text-sm text-gray-300">Solicitado por: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
+                        <p class="text-xs text-gray-400 whitespace-nowrap">${requestDateTime}</p>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-4">Status: <span class="font-semibold text-yellow-300">${translateStatus(ride.status).text}</span></p>
+                `;
+                if (ride.status === 'assigned') {
+                    hasAssignedJob = true;
+                    content += `<button onclick="acceptRide(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR CORRIDA</button>`;
+                } else if (ride.status === 'accepted') {
+                    content += `<button onclick="arriveAtPickup(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
+                } else if (ride.status === 'arrived_pickup') {
+                    content += `<button onclick="startTrip(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM PARA O DESTINO</button>`;
+                } else if (ride.status === 'in_progress') {
+                    content += `<button onclick="completeRide(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700">FINALIZAR CORRIDA</button>`;
+                }
+                card.innerHTML = content;
+                list.appendChild(card);
+            });
+            if (hasAssignedJob) startBeeping(); else stopBeeping();
+        }
+
+        async function acceptRide(rideId) {
+            stopBeeping();
+            // Iniciar rastreamento do motorista assim que ele aceita a corrida.
+            startDriverTracking(rideId); 
+
+            const { error } = await supabaseClient.from('rides').update({ status: 'accepted', acceptTime: new Date().toISOString() }).eq('id', rideId);
+            if (error) { 
+                console.error("Erro ao aceitar corrida:", error);
+                showModal("Não foi possível aceitar a corrida.");
+            } else {
+                const ride = state.rides.find(r => r.id === rideId);
+                if (ride && ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) {
+                    const { lat, lon } = ride.userLocation;
+                    // Abrir Google Maps para a localização do USUÁRIO (ponto de embarque)
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank');
+                } else {
+                    showModal("Não foi possível obter a localização do usuário para navegação.");
+                }
+            }
+        }
+        
+        async function arriveAtPickup(rideId) {
+            const { error } = await supabaseClient.from('rides').update({ status: 'arrived_pickup' }).eq('id', rideId);
+            if (error) {
+                console.error("Erro ao atualizar status para 'chegou no local':", error);
+                showModal("Não foi possível marcar como 'chegou no local'.");
+            }
+        }
+        
+        async function startTrip(rideId) {
+            const ride = state.rides.find(r => r.id === rideId);
+            if (ride) {
+                const { error } = await supabaseClient.from('rides').update({ status: 'in_progress' }).eq('id', rideId);
+                if (error) { 
+                    console.error("Erro ao iniciar viagem:", error);
+                    showModal("Não foi possível iniciar a viagem.");
+                } else { 
+                    // Abrir Google Maps para o DESTINO FINAL do usuário
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.destination)}`, '_blank'); 
+                }
+            }
+        }
+
+        async function completeRide(rideId) {
+            const { error } = await supabaseClient.from('rides').update({ status: 'completed' }).eq('id', rideId);
+            if (error) { 
+                console.error("Erro ao completar corrida:", error); 
+                showModal("Não foi possível finalizar a corrida.");
+            } else {
+                // Parar o rastreamento do motorista ao completar a corrida
+                if (driverWatchId) {
+                    navigator.geolocation.clearWatch(driverWatchId);
+                    driverWatchId = null;
+                }
+                // A interface será atualizada via realtime
+            }
+        }
+
+        // --- RASTREAMENTO E CÁLCULO DE DISTÂNCIA ---
+        function startDriverTracking(rideId) {
+            // Se já estiver rastreando, limpa o watch anterior para evitar múltiplos observadores
+            if (driverWatchId) {
+                navigator.geolocation.clearWatch(driverWatchId);
+            }
+
+            driverWatchId = navigator.geolocation.watchPosition(async (position) => {
+                const driverLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
+                // Apenas atualiza a localização se a corrida ainda estiver ativa
+                const currentRide = state.rides.find(r => r.id === rideId && r.status !== 'completed' && r.status !== 'canceled');
+                if (currentRide) {
+                    await supabaseClient.from('rides').update({ driverCurrentLocation: driverLocation }).eq('id', rideId);
+                } else {
+                    // Se a corrida não está mais ativa, parar de rastrear
+                    navigator.geolocation.clearWatch(driverWatchId);
+                    driverWatchId = null;
+                }
+            }, (error) => { 
+                console.error("Erro ao rastrear localização do motorista:", error); 
+                showModal('Não foi possível rastrear sua localização. Verifique as permissões.');
+            }, { 
+                enableHighAccuracy: true,
+                timeout: 5000, 
+                maximumAge: 0 
+            });
+        }
+
+
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of Earth in kilometers
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const d = R * c; // Distance in km
+            return d;
+        }
+
+        function deg2rad(deg) { 
+            return deg * (Math.PI / 180); 
+        }
+
+        // --- INICIALIZAÇÃO DO APP E SUPABASE ---
+        async function fetchAllData() {
+            // Erros serão logados no console, mas o app continua
+            const { data: drivers, error: driversError } = await supabaseClient.from('drivers').select('*');
+            if (driversError) console.error('Error fetching drivers:', driversError); else state.drivers = drivers;
+            const { data: users, error: usersError } = await supabaseClient.from('users').select('*');
+            if (usersError) console.error('Error fetching users:', usersError); else state.users = users;
+            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*');
+            if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
+        }
+
+        function setupRealtimeSubscriptions() {
+            supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, payload => {
+                fetchAllData().then(() => {
+                    const activeScreen = document.querySelector('.screen.active')?.id;
+                    if (activeScreen === 'admin-driver-crud-screen') renderDriverCrudList();
+                    else if (activeScreen === 'driver-selection-screen') populateDriverSelection();
+                    if (activeScreen === 'user-screen') { // Usuário precisa ver a atualização de motoristas disponíveis
+                        updateAvailableDriversCount();
+                    }
+                });
+            }).subscribe();
+
+            supabaseClient.channel('public:users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, payload => {
+                 fetchAllData().then(() => {
+                    if (document.querySelector('.screen.active')?.id === 'admin-user-crud-screen') renderUserCrudList();
+                 });
+            }).subscribe();
+            
+            supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
+                const { eventType, new: newRecord, old: oldRecord } = payload;
+                
+                // Atualizar o estado local das corridas
+                if (eventType === 'INSERT') {
+                    if (!state.rides.some(ride => ride.id === newRecord.id)) state.rides.push(newRecord);
+                } else if (eventType === 'UPDATE') {
+                    const rideIndex = state.rides.findIndex(r => r.id === newRecord.id);
+                    if (rideIndex !== -1) state.rides[rideIndex] = newRecord;
+                } else if (eventType === 'DELETE') {
+                    state.rides = state.rides.filter(r => r.id !== oldRecord.id);
+                }
+
+                const activeScreenId = document.querySelector('.screen.active')?.id;
+
+                // Atualizar o que é visível na tela dependendo do contexto
+                if (activeScreenId === 'admin-requests-screen') {
+                    loadAdminRequests();
+                    renderOngoingRidesTable();
+                }
+                else if (activeScreenId === 'driver-screen') loadDriverJobs();
+                else if (activeScreenId === 'user-screen') {
+                    // Se for uma atualização da corrida do usuário logado
+                    if (state.currentUserRideId && (newRecord?.id === state.currentUserRideId || oldRecord?.id === state.currentUserRideId)) {
+                        checkUserRideStatus(); 
+                    }
+                    updateAvailableDriversCount(); // Sempre importante para o usuário
+                    renderUserRideHistory(); // Atualiza o histórico do usuário para novas corridas ou status
+                } else if (activeScreenId === 'driver-selection-screen') {
+                    populateDriverSelection(); // Atualiza status de ocupado/livre dos motoristas
+                }
+            }).subscribe();
+        }
+
+        async function initApp() {
+            initAutocomplete();
+            loadAppIcon();
+            await fetchAllData(); // Carrega os dados iniciais do Supabase
+            setupRealtimeSubscriptions(); // Configura as escutas em tempo real
+
+            const loggedInUserId = localStorage.getItem('loggedInUserId');
+            if (loggedInUserId) {
+                state.currentUserId = parseInt(loggedInUserId);
+                const user = state.users.find(u => u.id === state.currentUserId);
+                if (user) {
+                    showScreen('user-screen');
+                    // IMPORTANTE: Após logar, verificar o status de qualquer corrida existente
+                    checkUserRideStatus(); 
+                }
+                else logoutUser();
+            } else {
+                showScreen('initial-screen');
+            }
+        }
+
+        function initAutocomplete() {
+            const destinationInput = document.getElementById('destination');
+            if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
+                const autocomplete = new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
+            }
+        }
+        
+        async function initHeatmap() {
+            const mapDiv = document.getElementById('heatmap-canvas');
+            if (!mapDiv) return;
+            const center = { lat: -30.0346, lng: -51.2177 };
+            map = new google.maps.Map(mapDiv, { center: center, zoom: 12, mapTypeId: 'satellite' });
+            const geocoder = new google.maps.Geocoder();
+            const heatmapData = [];
+            const geocodePromises = state.users.map(user => {
+                return new Promise((resolve) => {
+                    if (user.address) {
+                        geocoder.geocode({ 'address': user.address, 'region': 'BR' }, (results, status) => {
+                            if (status === 'OK') heatmapData.push(results[0].geometry.location); 
+                            else console.error('Geocode was not successful for the following reason: ' + status);
+                            resolve();
+                        });
+                    } else { resolve(); }
+                });
+            });
+            await Promise.all(geocodePromises);
+            heatmap = new google.maps.visualization.HeatmapLayer({ data: heatmapData, map: map });
+            heatmap.set('radius', 20);
+            heatmap.set('gradient', ['rgba(0, 255, 255, 0)','rgba(0, 255, 255, 1)','rgba(0, 191, 255, 1)','rgba(0, 127, 255, 1)','rgba(0, 63, 255, 1)','rgba(0, 0, 255, 1)','rgba(0, 0, 223, 1)','rgba(0, 0, 191, 1)','rgba(0, 0, 159, 1)','rgba(0, 0, 127, 1)','rgba(63, 0, 91, 1)','rgba(127, 0, 63, 1)','rgba(191, 0, 31, 1)','rgba(255, 0, 0, 1)']);
+        }
+
+        // --- NOVAS FUNÇÕES DE STATUS ---
+        function updateDriverStatusButton() {
+            const driver = state.drivers.find(d => d.id === state.currentDriverId);
+            if (!driver) return;
+            const toggle = document.getElementById('driver-status-toggle');
+            const label = document.getElementById('driver-status-label');
+            if (driver.status === 'active') {
+                toggle.checked = true; label.textContent = 'ATIVO'; label.className = 'font-bold text-green-400';
+            } else {
+                toggle.checked = false; label.textContent = 'INATIVO'; label.className = 'font-bold text-red-400';
+            }
+        }
+
+        async function toggleDriverStatus() {
+            const driver = state.drivers.find(d => d.id === state.currentDriverId);
+            if (driver) {
+                const newStatus = driver.status === 'active' ? 'inactive' : 'active';
+                const { error } = await supabaseClient.from('drivers').update({ status: newStatus }).eq('id', driver.id);
+                if (error) console.error("Error updating driver status:", error);
+                // updateAvailableDriversCount() será chamado pelo realtime subscription se o driver estiver ativo ou inativo
+            }
+        }
+
+        async function toggleDriverStatusAdmin(driverId) {
+            const driver = state.drivers.find(d => d.id === driverId);
+            if (driver) {
+                const newStatus = driver.status === 'active' ? 'inactive' : 'active';
+                const { error } = await supabaseClient.from('drivers').update({ status: newStatus }).eq('id', driver.id);
+                if (error) console.error("Error updating driver status:", error);
+                // updateAvailableDriversCount() será chamado pelo realtime subscription se o driver estiver ativo ou inativo
+            }
+        }
+
+        function updateAvailableDriversCount() {
+            const availableDrivers = state.drivers.filter(driver => {
+                // Um motorista é considerado "disponível" se estiver ativo e NÃO tiver nenhuma corrida ativa.
+                // Uma corrida é considerada "ativa" se não for 'completed' nem 'canceled'.
+                const hasActiveRide = state.rides.some(ride => 
+                    ride.driverId === driver.id && 
+                    ride.status !== 'completed' && 
+                    ride.status !== 'canceled'
+                );
+                return driver.status === 'active' && !hasActiveRide;
+            });
+            const countEl = document.getElementById('available-drivers-count');
+            if (countEl) { // Certifique-se de que o elemento existe antes de tentar atualizá-lo
+                countEl.textContent = `Motoristas disponíveis agora: ${availableDrivers.length}`;
+            }
+        }
+        
+        const customDataLabels = {
+            id: 'customDataLabels',
+            afterDatasetsDraw(chart, args, options) {
+                const { ctx, data } = chart;
+                ctx.save();
+                data.datasets[0].data.forEach((datapoint, index) => {
+                    if (datapoint > 0) {
+                        const { x, y } = chart.getDatasetMeta(0).data[index].tooltipPosition();
+                        ctx.font = 'bold 16px Poppins'; ctx.fillStyle = 'white';
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(datapoint, x, y);
+                    }
+                });
+            }
+        };
+
+        function renderDriverStatusChart(active, inactive) {
+            const ctx = document.getElementById('driver-status-chart').getContext('2d');
+            if (driverChart) driverChart.destroy();
+            driverChart = new Chart(ctx, {
+                type: 'pie',
+                data: { labels: ['Ativos', 'Inativos'], datasets: [{ data: [active, inactive], backgroundColor: ['#39FF14', '#FF0000'], borderColor: '#374151', borderWidth: 2 }] },
+                options: { responsive: true, plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+                plugins: [customDataLabels]
+            });
+        }
+
+        // MODIFICADO PARA RETORNAR OBJETO COM TEXTO E CLASSE DE COR
+        function translateStatus(status) {
+            switch (status) {
+                case 'requested': return { text: 'SOLICITADO', colorClass: 'status-requested' };
+                case 'assigned': return { text: 'DESIGNADO', colorClass: 'status-assigned' };
+                case 'accepted': return { text: 'ACEITO', colorClass: 'status-accepted' };
+                case 'arrived_pickup': return { text: 'CHEGOU NO EMBARQUE', colorClass: 'status-arrived_pickup' };
+                case 'in_progress': return { text: 'EM ANDAMENTO', colorClass: 'status-in_progress' };
+                case 'completed': return { text: 'FINALIZADA', colorClass: 'status-completed' };
+                case 'canceled': return { text: 'CANCELADA', colorClass: 'status-canceled' };
+                default: return { text: status.toUpperCase(), colorClass: '' }; // Cor padrão se não reconhecido
+            }
+        }
+
+        function exportRidesToExcel() {
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            if (!startDate || !endDate) { showModal("Por favor, selecione a data inicial e final."); return; }
+            const start = new Date(startDate).getTime();
+            const end = new Date(endDate); // Obter a data final
+            end.setHours(23, 59, 59, 999); // Ajustar para o final do dia
+
+            const filteredRides = state.rides.filter(ride => {
+                const rideTime = new Date(ride.requestTime).getTime();
+                return rideTime >= start && rideTime <= end.getTime(); // Comparar com o timestamp ajustado
+            });
+            if (filteredRides.length === 0) { showModal("Nenhuma corrida encontrada no período selecionado."); return; }
+
+            const dataToExport = filteredRides.map(ride => ({
+                'ID da Corrida': ride.id, 'Usuário': ride.userName, 'Empresa': ride.userCompany,
+                'Destino': ride.destination, 'Motorista': ride.driverName || 'N/A',
+                'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
+                'Data do Aceite': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A',
+                'Status': translateStatus(ride.status).text // Usar o texto do status
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio de Corridas");
+            XLSX.writeFile(workbook, `Relatorio_Corridas_${startDate}_a_${end.toISOString().split('T')[0]}.xlsx`);
+        }
+
+        function uploadAppIcon() {
+            const fileInput = document.getElementById('icon-file-input');
+            const file = fileInput.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                state.appIcon = event.target.result;
+                localStorage.setItem('appIcon', state.appIcon);
+                loadAppIcon(); 
+                showModal('Ícone atualizado com sucesso!');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function loadAppIcon() {
+            const iconContainer = document.getElementById('app-icon-container');
+            iconContainer.innerHTML = ''; 
+            if (state.appIcon) {
+                const img = document.createElement('img');
+                img.src = state.appIcon; img.className = 'h-12 w-12 object-contain';
+                iconContainer.appendChild(img);
+            } else {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('class', 'h-12 w-12 text-black'); svg.setAttribute('fill', 'currentColor');
+                svg.setAttribute('viewBox', '0 0 24 24');
+                svg.innerHTML = `<path d="M21.9,8.2L21,6.2c-0.5-1.2-1.7-2-3-2H6C4.7,4.2,3.5,5,3,6.2L2.1,8.2C2,8.4,2,8.6,2,8.8V16c0,1.1,0.9,2,2,2h1v1 c0,0.6,0.4,1,1,1h1c0.6,0,1-0.4,1-1v-1h1c1.1,0,2-0.9,2-2V8.8C22,8.6,22,8.4,21.9,8.2z M6.8,14.8c-0.8,0-1.5-0.7-1.5-1.5s0.7-1.5,1.5-1.5s1.5,0.7,1.5,1.5S7.6,14.8,6.8,14.8z M17.2,14.8c-0.8,0-1.5-0.7-1.5-1.5 s0.7-1.5,1.5-1.5s1.5,0.7,1.5,1.5S18.1,14.8,17.2,14.8z M4.5,10.8h15l-1.2-3c-0.2-0.5-0.7-0.8-1.3-0.8H6c-0.6,0-1.1,0.3-1.3,0.8 L4.5,10.8z"/>
+                    <rect height="1.5" width="4" x="10" y="2.2"/>`;
+                iconContainer.appendChild(svg);
+            }
+        }
+
+        function renderUserRideHistory() {
+            const historyContainer = document.getElementById('user-ride-history');
+            historyContainer.innerHTML = '';
+            const userRides = state.rides.filter(r => r.userId === state.currentUserId);
+            if (userRides.length === 0) {
+                historyContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum histórico de corrida.</p>';
+                return;
+            }
+            const table = document.createElement('table');
+            table.className = 'w-full text-sm text-left';
+            table.innerHTML = `
+                <thead class="text-xs text-gray-300 uppercase bg-gray-900/30">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Data</th>
+                        <th scope="col" class="px-4 py-3">Destino</th>
+                        <th scope="col" class="px-4 py-3">Status</th>
+                    </tr>
+                </thead>`;
+            const tbody = document.createElement('tbody');
+            // Ordenar por data da solicitação, mais recente primeiro
+            userRides.sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
+            userRides.forEach(ride => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700';
+                row.innerHTML = `
+                    <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td>
+                    <td class="px-4 py-3">${ride.destination}</td>
+                    <td class="px-4 py-3">${translateStatus(ride.status).text}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            historyContainer.appendChild(table);
+        }
+
+        function renderDriverRideHistory() {
+            const historyContainer = document.getElementById('driver-ride-history');
+            historyContainer.innerHTML = '';
+            const driverRides = state.rides.filter(r => r.driverId === state.currentDriverId && r.status === 'completed');
+            if (driverRides.length === 0) {
+                historyContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum histórico de corrida.</p>';
+                return;
+            }
+            const table = document.createElement('table');
+            table.className = 'w-full text-sm text-left';
+            table.innerHTML = `
+                <thead class="text-xs text-gray-300 uppercase bg-gray-900/30">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Data</th>
+                        <th scope="col" class="px-4 py-3">Usuário</th>
+                        <th scope="col" class="px-4 py-3">Destino</th>
+                    </tr>
+                </thead>`;
+            const tbody = document.createElement('tbody');
+            // Ordenar por data da solicitação, mais recente primeiro
+            driverRides.sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
+            driverRides.forEach(ride => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700';
+                row.innerHTML = `
+                    <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td>
+                    <td class="px-4 py-3">${ride.userName}</td>
+                    <td class="px-4 py-3">${ride.destination}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            historyContainer.appendChild(table);
+        }
+
+        function exportUserRidesToExcel() {
+            const userRides = state.rides.filter(r => r.userId === state.currentUserId);
+            if (userRides.length === 0) { showModal("Nenhum histórico de corrida para exportar."); return; }
+
+            const dataToExport = userRides.map(ride => ({
+                'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
+                'Destino': ride.destination,
+                'Motorista': ride.driverName || 'N/A',
+                'Status': translateStatus(ride.status).text
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Minhas Corridas");
+            XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
+        }
+
+        function exportDriverRidesToExcel() {
+            const driverRides = state.rides.filter(r => r.driverId === state.currentDriverId && r.status === 'completed');
+            if (driverRides.length === 0) { showModal("Nenhum histórico de corrida para exportar."); return; }
+
+            const dataToExport = driverRides.map(ride => ({
+                'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
+                'Usuário': ride.userName,
+                'Empresa': ride.userCompany,
+                'Destino': ride.destination,
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Minhas Corridas Concluídas");
+            XLSX.writeFile(workbook, "meu_historico_corridas_concluidas.xlsx");
+        }
+
+        // --- FUNÇÕES PARA REGISTROS ---
+        function openRecordsTab() {
+            // Para uma SPA, navegamos para a tela.
+            // Se você quisesse uma nova aba, usaria window.open('/admin-records-view.html', '_blank');
+            // assumindo que admin-records-view.html é um arquivo separado.
+            showScreen('admin-records-screen');
+            loadAllRecords(); // Carrega os registros quando a tela é mostrada
+        }
+
+        function loadAllRecords() {
+            const tableBody = document.getElementById('all-records-body');
+            tableBody.innerHTML = ''; // Limpa registros existentes
+
+            if (state.rides.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>';
+                return;
+            }
+
+            // Ordena as corridas por data de solicitação, mais recente primeiro
+            const sortedRides = [...state.rides].sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
+
+            sortedRides.forEach(ride => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700 hover:bg-gray-800/20';
+                row.innerHTML = `
+                    <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleString('pt-BR')}</td>
+                    <td class="px-4 py-3">${ride.userName}</td>
+                    <td class="px-4 py-3">${ride.userCompany || '-'}</td>
+                    <td class="px-4 py-3">${ride.destination}</td>
+                    <td class="px-4 py-3">${ride.driverName || '-'}</td>
+                    <td class="px-4 py-3">
+                        <span class="status-badge ${translateStatus(ride.status).colorClass}">${translateStatus(ride.status).text}</span>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function filterRecordsByDate() {
+            const startDateInput = document.getElementById('records-start-date');
+            const endDateInput = document.getElementById('records-end-date');
+            const tableBody = document.getElementById('all-records-body');
+            const rows = tableBody.getElementsByTagName('tr');
+
+            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+
+            if (!startDate && !endDate) {
+                // Se nenhuma data for selecionada, mostra todos os registros
+                loadAllRecords();
+                return;
+            }
+
+            // Garante que endDate seja o final do dia se apenas a data for fornecida
+            if (endDate) {
+                endDate.setHours(23, 59, 59, 999);
+            }
+
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                if (cells.length > 0) { // Garante que seja uma linha de dados
+                    const dateCell = cells[0]; // Assumindo que a data está na primeira célula
+                    const recordDateStr = dateCell.innerText;
+                    // Analisa a string de data. O formato de toLocaleString() pode variar,
+                    // então precisamos de uma maneira robusta de analisá-lo.
+                    // Exemplo de formato: "10/08/2023 15:30:00"
+                    const parts = recordDateStr.match(/(\d{2})\/(\d{2})\/(\d{4})[:, ]+(\d{2}):(\d{2}):(\d{2})/);
+                    let recordDate = null;
+                    if (parts) {
+                        // O mês é baseado em 0 nos objetos Date do JavaScript
+                        recordDate = new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1]), parseInt(parts[4]), parseInt(parts[5]), parseInt(parts[6]));
+                    }
+
+                    let isVisible = true;
+                    if (startDate && recordDate && recordDate < startDate) {
+                        isVisible = false;
+                    }
+                    if (endDate && recordDate && recordDate > endDate) {
+                        isVisible = false;
+                    }
+
+                    rows[i].style.display = isVisible ? '' : 'none';
+                }
+            }
+        }
+
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
+</body>
+</html>
