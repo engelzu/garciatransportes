@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -68,18 +67,50 @@
             font-weight: 600;
             color: #f3f4f6;
         }
+
+        /* Estilos para o Menu Sanduíche */
+        .menu-overlay {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        .menu-overlay.active {
+            transform: translateX(0);
+        }
+        .menu-backdrop {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
 
-    <div id="app-container" class="w-full max-w-md mx-auto">
+    <!-- Menu Sanduíche -->
+    <div id="menu-backdrop" class="fixed inset-0 z-40 hidden menu-backdrop" onclick="toggleMenu()"></div>
+    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 card-gradient p-6 z-50 menu-overlay">
+        <div class="flex justify-end mb-8">
+            <button onclick="toggleMenu()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        <nav>
+            <ul>
+                <li class="mb-4">
+                    <button onclick="showHistoryModal(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Minhas Solicitações</button>
+                </li>
+                 <li class="mb-4">
+                    <button onclick="exportUserRidesToExcel(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Exportar Histórico</button>
+                </li>
+                 <!-- Botão "Sair" removido conforme solicitado -->
+            </ul>
+        </nav>
+    </div>
+
+    <div id="app-container" class="w-full max-w-md mx-auto relative">
 
         <!-- TELA INICIAL -->
         <div id="initial-screen" class="screen active text-center">
-            <div class="flex flex-col items-center justify-center -mt-16 mb-2"> <!-- Ajustado para subir o ícone -->
-                <div id="app-icon-container" class="h-28 w-28"></div> <!-- Aumentado em 40% (20 * 1.4 = 28) -->
+            <!-- REINTEGRADA A DIV PARA O ÍCONE -->
+            <div class="flex flex-col items-center justify-center mb-4">
+                <div id="app-icon-container" class="h-28 w-28 mb-2"></div> <!-- O ícone será carregado aqui -->
             </div>
-            <h1 class="text-4xl sm:text-5xl font-bold text-black">GARCIAS TAXI</h1>
+            <h1 class="text-4xl sm:text-5xl font-bold text-black mb-2">GARCIAS TAXI</h1>
             <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
             <div class="space-y-4">
                 <button onclick="showScreen('user-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
@@ -109,29 +140,36 @@
 
         <!-- TELA DO USUÁRIO -->
         <div id="user-screen" class="screen">
-            <button onclick="logoutUser()" class="mb-4 text-yellow-300">&larr; Sair</button>
-            <h2 class="text-3xl font-bold mb-6 text-center">Área do Passageiro</h2>
-            <!-- A DIV user-status ficará visível acima do formulário de solicitação se houver uma viagem ativa -->
+            <!-- Imagem Centralizada -->
+            <div class="flex flex-col items-center justify-center mb-6">
+                <!-- A imagem aqui será exibida quando o motorista chegar -->
+                <img id="cheguei-image" src="images/final.png" alt="Motorista Chegou" class="h-28 w-28 object-contain mb-4 hidden"> 
+            </div>
+
+            <!-- Cabeçalho com Menu Sanduíche -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">Área do Passageiro</h2>
+                <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+
+            <!-- STATUS DA VIAGEM ATIVA (APENAS SE HOUVER UMA) -->
             <div id="user-status" class="hidden mt-8 text-center card-gradient p-4 rounded-lg mb-6">
-                <!-- Ícones de Status da Viagem -->
                 <div id="status-icon-searching" class="hidden mx-auto mb-2">
                     <div class="loader mx-auto"></div>
                 </div>
-                <div id="status-icon-en-route" class="hidden mx-auto mb-2">
-                    <!-- Este conteúdo será substituído pela imagem PNG -->
-                </div>
-                <div id="status-icon-arrived-pickup" class="hidden mx-auto mb-2">
-                    <!-- Este conteúdo será substituído pela imagem PNG -->
-                </div>
-                <div id="status-icon-in-progress" class="hidden mx-auto mb-2">
-                    <!-- Este conteúdo será substituído pela imagem PNG -->
-                </div>
+                <div id="status-icon-en-route" class="hidden mx-auto mb-2"></div>
+                <div id="status-icon-arrived-pickup" class="hidden mx-auto mb-2"></div>
+                <div id="status-icon-in-progress" class="hidden mx-auto mb-2"></div>
+                
                 <p id="user-status-message" class="mt-4 text-lg"></p>
                 <button id="cancel-ride-btn" onclick="cancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700">CANCELAR SOLICITAÇÃO</button>
             </div>
 
+            <!-- FORMULÁRIO DE SOLICITAÇÃO (APENAS SE NÃO HOUVER VIAGEM ATIVA) -->
             <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6">
-                 <h3 class="font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
+                 <h3 class="text-center font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
                 <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-300 font-semibold"></p>
                 <div class="mb-4">
                     <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
@@ -141,34 +179,38 @@
                     SOLICITAR TAXI
                 </button>
             </div>
-            
-            <div class="card-gradient p-4 rounded-lg mt-6"> <!-- Adicionado mt-6 para espaçamento -->
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-semibold text-xl">Minhas Solicitações</h3>
-                    <button onclick="exportUserRidesToExcel()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700">Exportar</button>
-                </div>
-                <div id="user-ride-history" class="overflow-x-auto"></div>
-            </div>
         </div>
     </div>
 
-    <!-- MODAL DE ALERTA -->
+    <!-- MODAL DE ALERTA (GENÉRICO) -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <p id="modal-message" class="mb-4 text-lg"></p>
             <div id="modal-buttons" class="flex justify-center gap-4">
-                 <button id="modal-cancel" onclick="closeModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
-                 <button id="modal-confirm" class="py-2 px-8 font-semibold rounded-lg button-gradient">OK</button>
+                 <button id="modal-cancel" onclick="closeModal('modal')" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
+                 <button id="modal-confirm" onclick="closeModal('modal')" class="py-2 px-8 font-semibold rounded-lg button-gradient">OK</button>
             </div>
         </div>
     </div>
+    
+    <!-- MODAL DE HISTÓRICO (ESPECÍFICO) -->
+    <div id="history-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-2xl max-h-[70vh] overflow-y-auto"> 
+            <h3 class="text-2xl font-bold mb-4 text-center">Histórico de Corridas</h3>
+            <div id="user-ride-history-modal" class="overflow-y-auto mb-6"></div> 
+            <div class="flex justify-center">
+                <button onclick="closeModal('history-modal'); toggleMenu()" class="py-2 px-6 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">Fechar</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // --- CONFIGURAÇÃO INICIAL E DADOS MOCADOS ---
         let state = {
             rides: [],
             users: [],
-            appIcon: 'images/user.png', // Alterado para usar o ícone "user.png"
+            appIcon: 'images/user.png', // O ícone que você enviou será carregado por esta variável
             currentUserRideId: null,
             currentUserId: null,
             userStatusInterval: null
@@ -180,25 +222,72 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- LÓGICA DE MODAL ---
-        function showModal(message, onConfirm, showCancel = false) {
-            document.getElementById('modal-message').textContent = message;
-            const confirmBtn = document.getElementById('modal-confirm');
-            const cancelBtn = document.getElementById('modal-cancel');
+        function showModal(modalId, htmlContent, onConfirmCallback, showCancelButton) {
+            const modal = document.getElementById(modalId);
+            const modalContentContainer = modal.querySelector('#modal-message') || modal.querySelector('.modal-content'); 
+            const confirmBtn = modal.querySelector('#modal-confirm');
+            const cancelBtn = modal.querySelector('#modal-cancel');
+            const modalButtonsDiv = modal.querySelector('#modal-buttons') || modal.querySelector('.modal-buttons');
+
+            if (modalContentContainer && htmlContent) {
+                modalContentContainer.innerHTML = htmlContent;
+            }
             
-            confirmBtn.onclick = onConfirm;
-            cancelBtn.style.display = showCancel ? 'inline-block' : 'none';
-            confirmBtn.textContent = showCancel ? 'Confirmar' : 'OK';
-            if (!showCancel) confirmBtn.onclick = closeModal;
+            // Limpa listeners de evento anteriores
+            if (confirmBtn) confirmBtn.onclick = null;
+            if (cancelBtn) cancelBtn.onclick = null;
+
+            if (showCancelButton && confirmBtn && cancelBtn && modalButtonsDiv) {
+                cancelBtn.style.display = 'inline-block';
+                confirmBtn.textContent = 'Confirmar';
+                confirmBtn.onclick = () => { 
+                    if (onConfirmCallback) onConfirmCallback(); 
+                    closeModal(modalId); 
+                };
+                cancelBtn.onclick = () => { closeModal(modalId); };
+                // Certifica que os botões estão presentes e na ordem correta
+                modalButtonsDiv.innerHTML = ''; 
+                modalButtonsDiv.appendChild(cancelBtn); 
+                modalButtonsDiv.appendChild(confirmBtn); 
+            } else if (confirmBtn && modalButtonsDiv) {
+                cancelBtn.style.display = 'none';
+                confirmBtn.textContent = 'OK';
+                confirmBtn.onclick = () => { closeModal(modalId); };
+                modalButtonsDiv.innerHTML = ''; 
+                modalButtonsDiv.appendChild(confirmBtn); 
+            }
             
-            const modal = document.getElementById('modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
 
-        function closeModal() {
-            const modal = document.getElementById('modal');
+        function closeModal(modalId = 'modal') {
+            const modal = document.getElementById(modalId);
+            if (!modal) return; 
+
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+
+            // Limpeza específica para cada modal
+            if (modalId === 'modal') {
+                const modalMessageEl = modal.querySelector('#modal-message');
+                if (modalMessageEl) modalMessageEl.textContent = '';
+                const confirmBtn = modal.querySelector('#modal-confirm');
+                if (confirmBtn) confirmBtn.onclick = null;
+                const cancelBtn = modal.querySelector('#modal-cancel');
+                if (cancelBtn) cancelBtn.onclick = null;
+            } else if (modalId === 'history-modal') {
+                const historyContainer = document.getElementById('user-ride-history-modal');
+                if (historyContainer) historyContainer.innerHTML = '';
+            }
+        }
+        
+        // --- LÓGICA DO MENU SANDUÍCHE ---
+        function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const backdrop = document.getElementById('menu-backdrop');
+            menu.classList.toggle('active');
+            backdrop.classList.toggle('hidden');
         }
 
         // --- LÓGICA DE LOGIN ---
@@ -214,7 +303,7 @@
                 .eq('password', password)
                 .single();
             
-            if (error && error.code !== 'PGRST116') { // PGRST116 é "No rows found"
+            if (error && error.code !== 'PGRST116') { 
                 console.error('Erro no Supabase ao tentar login:', error);
                 errorEl.textContent = 'Erro de comunicação com o servidor. Por favor, tente novamente.';
                 errorEl.classList.remove('hidden');
@@ -236,26 +325,31 @@
 
         function logoutUser() {
             state.currentUserId = null;
-            // Do NOT clear state.currentUserRideId or localStorage.removeItem('currentUserRideId') here.
-            // We want it to persist even if the user logs out and back in.
             localStorage.removeItem('loggedInUserId');
-            localStorage.removeItem('lastScreen'); // Clear last screen on explicit logout
-            if (state.userStatusInterval) clearInterval(state.userStatusInterval); // Stop status check
+            localStorage.removeItem('currentUserRideId'); 
+            localStorage.removeItem('lastScreen'); 
+            if (state.userStatusInterval) clearInterval(state.userStatusInterval); 
             showScreen('initial-screen');
         }
 
         // --- NAVEGAÇÃO ENTRE TELAS ---
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-            localStorage.setItem('lastScreen', screenId); // Salva a tela atual no localStorage
+            const activeScreen = document.getElementById(screenId);
+            if (activeScreen) {
+                activeScreen.classList.add('active');
+            }
+            localStorage.setItem('lastScreen', screenId);
 
             if (screenId === 'user-screen') {
-                checkUserRideStatus(); // Handles UI state and starts/stops interval
+                checkUserRideStatus();
                 updateAvailableDriversCount(); 
-                renderUserRideHistory();
             } else {
-                if (state.userStatusInterval) clearInterval(state.userStatusInterval); // Stop interval if leaving user screen
+                if (state.userStatusInterval) clearInterval(state.userStatusInterval);
+            }
+            // Fecha o menu mobile se estiver aberto ao mudar de tela
+            if (document.getElementById('mobile-menu').classList.contains('active')) {
+                toggleMenu();
             }
         }
 
@@ -265,18 +359,17 @@
             const requestRideBtn = document.getElementById('request-ride-btn');
 
             if (!destination) {
-                showModal('Por favor, insira um destino.');
+                showModal('modal', 'Por favor, insira um destino.');
                 return;
             }
 
-            // Disable button immediately to prevent double-clicks
             requestRideBtn.disabled = true;
             requestRideBtn.textContent = 'Solicitando...';
 
             document.getElementById('user-status-message').textContent = 'Obtendo sua localização...';
 
             if (!navigator.geolocation) {
-                showModal('Geolocalização não é suportada pelo seu navegador.');
+                showModal('modal', 'Geolocalização não é suportada pelo seu navegador.');
                 requestRideBtn.disabled = false;
                 requestRideBtn.textContent = 'SOLICITAR TAXI';
                 return;
@@ -287,7 +380,7 @@
                 const currentUser = state.users.find(u => u.id === state.currentUserId);
 
                 if (!currentUser) {
-                    showModal('Erro: Usuário não encontrado. Por favor, faça login novamente.');
+                    showModal('modal', 'Erro: Usuário não encontrado. Por favor, faça login novamente.');
                     logoutUser();
                     requestRideBtn.disabled = false;
                     requestRideBtn.textContent = 'SOLICITAR TAXI';
@@ -308,25 +401,23 @@
 
                 if (error) {
                     console.error("Erro ao solicitar corrida:", error);
-                    showModal("Não foi possível solicitar a corrida.");
+                    showModal('modal', "Não foi possível solicitar a corrida.");
                     requestRideBtn.disabled = false;
                     requestRideBtn.textContent = 'SOLICITAR TAXI';
-                    // Re-evaluate UI state, in case of error, form should be visible
                     checkUserRideStatus(); 
                     return;
                 }
 
                 state.currentUserRideId = data.id;
-                localStorage.setItem('currentUserRideId', data.id); // Persist active ride ID
-                document.getElementById('destination').value = ''; // Clear destination input
-                checkUserRideStatus(); // Update UI based on new ride
+                localStorage.setItem('currentUserRideId', data.id); 
+                document.getElementById('destination').value = ''; 
+                checkUserRideStatus(); 
                 
             }, (error) => {
                 console.error("Erro ao obter localização do usuário:", error);
-                showModal('Não foi possível obter sua localização. Verifique as permissões de localização no seu dispositivo/navegador.');
+                showModal('modal', 'Não foi possível obter sua localização. Verifique as permissões de localização no seu dispositivo/navegador.');
                 requestRideBtn.disabled = false;
                 requestRideBtn.textContent = 'SOLICITAR TAXI';
-                // Re-evaluate UI state
                 checkUserRideStatus();
             }, {
                 enableHighAccuracy: true,
@@ -340,11 +431,10 @@
             const userStatusDiv = document.getElementById('user-status');
             const requestRideBtn = document.getElementById('request-ride-btn');
             const destinationInput = document.getElementById('destination');
+            const guegueiImage = document.getElementById('cheguei-image'); // Pega a referência da imagem
 
-            // Ensure status interval is cleared before potentially restarting
             if (state.userStatusInterval) clearInterval(state.userStatusInterval);
 
-            // Attempt to load currentUserRideId from localStorage if not already set in state
             if (!state.currentUserRideId && state.currentUserId) {
                 const storedRideId = localStorage.getItem('currentUserRideId');
                 if (storedRideId) {
@@ -352,47 +442,47 @@
                     if (!rideError && activeRide && activeRide.userId === state.currentUserId && !['completed', 'canceled'].includes(activeRide.status)) {
                         state.currentUserRideId = activeRide.id;
                     } else {
-                        // Stored ride is invalid, not for current user, or completed/canceled
                         localStorage.removeItem('currentUserRideId');
                     }
                 }
             }
 
-
             if (state.currentUserRideId) {
                 const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
 
-                // Check if ride is valid and still active for the current user
                 if (!error && myRide && myRide.userId === state.currentUserId && !['completed', 'canceled'].includes(myRide.status)) {
-                    // Active ride found for current user: Hide form, show status
                     requestForm.classList.add('hidden');
                     userStatusDiv.classList.remove('hidden');
+                    updateUserStatusMessage(myRide); 
+                    startUserStatusCheck(); 
                     
-                    updateUserStatusMessage(myRide); // Update specific status messages and icons
-                    startUserStatusCheck(); // Keep checking status for this active ride
+                    // Mostra a imagem "CHEGUEI" apenas se o status for 'arrived_pickup'
+                    if (myRide.status === 'arrived_pickup') {
+                        guegueiImage.classList.remove('hidden');
+                    } else {
+                        guegueiImage.classList.add('hidden');
+                    }
                 } else {
-                    // Ride not found, or not for current user, or already finished (completed/canceled)
-                    // Reset currentUserRideId and UI to allow new requests
                     state.currentUserRideId = null;
                     localStorage.removeItem('currentUserRideId');
-                    
                     requestForm.classList.remove('hidden');
                     userStatusDiv.classList.add('hidden');
-                    requestRideBtn.disabled = false; // Enable button as no active ride
+                    requestRideBtn.disabled = false; 
                     requestRideBtn.textContent = 'SOLICITAR TAXI';
-                    destinationInput.value = ''; // Clear destination input
-                    document.getElementById('user-status-message').textContent = ''; // Clear any old status message
+                    destinationInput.value = ''; 
+                    document.getElementById('user-status-message').textContent = ''; 
+                    guegueiImage.classList.add('hidden'); // Garante que a imagem esteja oculta se a corrida não estiver ativa
                 }
             } else {
-                // No current active ride: Show form, enable button
                 requestForm.classList.remove('hidden');
                 userStatusDiv.classList.add('hidden');
-                requestRideBtn.disabled = false; // Enable button as no active ride
+                requestRideBtn.disabled = false; 
                 requestRideBtn.textContent = 'SOLICITAR TAXI';
                 destinationInput.value = '';
                 document.getElementById('user-status-message').textContent = '';
+                guegueiImage.classList.add('hidden'); // Garante que a imagem esteja oculta se não houver corrida ativa
             }
-            renderUserRideHistory(); // Always update history when user screen is active
+            renderUserRideHistory(); 
         }
 
         function startUserStatusCheck() {
@@ -400,23 +490,20 @@
             state.userStatusInterval = setInterval(async () => {
                 if (!state.currentUserRideId) {
                     clearInterval(state.userStatusInterval);
-                    checkUserRideStatus(); // Re-evaluate UI if ride ID becomes null
+                    checkUserRideStatus(); 
                     return;
                 }
                 const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
                 if (myRide) {
                    updateUserStatusMessage(myRide);
-                   // Also re-evaluate form/button state as status might have changed
-                   // This call ensures the UI transitions correctly if a ride finishes in background
                    checkUserRideStatus(); 
                 } else {
-                    // Ride no longer exists or finished
                     clearInterval(state.userStatusInterval);
                     state.currentUserRideId = null;
                     localStorage.removeItem('currentUserRideId');
-                    checkUserRideStatus(); // Re-evaluate UI
+                    checkUserRideStatus(); 
                 }
-            }, 10000); // Atualiza a cada 10 segundos
+            }, 10000); 
         }
         
         function updateUserStatusMessage(ride) {
@@ -425,7 +512,8 @@
             const arrivedPickupIconContainer = document.getElementById('status-icon-arrived-pickup');
             const inProgressIconContainer = document.getElementById('status-icon-in-progress');
             const cancelRideBtn = document.getElementById('cancel-ride-btn');
-            
+            const guegueiImage = document.getElementById('cheguei-image'); // Referência para a imagem
+
             searchingIconContainer.classList.add('hidden');
             enRouteIconContainer.classList.add('hidden');
             arrivedPickupIconContainer.classList.add('hidden');
@@ -435,8 +523,7 @@
             arrivedPickupIconContainer.innerHTML = '';
             inProgressIconContainer.innerHTML = '';
 
-            // Show cancel button only if ride is still "cancelable"
-            if (['requested', 'assigned', 'accepted', 'arrived_pickup'].includes(ride.status)) {
+            if (['requested', 'assigned', 'accepted', 'arrived_pickup'].includes(ride.status)) { // Mantém o botão de cancelar visível até 'arrived_pickup'
                 cancelRideBtn.classList.remove('hidden');
             } else {
                 cancelRideBtn.classList.add('hidden');
@@ -471,12 +558,7 @@
                     break;
                 case 'arrived_pickup':
                     message = `Seu motorista, ${ride.driverName || 'designado'}, chegou no local de embarque.`;
-                    const arrivedImg = document.createElement('img');
-                    arrivedImg.src = 'images/final.png'; 
-                    arrivedImg.alt = 'Motorista Chegou';
-                    arrivedImg.className = 'h-20 w-20 mx-auto';
-                    arrivedPickupIconContainer.appendChild(arrivedImg);
-                    arrivedPickupIconContainer.classList.remove('hidden');
+                    // A imagem "CHEGUEI" será tratada na função checkUserRideStatus
                     break;
                 case 'in_progress':
                      message = `Viagem para ${ride.destination} em andamento.`;
@@ -490,8 +572,7 @@
                  case 'completed':
                     message = `Viagem finalizada! Obrigado por escolher a GARCIAS TAXI.`;
                     state.currentUserRideId = null;
-                    localStorage.removeItem('currentUserRideId'); // Clear active ride from local storage
-                    // Let checkUserRideStatus handle interval and UI reset after a delay
+                    localStorage.removeItem('currentUserRideId'); 
                     setTimeout(() => {
                         checkUserRideStatus(); 
                     }, 5000);
@@ -499,7 +580,7 @@
                 case 'canceled':
                     message = `Sua viagem foi cancelada.`;
                     state.currentUserRideId = null;
-                    localStorage.removeItem('currentUserRideId'); // Clear active ride from local storage
+                    localStorage.removeItem('currentUserRideId'); 
                     setTimeout(() => {
                         checkUserRideStatus(); 
                     }, 3000);
@@ -513,23 +594,19 @@
 
         async function cancelRide() {
             if (state.currentUserRideId) {
-                showModal('Tem certeza que deseja cancelar esta solicitação?', async () => {
-                    closeModal();
+                showModal('modal', 'Tem certeza que deseja cancelar esta solicitação?', async () => {
                     const { error } = await supabaseClient.from('rides').update({ status: 'canceled' }).eq('id', state.currentUserRideId);
                     if (error) {
-                        showModal('Não foi possível cancelar a corrida.');
+                        showModal('modal', 'Não foi possível cancelar a corrida.');
                         console.error('Erro ao cancelar corrida:', error);
-                    } else {
-                        // Status update will trigger realtime, and updateUserStatusMessage
-                        // will handle clearing currentUserRideId and UI reset.
                     }
-                }, true); // Show cancel button in modal
+                }, true); 
             }
         }
 
         // --- CÁLCULO DE DISTÂNCIA ---
         function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radius of Earth in kilometers
+            const R = 6371; 
             const dLat = deg2rad(lat2 - lat1);
             const dLon = deg2rad(lon2 - lon1);
             const a =
@@ -537,7 +614,7 @@
                 Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
                 Math.sin(dLon / 2) * Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const d = R * c; // Distance in km
+            const d = R * c; 
             return d;
         }
 
@@ -555,13 +632,12 @@
 
         function setupRealtimeSubscriptions() {
             supabaseClient.channel('public:users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, payload => {
-                 fetchAllData(); // Re-fetch all data to ensure state is updated
+                 fetchAllData(); 
             }).subscribe();
             
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
                 
-                // Update local state.rides
                 if (eventType === 'INSERT') {
                     if (!state.rides.some(ride => ride.id === newRecord.id)) state.rides.push(newRecord);
                 } else if (eventType === 'UPDATE') {
@@ -571,23 +647,20 @@
                     state.rides = state.rides.filter(r => r.id !== oldRecord.id);
                 }
 
-                // Re-evaluate user screen UI if active and related ride changed
                 const activeScreenId = document.querySelector('.screen.active')?.id;
                 if (activeScreenId === 'user-screen') {
-                    // If the changed ride is the current user's active ride
                     if (state.currentUserRideId && (newRecord?.id === state.currentUserRideId || oldRecord?.id === state.currentUserRideId)) {
                         checkUserRideStatus(); 
                     }
-                    // Also update available drivers and history for any relevant changes
                     updateAvailableDriversCount();
-                    renderUserRideHistory();
+                    renderUserRideHistory(); 
                 }
             }).subscribe();
         }
 
         async function initApp() {
             initAutocomplete();
-            loadAppIcon();
+            loadAppIcon(); // A função que carrega o ícone está aqui!
             await fetchAllData();
             setupRealtimeSubscriptions();
 
@@ -598,11 +671,9 @@
                 state.currentUserId = parseInt(loggedInUserId);
                 const user = state.users.find(u => u.id === state.currentUserId);
                 if (user) {
-                    // currentUserRideId will be handled by checkUserRideStatus when user-screen is shown
                     showScreen('user-screen'); 
                 } else {
-                    // User ID in localStorage but not found in DB
-                    logoutUser(); // This will clear the invalid login, but keep currentUserRideId
+                    logoutUser(); 
                     showScreen('initial-screen'); 
                 }
             } else if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
@@ -615,7 +686,6 @@
 
         function initAutocomplete() {
             const destinationInput = document.getElementById('destination');
-            // Ensure Google Maps API is loaded before initializing Autocomplete
             if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
                 new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
             } else {
@@ -623,11 +693,9 @@
             }
         }
         
-        // --- FUNÇÕES DE STATUS (AJUSTADAS PARA APENAS EXIBIR) ---
         function updateAvailableDriversCount() {
             const countEl = document.getElementById('available-drivers-count');
             if (countEl) {
-                // Since we don't have driver data on the client side, this remains a generic message
                 countEl.textContent = `Aguardando motoristas...`; 
             }
         }
@@ -650,10 +718,11 @@
             iconContainer.innerHTML = ''; 
             if (state.appIcon) {
                 const img = document.createElement('img');
-                img.src = state.appIcon; 
+                img.src = state.appIcon; // Usa o caminho definido em state.appIcon
                 img.className = 'h-full w-full object-contain'; 
                 iconContainer.appendChild(img);
             } else {
+                // Fallback SVG se state.appIcon não estiver definido (não deve acontecer com a configuração atual)
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('class', 'h-12 w-12 text-black'); svg.setAttribute('fill', 'currentColor');
                 svg.setAttribute('viewBox', '0 0 24 24');
@@ -664,7 +733,12 @@
         }
 
         function renderUserRideHistory() {
-            const historyContainer = document.getElementById('user-ride-history');
+            const historyContainer = document.getElementById("user-ride-history-modal");
+            if (!historyContainer) {
+                console.error("Elemento '#user-ride-history' não encontrado.");
+                return; 
+            }
+
             historyContainer.innerHTML = '';
             const userRides = state.rides.filter(r => r.userId === state.currentUserId);
             if (userRides.length === 0) {
@@ -676,7 +750,7 @@
             table.innerHTML = `
                 <thead class="text-xs text-gray-300 uppercase bg-gray-900/30">
                     <tr>
-                        <th scope="col" class="px-4 py-3">Data</th>
+                        <th scope="col" class="px-4 py-3">Data e Hora</th> 
                         <th scope="col" class="px-4 py-3">Destino</th>
                         <th scope="col" class="px-4 py-3">Status</th>
                     </tr>
@@ -686,8 +760,17 @@
             userRides.forEach(ride => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-700';
+                // Formata a data e hora para o formato local brasileiro
+                const dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
                 row.innerHTML = `
-                    <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td>
+                    <td class="px-4 py-3">${dateTimeString}</td> 
                     <td class="px-4 py-3">${ride.destination}</td>
                     <td class="px-4 py-3">${translateStatus(ride.status)}</td>
                 `;
@@ -697,12 +780,31 @@
             historyContainer.appendChild(table);
         }
 
+        function showHistoryModal() {
+            renderUserRideHistory();
+            showModal("history-modal", "", null, false);
+        }
+
+        document.getElementById('menu-toggle-btn').onclick = function() {
+            toggleMenu();
+            if (document.getElementById('mobile-menu').classList.contains('active')) {
+                renderUserRideHistory(); 
+            }
+        };
+        
         function exportUserRidesToExcel() {
             const userRides = state.rides.filter(r => r.userId === state.currentUserId);
-            if (userRides.length === 0) { showModal("Nenhum histórico de corrida para exportar."); return; }
+            if (userRides.length === 0) { showModal("modal", "Nenhum histórico de corrida para exportar."); return; }
 
             const dataToExport = userRides.map(ride => ({
-                'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
+                'Data e Hora da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR', {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                }),
                 'Destino': ride.destination,
                 'Motorista': ride.driverName || 'N/A',
                 'Status': translateStatus(ride.status)
@@ -713,6 +815,7 @@
             XLSX.utils.book_append_sheet(workbook, worksheet, "Minhas Corridas");
             XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
         }
+
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places&callback=initApp" async defer></script>
 </body>
