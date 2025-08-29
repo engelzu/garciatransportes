@@ -188,12 +188,6 @@
                 delete link.dataset.clicked;
             });
 
-            // Adiciona evento de clique para mostrar spinner apenas durante a transição
-            document.querySelectorAll('a[href*="garciatransportesguaiba"]').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
-                });
-            });
         });
     </script>
 </body>
