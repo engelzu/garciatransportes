@@ -66,6 +66,12 @@
     </div>
 
     <script>
+        // Armazenar textos originais dos botões
+        const originalButtonTexts = {};
+        document.querySelectorAll('a').forEach(link => {
+            originalButtonTexts[link.href] = link.innerHTML;
+        });
+
         // Prevenir comportamento padrão dos links
         document.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', (e) => {
@@ -77,6 +83,14 @@
                 }, 500);
             });
         });
+
+        // Restaurar textos originais ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('a').forEach(link => {
+                if (originalButtonTexts[link.href]) {
+                    link.innerHTML = originalButtonTexts[link.href];
+                }
+            });
 
         // Fallback para o logo caso não carregue
         document.addEventListener('DOMContentLoaded', function() {
