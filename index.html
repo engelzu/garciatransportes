@@ -11,29 +11,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Reset básico para garantir que nada saia do lugar */
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #000000; /* Fundo preto */
-            color: #ffffff; /* Fonte branca */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 0; /* Remove padding para o vídeo ocupar toda a tela */
-            margin: 0; /* Remove margem padrão do body */
-            overflow: hidden; /* Crucial para evitar barras de rolagem */
-        }
+        /* ... (your existing styles) ... */
         .main-gradient {
-            background: linear-gradient(135deg, #000000, #000000); /* Degradê transformado em preto */
+            background: linear-gradient(135deg, #000000, #000000);
         }
         .button-gradient {
-            background: linear-gradient(to right, #000000, #000000); /* Degradê transformado em preto */
-            border: 2px solid white; /* Contorno branco */
+            background: linear-gradient(to right, #000000, #000000);
+            border: 2px solid white;
             position: relative;
             overflow: hidden;
         }
@@ -53,12 +37,12 @@
         }
 
         .button-gradient:disabled {
-            background: #4b5563; /* Gray out disabled button */
+            background: #4b5563;
             cursor: not-allowed;
             opacity: 0.7;
         }
         .card-gradient {
-             background: linear-gradient(135deg, #000000, #000000); /* Degradê transformado em preto */
+             background: linear-gradient(135deg, #000000, #000000);
         }
         .screen {
             display: none;
@@ -69,7 +53,7 @@
         .loader {
             border: 4px solid #f3f3f3;
             border-radius: 50%;
-            border-top: 4px solid #6d28d9; /* Mantém a cor original do loader */
+            border-top: 4px solid #6d28d9;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
@@ -97,7 +81,6 @@
             color: #f3f4f6;
         }
 
-        /* Estilos para o Menu Sanduíche */
         .menu-overlay {
             transform: translateX(100%);
             transition: transform 0.3s ease-in-out;
@@ -109,139 +92,122 @@
             background-color: rgba(0, 0, 0, 0.7);
         }
 
-        /* Estilos para os textos */
-        .text-black { color: #ffffff !important; } /* Transforma texto preto em branco */
-        .text-gray-800 { color: #ffffff !important; } /* Transforma texto cinza escuro em branco */
-        .text-gray-400 { color: #ffffff !important; } /* Transforma texto cinza em branco */
-        .text-gray-300 { color: #ffffff !important; } /* Transforma texto cinza em branco */
-        .text-gray-600 { color: #ffffff !important; } /* Transforma texto cinza em branco */
-        .text-gray-700 { color: #ffffff !important; } /* Transforma texto cinza em branco */
-        .text-gray-500 { color: #ffffff !important; } /* Transforma texto cinza em branco */
-        .text-red-500 { color: #ffffff !important; } /* Transforma texto vermelho em branco */
-        .text-green-300 { color: #ffffff !important; } /* Transforma texto verde em branco */
-        .text-yellow-300 { color: #ffffff !important; } /* Transforma texto amarelo em branco */
-        .text-cyan-400 { color: #00ffff !important; } /* Cor Cyan */
+        .text-black { color: #ffffff !important; }
+        .text-gray-800 { color: #ffffff !important; }
+        .text-gray-400 { color: #ffffff !important; }
+        .text-gray-300 { color: #ffffff !important; }
+        .text-gray-600 { color: #ffffff !important; }
+        .text-gray-700 { color: #ffffff !important; }
+        .text-gray-500 { color: #ffffff !important; }
+        .text-red-500 { color: #ffffff !important; }
+        .text-green-300 { color: #ffffff !important; }
+        .text-yellow-300 { color: #ffffff !important; }
+        .text-cyan-400 { color: #00ffff !important; }
 
-        /* Ajustes específicos para garantir que os textos dos botões e títulos fiquem brancos */
         h1, h2, h3, p, button, label, input::placeholder {
             color: #ffffff !important;
         }
 
-        /* Ajuste para o ícone do menu sanduíche */
         #menu-toggle-btn svg path {
             stroke: #ffffff !important;
         }
         
-        /* Ajuste para o ícone de voltar */
         #user-login-screen button:first-child {
-            color: #ffffff !important; /* Cor branca para a seta de voltar */
+            color: #ffffff !important;
         }
 
-        /* Centralizando o conteúdo da tela */
         .content-wrapper {
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%; /* Para ocupar a altura disponível dentro do container */
-            width: 100%; /* Para garantir que o padding não atrapalhe o alinhamento */
+            height: 100%;
+            width: 100%;
         }
 
         .input-and-button-container {
-            width: 100%; /* Garante que o container ocupe a largura disponível */
-            max-width: 400px; /* Define uma largura máxima para os elementos internos */
-            margin: 0 auto; /* Centraliza o container */
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
         }
 
         #destination {
-            width: 100%; /* Faz o input ocupar toda a largura do seu container pai */
-            box-sizing: border-box; /* Inclui padding e border na largura total */
+            width: 100%;
+            box-sizing: border-box;
         }
 
         #request-ride-btn {
-            width: 100%; /* Faz o botão ocupar toda a largura do seu container pai */
-            box-sizing: border-box; /* Inclui padding e border na largura total */
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        /* Centraliza o título "Área do Passageiro" com o botão "SOLICITAR TAXI" */
         .title-and-button-alignment {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
         .title-and-button-alignment h2 {
-            width: 100%; /* Permite que o h2 pegue a largura máxima */
-            text-align: center; /* Centraliza o texto dentro do h2 */
+            width: 100%;
+            text-align: center;
         }
 
-        /* Estilos para o vídeo de splash screen */
-        #splash-screen {
-            position: fixed; /* Fixo na tela */
+        /* Estilos para o vídeo de introdução */
+        #intro-video {
+            width: 100%;
+            height: 100vh; /* Ocupa a tela inteira */
+            object-fit: cover; /* Garante que o vídeo cubra toda a área */
+        }
+
+        /* Container para o vídeo e a transição para o app */
+        #video-container {
+            position: fixed; /* Mantém o vídeo fixo na tela */
             top: 0;
             left: 0;
-            width: 100vw; /* Usa 100% da largura da viewport */
-            height: 100vh; /* Usa 100% da altura da viewport */
-            display: flex; /* Para centralizar o conteúdo dentro dele */
-            justify-content: center;
-            align-items: center;
-            z-index: 100; /* Garante que fique acima de tudo, mas abaixo da UI final */
-            overflow: hidden; /* Essencial para o vídeo não vazar para fora */
-            background-color: #000; /* Fundo preto caso o vídeo não carregue */
-            max-width: 100%; /* Garante que não ultrapasse a largura da viewport */
-        }
-
-        #splash-video {
-            display: block; /* Remove espaço extra abaixo do vídeo */
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Importante: Cobre toda a área do contêiner, mantendo a proporção */
-            object-position: center; /* Centraliza o vídeo se o aspect ratio não bater exatamente */
-        }
-
-        /* Estilos para esconder o splash screen e mostrar o conteúdo principal */
-        .hidden-splash {
-            display: none;
+            z-index: 9999; /* Garante que o vídeo fique sobre todos os outros elementos */
+            background-color: black; /* Fundo preto caso o vídeo não carregue */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
 
-    <!-- SPLASH SCREEN COM VÍDEO -->
-    <div id="splash-screen" class="screen active">
-        <video autoplay muted playsinline id="splash-video">
-            <source src="images/video.mp4" type="video/mp4">
+    <!-- Contêiner do Vídeo de Introdução -->
+    <div id="video-container">
+        <video id="intro-video" autoplay muted playsinline>
+            <source src="images/video1.mp4" type="video/mp4">
             Seu navegador não suporta o elemento de vídeo.
         </video>
     </div>
 
-    <!-- Conteúdo principal da aplicação (inicialmente oculto) -->
-    <div id="app-container" class="w-full max-w-md mx-auto relative hidden">
-
-        <!-- Menu Sanduíche (MANTIDO ABAIXO DO APP CONTAINER COMO ESTAVA) -->
-        <div id="menu-backdrop" class="fixed inset-0 z-40 hidden menu-backdrop" onclick="toggleMenu()"></div>
-        <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 card-gradient p-6 z-50 menu-overlay">
-            <div class="flex justify-end mb-8">
-                <button onclick="toggleMenu()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            <nav>
-                <ul>
-                    <li class="mb-4">
-                        <button onclick="showHistoryModal(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Minhas Solicitações</button>
-                    </li>
-                    <li class="mb-4">
-                        <button onclick="exportUserRidesToExcel(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Exportar Histórico</button>
-                    </li>
-                    <!-- Botão "Sair" removido conforme solicitado -->
-                </ul>
-            </nav>
+    <!-- Menu Sanduíche -->
+    <div id="menu-backdrop" class="fixed inset-0 z-40 hidden menu-backdrop" onclick="toggleMenu()"></div>
+    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 card-gradient p-6 z-50 menu-overlay">
+        <div class="flex justify-end mb-8">
+            <button onclick="toggleMenu()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
         </div>
+        <nav>
+            <ul>
+                <li class="mb-4">
+                    <button onclick="showHistoryModal(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Minhas Solicitações</button>
+                </li>
+                 <li class="mb-4">
+                    <button onclick="exportUserRidesToExcel(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Exportar Histórico</button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div id="app-container" class="w-full max-w-md mx-auto relative hidden"> <!-- Inicialmente oculto -->
 
         <!-- TELA INICIAL -->
-        <div id="initial-screen" class="screen text-center">
-            <!-- REINTEGRADA A DIV PARA O ÍCONE -->
+        <div id="initial-screen" class="screen active text-center">
             <div class="flex flex-col items-center justify-center mb-4">
-                <div id="app-icon-container" class="h-28 w-28 mb-2"></div> <!-- O ícone será carregado aqui -->
+                <div id="app-icon-container" class="h-28 w-28 mb-2"></div>
             </div>
             <h1 class="text-4xl sm:text-5xl font-bold text-black mb-2">GARCIA TRANSPORTES</h1>
             <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
@@ -273,13 +239,10 @@
 
         <!-- TELA DO USUÁRIO -->
         <div id="user-screen" class="screen">
-            <!-- Imagem Centralizada -->
             <div class="flex flex-col items-center justify-center mb-6">
-                <!-- A imagem aqui será exibida quando o motorista chegar -->
-                <img id="cheguei-image" src="images/final.png" alt="Motorista Chegou" class="h-28 w-28 object-contain mb-4 hidden"> 
+                <img id="cheguei-image" src="images/final.png" alt="Motorista Chegou" class="h-28 w-28 object-contain mb-4 hidden">
             </div>
 
-            <!-- Cabeçalho com Menu Sanduíche -->
             <div class="flex justify-between items-center mb-6 title-and-button-alignment">
                 <h2 class="text-3xl font-bold">Área do Passageiro</h2>
                 <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none">
@@ -287,7 +250,6 @@
                 </button>
             </div>
 
-            <!-- STATUS DA VIAGEM ATIVA (APENAS SE HOUVER UMA) -->
             <div id="user-status" class="hidden mt-8 text-center card-gradient p-4 rounded-lg mb-6">
                 <div id="status-icon-searching" class="hidden mx-auto mb-2">
                     <div class="loader mx-auto"></div>
@@ -300,7 +262,6 @@
                 <button id="cancel-ride-btn" onclick="cancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700">CANCELAR SOLICITAÇÃO</button>
             </div>
 
-            <!-- FORMULÁRIO DE SOLICITAÇÃO (APENAS SE NÃO HOUVER VIAGEM ATIVA) -->
             <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6 content-wrapper">
                  <h3 class="text-center font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
                 <p id="available-drivers-count" class="text-center mb-4 text-lg text-cyan-400 font-semibold">Aguardando motoristas...</p>
@@ -368,7 +329,6 @@
                 modalContentContainer.innerHTML = htmlContent;
             }
             
-            // Limpa listeners de evento anteriores
             if (confirmBtn) confirmBtn.onclick = null;
             if (cancelBtn) cancelBtn.onclick = null;
 
@@ -380,7 +340,6 @@
                     closeModal(modalId); 
                 };
                 cancelBtn.onclick = () => { closeModal(modalId); };
-                // Certifica que os botões estão presentes e na ordem correta
                 modalButtonsDiv.innerHTML = ''; 
                 modalButtonsDiv.appendChild(cancelBtn); 
                 modalButtonsDiv.appendChild(confirmBtn); 
@@ -403,7 +362,6 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
 
-            // Limpeza específica para cada modal
             if (modalId === 'modal') {
                 const modalMessageEl = modal.querySelector('#modal-message');
                 if (modalMessageEl) modalMessageEl.textContent = '';
@@ -482,7 +440,6 @@
             } else {
                 if (state.userStatusInterval) clearInterval(state.userStatusInterval);
             }
-            // Fecha o menu mobile se estiver aberto ao mudar de tela
             if (document.getElementById('mobile-menu').classList.contains('active')) {
                 toggleMenu();
             }
@@ -566,7 +523,7 @@
             const userStatusDiv = document.getElementById('user-status');
             const requestRideBtn = document.getElementById('request-ride-btn');
             const destinationInput = document.getElementById('destination');
-            const guegueiImage = document.getElementById('cheguei-image'); // Pega a referência da imagem
+            const guegueiImage = document.getElementById('cheguei-image'); 
 
             if (state.userStatusInterval) clearInterval(state.userStatusInterval);
 
@@ -591,7 +548,6 @@
                     updateUserStatusMessage(myRide); 
                     startUserStatusCheck(); 
                     
-                    // Mostra a imagem "CHEGUEI" apenas se o status for 'arrived_pickup'
                     if (myRide.status === 'arrived_pickup') {
                         guegueiImage.classList.remove('hidden');
                     } else {
@@ -606,7 +562,7 @@
                     requestRideBtn.textContent = 'SOLICITAR TAXI';
                     destinationInput.value = ''; 
                     document.getElementById('user-status-message').textContent = ''; 
-                    guegueiImage.classList.add('hidden'); // Garante que a imagem esteja oculta se a corrida não estiver ativa
+                    guegueiImage.classList.add('hidden'); 
                 }
             } else {
                 requestForm.classList.remove('hidden');
@@ -615,7 +571,7 @@
                 requestRideBtn.textContent = 'SOLICITAR TAXI';
                 destinationInput.value = '';
                 document.getElementById('user-status-message').textContent = '';
-                guegueiImage.classList.add('hidden'); // Garante que a imagem esteja oculta se não houver corrida ativa
+                guegueiImage.classList.add('hidden'); 
             }
             renderUserRideHistory(); 
         }
@@ -647,7 +603,7 @@
             const arrivedPickupIconContainer = document.getElementById('status-icon-arrived-pickup');
             const inProgressIconContainer = document.getElementById('status-icon-in-progress');
             const cancelRideBtn = document.getElementById('cancel-ride-btn');
-            const guegueiImage = document.getElementById('cheguei-image'); // Referência para a imagem
+            const guegueiImage = document.getElementById('cheguei-image'); 
 
             searchingIconContainer.classList.add('hidden');
             enRouteIconContainer.classList.add('hidden');
@@ -658,7 +614,7 @@
             arrivedPickupIconContainer.innerHTML = '';
             inProgressIconContainer.innerHTML = '';
 
-            if (['requested', 'assigned', 'accepted', 'arrived_pickup'].includes(ride.status)) { // Mantém o botão de cancelar visível até 'arrived_pickup'
+            if (['requested', 'assigned', 'accepted', 'arrived_pickup'].includes(ride.status)) {
                 cancelRideBtn.classList.remove('hidden');
             } else {
                 cancelRideBtn.classList.add('hidden');
@@ -693,7 +649,6 @@
                     break;
                 case 'arrived_pickup':
                     message = `Seu motorista, ${ride.driverName || 'designado'}, chegou no local de embarque.`;
-                    // A imagem "CHEGUEI" será tratada na função checkUserRideStatus
                     break;
                 case 'in_progress':
                      message = `Viagem para ${ride.destination} em andamento.`;
@@ -793,16 +748,10 @@
             }).subscribe();
         }
 
-        async function initApp() {
-            // Initialize Google Maps API first
-            if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
-                console.error("Google Maps API not loaded. Cannot initialize.");
-                return;
-            }
+        function initApp() {
             initAutocomplete();
-
-            loadAppIcon(); // A função que carrega o ícone está aqui!
-            await fetchAllData();
+            loadAppIcon();
+            fetchAllData();
             setupRealtimeSubscriptions();
 
             const loggedInUserId = localStorage.getItem('loggedInUserId');
@@ -812,70 +761,43 @@
                 state.currentUserId = parseInt(loggedInUserId);
                 const user = state.users.find(u => u.id === state.currentUserId);
                 if (user) {
-                    // If logged in, skip splash and go directly to user screen
-                    document.getElementById('splash-screen').classList.add('hidden-splash');
-                    document.getElementById('app-container').classList.remove('hidden');
-                    showScreen('user-screen');
+                    // A tela do app será mostrada após o vídeo terminar
                 } else {
                     logoutUser(); 
                     showScreen('initial-screen'); 
                 }
-            } else {
-                // If not logged in, proceed with splash screen logic
-                const splashVideo = document.getElementById('splash-video');
-                
-                // Add event listener for when the video ends
-                splashVideo.onended = () => {
-                    console.log("Video ended event triggered.");
-                    transitionToApp();
-                };
-
-                // Add error listener for the video, in case it fails to load or play
-                splashVideo.onerror = () => {
-                    console.error("Error loading or playing the splash video.");
-                    // If there's an error, transition immediately to the app
-                    transitionToApp();
-                };
-
-                // Set a timeout as a fallback in case the video 'ended' event doesn't fire
-                // (e.g., browser limitations, video not loading properly).
-                // Adjust the timeout duration as needed (e.g., 10 seconds).
-                const fallbackTimeout = setTimeout(() => {
-                    console.warn('Fallback timeout triggered for splash screen.');
-                    transitionToApp();
-                }, 10000); // 10 seconds
-
-                // Clear the fallback timeout if the video actually ends or errors out
-                splashVideo.onended = () => {
-                    clearTimeout(fallbackTimeout);
-                    transitionToApp();
-                };
-                splashVideo.onerror = () => {
-                    clearTimeout(fallbackTimeout);
-                    transitionToApp();
-                };
+            } else if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
+                showScreen(lastScreen);
+            }
+            else {
+                showScreen('initial-screen');
             }
         }
 
-        // Helper function to handle the transition from splash to app
-        function transitionToApp() {
-            const splashScreen = document.getElementById('splash-screen');
-            const appContainer = document.getElementById('app-container');
-            
-            if (splashScreen && appContainer) {
-                splashScreen.classList.add('hidden-splash'); // Hide splash screen
-                appContainer.classList.remove('hidden'); // Show main app content
-                
-                const lastScreen = localStorage.getItem('lastScreen');
-                if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
-                    showScreen(lastScreen);
-                } else {
-                    showScreen('initial-screen'); // Default to initial screen
-                }
+        // Adiciona um listener para quando o vídeo terminar de tocar
+        document.getElementById('intro-video').addEventListener('ended', () => {
+            document.getElementById('video-container').style.display = 'none'; // Oculta o contêiner do vídeo
+            document.getElementById('app-container').classList.remove('hidden'); // Mostra o restante do app
+            // Verifica o status do usuário após o vídeo terminar
+            const loggedInUserId = localStorage.getItem('loggedInUserId');
+            if (loggedInUserId) {
+                state.currentUserId = parseInt(loggedInUserId);
+                showScreen('user-screen'); 
             } else {
-                console.error("Could not find splash-screen or app-container elements for transition.");
+                showScreen('initial-screen');
+            }
+        });
+
+        // Chamar initApp() quando a API do Google Maps estiver pronta
+        function initAppWhenMapsLoaded() {
+            if (typeof google !== 'undefined' && google.maps && google.maps.places) {
+                initApp();
+            } else {
+                setTimeout(initAppWhenMapsLoaded, 100);
             }
         }
+        // Inicia o carregamento do app, que por sua vez espera o Google Maps
+        initAppWhenMapsLoaded();
 
 
         function initAutocomplete() {
@@ -912,11 +834,10 @@
             iconContainer.innerHTML = ''; 
             if (state.appIcon) {
                 const img = document.createElement('img');
-                img.src = state.appIcon; // Usa o caminho definido em state.appIcon
+                img.src = state.appIcon;
                 img.className = 'h-full w-full object-contain'; 
                 iconContainer.appendChild(img);
             } else {
-                // Fallback SVG se state.appIcon não estiver definido (não deve acontecer com a configuração atual)
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('class', 'h-12 w-12 text-black'); svg.setAttribute('fill', 'currentColor');
                 svg.setAttribute('viewBox', '0 0 24 24');
@@ -954,7 +875,6 @@
             userRides.forEach(ride => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-700';
-                // Formata a data e hora para o formato local brasileiro
                 const dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', {
                     year: 'numeric',
                     month: 'numeric',
@@ -1011,7 +931,6 @@
         }
 
     </script>
-    <!-- Make sure the Google Maps script is loaded AFTER initApp function is defined -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places&callback=initApp" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places&callback=initAppWhenMapsLoaded" async defer></script>
 </body>
 </html>
