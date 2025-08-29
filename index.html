@@ -19,8 +19,9 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 1rem;
+            padding: 0; /* Remove padding para o vídeo ocupar toda a tela */
             overflow: hidden; /* Evita barras de rolagem desnecessárias */
+            margin: 0; /* Remove margem padrão do body */
         }
         .main-gradient {
             background: linear-gradient(135deg, #000000, #000000); /* Degradê transformado em preto */
@@ -170,14 +171,26 @@
         }
 
         /* Estilos para o vídeo de splash screen */
-        #splash-video {
-            position: fixed;
+        #splash-screen {
+            position: fixed; /* Fixo na tela */
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* Cobre toda a área, cortando se necessário */
+            width: 100vw; /* Usa 100% da largura da viewport */
+            height: 100vh; /* Usa 100% da altura da viewport */
+            display: flex; /* Para centralizar o conteúdo dentro dele */
+            justify-content: center;
+            align-items: center;
             z-index: 100; /* Garante que fique acima de tudo, mas abaixo da UI final */
+            overflow: hidden; /* Essencial para o vídeo não vazar para fora */
+            background-color: #000; /* Fundo preto caso o vídeo não carregue */
+        }
+
+        #splash-video {
+            display: block; /* Remove espaço extra abaixo do vídeo */
+            width: 100%; /* O vídeo tentará ocupar 100% da largura do contêiner pai */
+            height: 100%; /* O vídeo tentará ocupar 100% da altura do contêiner pai */
+            object-fit: cover; /* Importante: Cobre toda a área do contêiner, mantendo a proporção */
+            object-position: center; /* Centraliza o vídeo se o aspect ratio não bater exatamente */
         }
 
         /* Estilos para esconder o splash screen e mostrar o conteúdo principal */
