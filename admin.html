@@ -131,12 +131,19 @@
 
     <div id="app-container" class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
 
-        <!-- TELA INICIAL -->
         <div id="initial-screen" class="screen active text-center">
             <div class="flex justify-center items-center gap-4 mb-2">
                 <div id="app-icon-container" class="h-12 w-12"></div>
                 <h1 class="text-4xl sm:text-5xl font-bold text-black">GARCIAS TAXI</h1>
             </div>
+            
+            <style>
+                button[onclick="showScreen('user-login-screen')"],
+                button[onclick="showScreen('driver-selection-screen')"] {
+                    display: none;
+                }
+            </style>
+
             <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
             <div class="space-y-4 max-w-md mx-auto">
                 <button onclick="showScreen('admin-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
@@ -160,9 +167,8 @@
             </div>
         </div>
         
-        <!-- TELA DE LOGIN ADMIN -->
         <div id="admin-login-screen" class="screen">
-            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Login Administrador</h2>
              <div class="max-w-md mx-auto">
                 <div class="mb-4">
@@ -174,9 +180,8 @@
             </div>
         </div>
 
-        <!-- TELA DE LOGIN USUÁRIO -->
         <div id="user-login-screen" class="screen">
-            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Login do Usuário</h2>
             <div class="max-w-md mx-auto">
                 <div class="mb-4">
@@ -192,18 +197,16 @@
             </div>
         </div>
 
-        <!-- TELA DE SELEÇÃO DE MOTORISTA -->
         <div id="driver-selection-screen" class="screen">
-            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-1 text-center">Selecionar Motorista</h2>
             <p id="driver-selection-timestamp" class="text-center text-gray-300 text-sm mb-6"></p>
             <div id="driver-list-selection" class="space-y-3 max-w-md mx-auto"></div>
         </div>
 
-        <!-- TELA DO USUÁRIO -->
         <div id="user-screen" class="screen">
              <div class="max-w-md mx-auto">
-                <button onclick="logoutUser()" class="mb-4 text-yellow-300">&larr; Sair</button>
+                <button onclick="logoutUser()" class="mb-4 text-yellow-300">← Sair</button>
                 <h2 class="text-3xl font-bold mb-6 text-center">Área do Usuário</h2>
                 <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6">
                     <h3 class="font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
@@ -217,19 +220,15 @@
                     </button>
                 </div>
                 <div id="user-status" class="hidden mt-8 text-center">
-                    <!-- Ícones de Status da Viagem -->
                     <div id="status-icon-searching" class="hidden mx-auto mb-2">
                         <div class="loader mx-auto"></div>
                     </div>
                     <div id="status-icon-en-route" class="hidden mx-auto mb-2">
-                        <!-- Este conteúdo será substituído pela imagem PNG -->
-                    </div>
+                        </div>
                     <div id="status-icon-arrived-pickup" class="hidden mx-auto mb-2">
-                        <!-- Este conteúdo será substituído pela imagem PNG -->
-                    </div>
+                        </div>
                     <div id="status-icon-in-progress" class="hidden mx-auto mb-2">
-                        <!-- Este conteúdo será substituído pela imagem PNG -->
-                    </div>
+                        </div>
                     <p id="user-status-message" class="mt-4 text-lg"></p>
                     <button id="cancel-ride-btn" onclick="cancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700">CANCELAR SOLICITAÇÃO</button>
                 </div>
@@ -243,9 +242,8 @@
             </div>
         </div>
 
-        <!-- TELA DO ADMIN -->
         <div id="admin-screen" class="screen">
-            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Painel do Administrador</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                  <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Gerenciar Motoristas</button>
@@ -253,23 +251,18 @@
                  <button onclick="showScreen('admin-requests-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Ver Solicitações de Corrida</button>
                 <button onclick="showScreen('admin-heatmap-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Ver Mapa de Calor</button>
                 <button onclick="showScreen('admin-customize-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Personalizar App</button>
-                <!-- NEW BUTTON FOR RECORDS -->
                 <button onclick="openRecordsTab()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Registros</button>
             </div>
         </div>
         
-        <!-- TELA ADMIN - SOLICITAÇÕES -->
         <div id="admin-requests-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
-                <button onclick="showScreen('admin-screen')" class="text-yellow-300">&larr; Voltar ao Painel</button>
+                <button onclick="showScreen('admin-screen')" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
-                <div class="w-32"></div> <!-- Espaçador -->
-            </div>
+                <div class="w-32"></div> </div>
             
-            <!-- Painel Superior de Resumo -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                 <!-- Card Status das Corridas -->
-                <div class="card-gradient p-4 rounded-lg w-full">
+                 <div class="card-gradient p-4 rounded-lg w-full">
                     <h3 class="font-semibold mb-2 text-center">Status das Corridas</h3>
                     <div class="flex justify-around text-center">
                         <div>
@@ -286,7 +279,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Card Motoristas -->
                 <div class="card-gradient p-4 rounded-lg flex items-center justify-center gap-4 w-full">
                     <div class="text-center md:text-left">
                         <h3 class="font-semibold mb-2">Motoristas</h3>
@@ -298,7 +290,6 @@
                         <canvas id="driver-status-chart"></canvas>
                     </div>
                 </div>
-                <!-- Card Exportar Relatório -->
                 <div class="card-gradient p-4 rounded-lg">
                     <h3 class="font-semibold mb-2">Exportar Relatório de Corridas</h3>
                     <div class="space-y-3">
@@ -315,29 +306,23 @@
                 </div>
             </div>
 
-            <!-- Área de Conteúdo com Rolagem -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
-                <!-- Coluna para Novas Solicitações -->
                 <div class="lg:col-span-1">
                     <h3 class="text-2xl font-bold mb-4">Novas Solicitações</h3>
                     <div id="admin-requests-list" class="space-y-4">
-                        <!-- Cards de novas solicitações aqui -->
-                    </div>
+                        </div>
                 </div>
 
-                <!-- Coluna para Corridas em Andamento -->
                 <div class="lg:col-span-2">
                     <h3 class="text-2xl font-bold mb-4">Corridas em Andamento</h3>
                     <div id="admin-ongoing-rides-table" class="card-gradient p-4 rounded-lg overflow-x-auto">
-                        <!-- Tabela de corridas em andamento aqui -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
         
-        <!-- TELA ADMIN - CRUD MOTORISTAS -->
         <div id="admin-driver-crud-screen" class="screen">
-            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Cadastro de Motoristas</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="card-gradient p-4 rounded-lg">
@@ -355,9 +340,8 @@
             </div>
         </div>
 
-        <!-- TELA ADMIN - CRUD USUÁRIOS -->
         <div id="admin-user-crud-screen" class="screen">
-            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Cadastro de Usuários</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -390,16 +374,14 @@
             </div>
         </div>
 
-        <!-- TELA ADMIN - MAPA DE CALOR -->
         <div id="admin-heatmap-screen" class="screen">
-            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Mapa de Calor de Usuários</h2>
             <div id="heatmap-canvas"></div>
         </div>
 
-        <!-- TELA ADMIN - PERSONALIZAR APP -->
         <div id="admin-customize-screen" class="screen">
-            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">&larr; Voltar ao Painel</button>
+            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Personalizar App</h2>
             <div class="card-gradient p-4 rounded-lg max-w-md mx-auto">
                 <h3 class="font-semibold mb-2">Ícone do Aplicativo</h3>
@@ -408,10 +390,9 @@
             </div>
         </div>
 
-        <!-- TELA DO MOTORISTA -->
         <div id="driver-screen" class="screen">
             <div class="max-w-md mx-auto">
-                <button onclick="showScreen('driver-selection-screen')" class="mb-4 text-yellow-300">&larr; Trocar Motorista</button>
+                <button onclick="showScreen('driver-selection-screen')" class="mb-4 text-yellow-300">← Trocar Motorista</button>
                 <h2 class="text-3xl font-bold mb-2 text-center">Minhas Corridas</h2>
                 <p id="driver-name-display" class="text-center text-yellow-300 mb-1"></p>
                 <p id="driver-stats-display" class="text-center text-red-500 font-semibold text-sm mb-6"></p>
@@ -437,15 +418,12 @@
             </div>
         </div>
 
-        <!-- TELA ADMIN - TODOS OS REGISTROS -->
         <div id="admin-records-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
-                <button onclick="showScreen('admin-screen')" class="text-yellow-300">&larr; Voltar ao Painel</button>
+                <button onclick="showScreen('admin-screen')" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Todos os Registros</h2>
-                <div class="w-32"></div> <!-- Espaçador -->
-            </div>
+                <div class="w-32"></div> </div>
 
-            <!-- Date Filter Inputs -->
             <div class="flex justify-center gap-4 mb-6">
                 <div>
                     <label for="records-start-date" class="block mb-2 text-sm font-medium">Data Inicial</label>
@@ -458,7 +436,6 @@
                  <button onclick="filterRecordsByDate()" class="py-2 px-4 font-semibold rounded-lg button-gradient h-fit self-end">Filtrar</button>
             </div>
 
-            <!-- Records Table -->
             <div class="card-gradient p-4 rounded-lg overflow-x-auto">
                 <table id="all-records-table" class="w-full text-sm text-left">
                     <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
@@ -469,19 +446,16 @@
                             <th scope="col" class="px-4 py-3">Destino</th>
                             <th scope="col" class="px-4 py-3">Motorista</th>
                             <th scope="col" class="px-4 py-3">Status</th>
-                            <!-- A coluna de Distância será adicionada dinamicamente pelo JS -->
-                        </tr>
+                            </tr>
                     </thead>
                     <tbody id="all-records-body">
-                        <!-- Records will be populated here -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
 
     </div>
 
-    <!-- MODAL DE ALERTA / EDIÇÃO -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <p id="modal-message" class="mb-4 text-lg"></p>
@@ -2085,8 +2059,6 @@
         }
 
     </script>
-    <!-- Carrega a API do Google Maps com as bibliotecas necessárias e o callback de inicialização -->
-    <!-- CERTIFIQUE-SE DE QUE A CHAVE DE API ESTÁ CORRETA E ATIVADA -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
+   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
 </body>
 </html>
