@@ -168,7 +168,7 @@
 
         <!-- Rodapé -->
         <footer class="mt-12 text-center text-gray-400 text-sm">
-            <p>© 2023 Garcia Transportes. Todos os direitos reservados.</p>
+            <p>© 2025 Garcia Transportes. Todos os direitos reservados.</p>
         </footer>
     </div>
 
@@ -183,15 +183,15 @@
                 }
             }, 1000);
 
+            // Remove any existing clicked state when page loads
+            document.querySelectorAll('a[href*="garciatransportesguaiba"]').forEach(link => {
+                delete link.dataset.clicked;
+            });
+
             // Adiciona evento de clique para mostrar spinner apenas durante a transição
             document.querySelectorAll('a[href*="garciatransportesguaiba"]').forEach(link => {
                 link.addEventListener('click', function(e) {
-                    if (!this.dataset.clicked) {
-                        this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
-                        this.dataset.clicked = true;
-                    } else {
-                        e.preventDefault();
-                    }
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
                 });
             });
         });
