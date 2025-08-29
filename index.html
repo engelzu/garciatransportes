@@ -20,6 +20,7 @@
             align-items: center;
             min-height: 100vh;
             padding: 1rem;
+            overflow: hidden; /* Evita barras de rolagem desnecessárias */
         }
         .main-gradient {
             background: linear-gradient(135deg, #000000, #000000); /* Degradê transformado em preto */
@@ -168,33 +169,57 @@
             text-align: center; /* Centraliza o texto dentro do h2 */
         }
 
+        /* Estilos para o vídeo de splash screen */
+        #splash-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Cobre toda a área, cortando se necessário */
+            z-index: 100; /* Garante que fique acima de tudo, mas abaixo da UI final */
+        }
+
+        /* Estilos para esconder o splash screen e mostrar o conteúdo principal */
+        .hidden-splash {
+            display: none;
+        }
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
 
-    <!-- Menu Sanduíche -->
-    <div id="menu-backdrop" class="fixed inset-0 z-40 hidden menu-backdrop" onclick="toggleMenu()"></div>
-    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 card-gradient p-6 z-50 menu-overlay">
-        <div class="flex justify-end mb-8">
-            <button onclick="toggleMenu()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
-        </div>
-        <nav>
-            <ul>
-                <li class="mb-4">
-                    <button onclick="showHistoryModal(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Minhas Solicitações</button>
-                </li>
-                 <li class="mb-4">
-                    <button onclick="exportUserRidesToExcel(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Exportar Histórico</button>
-                </li>
-                 <!-- Botão "Sair" removido conforme solicitado -->
-            </ul>
-        </nav>
+    <!-- SPLASH SCREEN COM VÍDEO -->
+    <div id="splash-screen" class="screen active">
+        <video autoplay muted playsinline id="splash-video">
+            <source src="images/video.mp4" type="video/mp4">
+            Seu navegador não suporta o elemento de vídeo.
+        </video>
     </div>
 
-    <div id="app-container" class="w-full max-w-md mx-auto relative">
+    <!-- Conteúdo principal da aplicação (inicialmente oculto) -->
+    <div id="app-container" class="w-full max-w-md mx-auto relative hidden">
+
+        <!-- Menu Sanduíche (MANTIDO ABAIXO DO APP CONTAINER COMO ESTAVA) -->
+        <div id="menu-backdrop" class="fixed inset-0 z-40 hidden menu-backdrop" onclick="toggleMenu()"></div>
+        <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 card-gradient p-6 z-50 menu-overlay">
+            <div class="flex justify-end mb-8">
+                <button onclick="toggleMenu()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <nav>
+                <ul>
+                    <li class="mb-4">
+                        <button onclick="showHistoryModal(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Minhas Solicitações</button>
+                    </li>
+                    <li class="mb-4">
+                        <button onclick="exportUserRidesToExcel(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Exportar Histórico</button>
+                    </li>
+                    <!-- Botão "Sair" removido conforme solicitado -->
+                </ul>
+            </nav>
+        </div>
 
         <!-- TELA INICIAL -->
-        <div id="initial-screen" class="screen active text-center">
+        <div id="initial-screen" class="screen text-center">
             <!-- REINTEGRADA A DIV PARA O ÍCONE -->
             <div class="flex flex-col items-center justify-center mb-4">
                 <div id="app-icon-container" class="h-28 w-28 mb-2"></div> <!-- O ícone será carregado aqui -->
@@ -750,7 +775,13 @@
         }
 
         async function initApp() {
+            // Initialize Google Maps API first
+            if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
+                console.error("Google Maps API not loaded. Cannot initialize.");
+                return;
+            }
             initAutocomplete();
+
             loadAppIcon(); // A função que carrega o ícone está aqui!
             await fetchAllData();
             setupRealtimeSubscriptions();
@@ -762,16 +793,63 @@
                 state.currentUserId = parseInt(loggedInUserId);
                 const user = state.users.find(u => u.id === state.currentUserId);
                 if (user) {
-                    showScreen('user-screen'); 
+                    // If logged in, skip splash and go directly to user screen
+                    document.getElementById('splash-screen').classList.add('hidden-splash');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    showScreen('user-screen');
                 } else {
                     logoutUser(); 
                     showScreen('initial-screen'); 
                 }
-            } else if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
-                showScreen(lastScreen);
-            }
-            else {
-                showScreen('initial-screen');
+            } else {
+                // If not logged in, proceed with splash screen logic
+                const splashVideo = document.getElementById('splash-video');
+                
+                // Add event listener for when the video ends
+                splashVideo.onended = () => {
+                    document.getElementById('splash-screen').classList.add('hidden-splash'); // Hide splash screen
+                    document.getElementById('app-container').classList.remove('hidden'); // Show main app content
+                    
+                    if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
+                        showScreen(lastScreen);
+                    } else {
+                        showScreen('initial-screen'); // Default to initial screen if no last screen or invalid
+                    }
+                };
+
+                // If the video doesn't play automatically (e.g., user interaction required),
+                // you might need a button to start it. For now, assuming autoplay works.
+                // If it fails to play, the splash screen will remain visible.
+                
+                // Set a timeout as a fallback in case the video 'ended' event doesn't fire
+                // (e.g., browser limitations, video not loading properly).
+                // Adjust the timeout duration as needed (e.g., 10 seconds).
+                const fallbackTimeout = setTimeout(() => {
+                    if (!document.getElementById('app-container').classList.contains('hidden')) { // If app container is already shown, do nothing
+                        console.warn('Fallback timeout triggered for splash screen.');
+                        document.getElementById('splash-screen').classList.add('hidden-splash');
+                        document.getElementById('app-container').classList.remove('hidden');
+                        if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
+                            showScreen(lastScreen);
+                        } else {
+                            showScreen('initial-screen');
+                        }
+                    }
+                }, 10000); // 10 seconds
+
+                // Clear the fallback timeout if the video actually ends
+                splashVideo.onended = () => {
+                    clearTimeout(fallbackTimeout);
+                    // ... rest of the onended logic ...
+                    document.getElementById('splash-screen').classList.add('hidden-splash'); // Hide splash screen
+                    document.getElementById('app-container').classList.remove('hidden'); // Show main app content
+                    
+                    if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
+                        showScreen(lastScreen);
+                    } else {
+                        showScreen('initial-screen'); // Default to initial screen if no last screen or invalid
+                    }
+                };
             }
         }
 
@@ -908,6 +986,7 @@
         }
 
     </script>
+    <!-- Make sure the Google Maps script is loaded AFTER initApp function is defined -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places&callback=initApp" async defer></script>
 </body>
 </html>
