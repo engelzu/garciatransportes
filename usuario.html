@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARCIA TRANSPORTES</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ... (your existing styles) ... */
+        .main-gradient {
+            background: linear-gradient(135deg, #000000, #000000);
+        }
+        .button-gradient {
+            background: linear-gradient(to right, #000000, #000000);
+            border: 2px solid white;
+            position: relative;
+            overflow: hidden;
+        }
+        .button-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0.3), rgba(255,255,255,0));
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+        .button-gradient:hover::before {
+            transform: translateX(0);
+        }
+
+        .button-gradient:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .card-gradient {
+             background: linear-gradient(135deg, #000000, #000000);
+        }
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #6d28d9;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .pac-container {
+            background-color: #374151;
+            border-radius: 8px;
+            border: 1px solid #4b5563;
+        }
+        .pac-item {
+            padding: 10px;
+            font-size: 14px;
+            color: #d1d5db;
+            cursor: pointer;
+        }
+        .pac-item:hover {
+            background-color: #4b5563;
+        }
+        .pac-item-query {
+            font-weight: 600;
+            color: #f3f4f6;
+        }
+
+        .menu-overlay {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        .menu-overlay.active {
+            transform: translateX(0);
+        }
+        .menu-backdrop {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .text-black { color: #ffffff !important; }
+        .text-gray-800 { color: #ffffff !important; }
+        .text-gray-400 { color: #ffffff !important; }
+        .text-gray-300 { color: #ffffff !important; }
+        .text-gray-600 { color: #ffffff !important; }
+        .text-gray-700 { color: #ffffff !important; }
+        .text-gray-500 { color: #ffffff !important; }
+        .text-red-500 { color: #ffffff !important; }
+        .text-green-300 { color: #ffffff !important; }
+        .text-yellow-300 { color: #ffffff !important; }
+        .text-cyan-400 { color: #00ffff !important; }
+
+        h1, h2, h3, p, button, label, input::placeholder {
+            color: #ffffff !important;
+        }
+
+        #menu-toggle-btn svg path {
+            stroke: #ffffff !important;
+        }
+        
+        #user-login-screen button:first-child {
+            color: #ffffff !important;
+        }
+
+        .content-wrapper {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+        }
+
+        .input-and-button-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        #destination {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #request-ride-btn {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .title-and-button-alignment {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .title-and-button-alignment h2 {
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Estilos para o vídeo de introdução */
+        #intro-video {
+            width: 100%;
+            height: 100vh; /* Ocupa a tela inteira */
+            object-fit: cover; /* Garante que o vídeo cubra toda a área */
+        }
+
+        /* Container para o vídeo e a transição para o app */
+        #video-container {
+            position: fixed; /* Mantém o vídeo fixo na tela */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999; /* Garante que o vídeo fique sobre todos os outros elementos */
+            background-color: black; /* Fundo preto caso o vídeo não carregue */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
+
+    <!-- Contêiner do Vídeo de Introdução -->
+    <div id="video-container">
+        <video id="intro-video" autoplay muted playsinline>
+            <source src="images/video1.mp4" type="video/mp4">
+            Seu navegador não suporta o elemento de vídeo.
+        </video>
+    </div>
+
+    <!-- Menu Sanduíche -->
+    <div id="menu-backdrop" class="fixed inset-0 z-40 hidden menu-backdrop" onclick="toggleMenu()"></div>
+    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 card-gradient p-6 z-50 menu-overlay">
+        <div class="flex justify-end mb-8">
+            <button onclick="toggleMenu()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        <nav>
+            <ul>
+                <li class="mb-4">
+                    <button onclick="showHistoryModal(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Minhas Solicitações</button>
+                </li>
+                 <li class="mb-4">
+                    <button onclick="exportUserRidesToExcel(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Exportar Histórico</button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div id="app-container" class="w-full max-w-md mx-auto relative hidden"> <!-- Inicialmente oculto -->
+
+        <!-- TELA INICIAL -->
+        <div id="initial-screen" class="screen active text-center">
+            <div class="flex flex-col items-center justify-center mb-4">
+                <div id="app-icon-container" class="h-28 w-28 mb-2"></div>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-bold text-black mb-2">GARCIA TRANSPORTES</h1>
+            <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
+            <div class="space-y-4">
+                <button onclick="showScreen('user-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-sky-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    PASSAGEIRO
+                </button>
+            </div>
+        </div>
+        
+        <!-- TELA DE LOGIN USUÁRIO -->
+        <div id="user-login-screen" class="screen">
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
+            <h2 class="text-3xl font-bold mb-6 text-center">Login do Passageiro</h2>
+            <div class="mb-4">
+                <label for="user-id" class="block mb-2 text-sm font-medium">Matrícula</label>
+                <input type="text" id="user-id" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite sua matrícula">
+            </div>
+            <div class="mb-4">
+                <label for="user-password" class="block mb-2 text-sm font-medium">Senha</label>
+                <input type="password" id="user-password" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite sua senha">
+            </div>
+            <button onclick="loginUser()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
+            <p id="user-login-error" class="text-red-500 text-center mt-4 hidden">Matrícula ou senha incorreta!</p>
+        </div>
+
+        <!-- TELA DO USUÁRIO -->
+        <div id="user-screen" class="screen">
+            <div class="flex flex-col items-center justify-center mb-6">
+                <img id="cheguei-image" src="images/final.png" alt="Motorista Chegou" class="h-28 w-28 object-contain mb-4 hidden">
+            </div>
+
+            <div class="flex justify-between items-center mb-6 title-and-button-alignment">
+                <h2 class="text-3xl font-bold">Área do Passageiro</h2>
+                <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+
+            <div id="user-status" class="hidden mt-8 text-center card-gradient p-4 rounded-lg mb-6">
+                <div id="status-icon-searching" class="hidden mx-auto mb-2">
+                    <div class="loader mx-auto"></div>
+                </div>
+                <div id="status-icon-en-route" class="hidden mx-auto mb-2"></div>
+                <div id="status-icon-arrived-pickup" class="hidden mx-auto mb-2"></div>
+                <div id="status-icon-in-progress" class="hidden mx-auto mb-2"></div>
+                
+                <p id="user-status-message" class="mt-4 text-lg"></p>
+                <button id="cancel-ride-btn" onclick="cancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700">CANCELAR SOLICITAÇÃO</button>
+            </div>
+
+            <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6 content-wrapper">
+                 <h3 class="text-center font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
+                <p id="available-drivers-count" class="text-center mb-4 text-lg text-cyan-400 font-semibold">Aguardando motoristas...</p>
+                <div class="mb-4 input-and-button-container">
+                    <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
+                    <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço completo">
+                </div>
+                <div class="input-and-button-container">
+                    <button id="request-ride-btn" onclick="requestRide()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                        SOLICITAR TAXI
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ALERTA (GENÉRICO) -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
+            <p id="modal-message" class="mb-4 text-lg"></p>
+            <div id="modal-buttons" class="flex justify-center gap-4">
+                 <button id="modal-cancel" onclick="closeModal('modal')" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
+                 <button id="modal-confirm" onclick="closeModal('modal')" class="py-2 px-8 font-semibold rounded-lg button-gradient">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL DE HISTÓRICO (ESPECÍFICO) -->
+    <div id="history-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-2xl max-h-[70vh] overflow-y-auto"> 
+            <h3 class="text-2xl font-bold mb-4 text-center">Histórico de Corridas</h3>
+            <div id="user-ride-history-modal" class="overflow-y-auto mb-6"></div> 
+            <div class="flex justify-center">
+                <button onclick="closeModal('history-modal'); toggleMenu()" class="py-2 px-6 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- CONFIGURAÇÃO INICIAL E DADOS MOCADOS ---
+        let state = {
+            rides: [],
+            users: [],
+            appIcon: 'images/user.png', // O ícone que você enviou será carregado por esta variável
+            currentUserRideId: null,
+            currentUserId: null,
+            userStatusInterval: null
+        };
+
+        // --- CONFIGURAÇÃO DO SUPABASE ---
+        const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; // A URL permanece a mesma
+        const SUPABASE_ANON_KEY = 'sb_publishable_a95qQRM7LfINIPGhajJqvw_kZd51KJY'; // Chave publishable fornecida
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- LÓGICA DE MODAL ---
+        function showModal(modalId, htmlContent, onConfirmCallback, showCancelButton) {
+            const modal = document.getElementById(modalId);
+            const modalContentContainer = modal.querySelector('#modal-message') || modal.querySelector('.modal-content'); 
+            const confirmBtn = modal.querySelector('#modal-confirm');
+            const cancelBtn = modal.querySelector('#modal-cancel');
+            const modalButtonsDiv = modal.querySelector('#modal-buttons') || modal.querySelector('.modal-buttons');
+
+            if (modalContentContainer && htmlContent) {
+                modalContentContainer.innerHTML = htmlContent;
+            }
+            
+            if (confirmBtn) confirmBtn.onclick = null;
+            if (cancelBtn) cancelBtn.onclick = null;
+
+            if (showCancelButton && confirmBtn && cancelBtn && modalButtonsDiv) {
+                cancelBtn.style.display = 'inline-block';
+                confirmBtn.textContent = 'Confirmar';
+                confirmBtn.onclick = () => { 
+                    if (onConfirmCallback) onConfirmCallback(); 
+                    closeModal(modalId); 
+                };
+                cancelBtn.onclick = () => { closeModal(modalId); };
+                modalButtonsDiv.innerHTML = ''; 
+                modalButtonsDiv.appendChild(cancelBtn); 
+                modalButtonsDiv.appendChild(confirmBtn); 
+            } else if (confirmBtn && modalButtonsDiv) {
+                cancelBtn.style.display = 'none';
+                confirmBtn.textContent = 'OK';
+                confirmBtn.onclick = () => { closeModal(modalId); };
+                modalButtonsDiv.innerHTML = ''; 
+                modalButtonsDiv.appendChild(confirmBtn); 
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(modalId = 'modal') {
+            const modal = document.getElementById(modalId);
+            if (!modal) return; 
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            if (modalId === 'modal') {
+                const modalMessageEl = modal.querySelector('#modal-message');
+                if (modalMessageEl) modalMessageEl.textContent = '';
+                const confirmBtn = modal.querySelector('#modal-confirm');
+                if (confirmBtn) confirmBtn.onclick = null;
+                const cancelBtn = modal.querySelector('#modal-cancel');
+                if (cancelBtn) cancelBtn.onclick = null;
+            } else if (modalId === 'history-modal') {
+                const historyContainer = document.getElementById('user-ride-history-modal');
+                if (historyContainer) historyContainer.innerHTML = '';
+            }
+        }
+        
+        // --- LÓGICA DO MENU SANDUÍCHE ---
+        function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const backdrop = document.getElementById('menu-backdrop');
+            menu.classList.toggle('active');
+            backdrop.classList.toggle('hidden');
+        }
+
+        // --- LÓGICA DE LOGIN ---
+        async function loginUser() {
+            const matricula = document.getElementById('user-id').value;
+            const password = document.getElementById('user-password').value;
+            const errorEl = document.getElementById('user-login-error');
+
+            const { data: user, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('matricula', matricula)
+                .eq('password', password)
+                .single();
+            
+            if (error && error.code !== 'PGRST116') { 
+                console.error('Erro no Supabase ao tentar login:', error);
+                errorEl.textContent = 'Erro de comunicação com o servidor. Por favor, tente novamente.';
+                errorEl.classList.remove('hidden');
+                return; 
+            }
+
+            if (user) {
+                state.currentUserId = user.id;
+                localStorage.setItem('loggedInUserId', user.id);
+                errorEl.classList.add('hidden');
+                document.getElementById('user-id').value = '';
+                document.getElementById('user-password').value = '';
+                showScreen('user-screen');
+            } else {
+                errorEl.textContent = 'Matrícula ou senha incorreta!';
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function logoutUser() {
+            state.currentUserId = null;
+            localStorage.removeItem('loggedInUserId');
+            localStorage.removeItem('currentUserRideId'); 
+            localStorage.removeItem('lastScreen'); 
+            if (state.userStatusInterval) clearInterval(state.userStatusInterval); 
+            showScreen('initial-screen');
+        }
+
+        // --- NAVEGAÇÃO ENTRE TELAS ---
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            const activeScreen = document.getElementById(screenId);
+            if (activeScreen) {
+                activeScreen.classList.add('active');
+            }
+            localStorage.setItem('lastScreen', screenId);
+
+            if (screenId === 'user-screen') {
+                checkUserRideStatus();
+                updateAvailableDriversCount(); 
+            } else {
+                if (state.userStatusInterval) clearInterval(state.userStatusInterval);
+            }
+            if (document.getElementById('mobile-menu').classList.contains('active')) {
+                toggleMenu();
+            }
+        }
+
+        // --- LÓGICA DO USUÁRIO ---
+        async function requestRide() {
+            const destination = document.getElementById('destination').value;
+            const requestRideBtn = document.getElementById('request-ride-btn');
+
+            if (!destination) {
+                showModal('modal', 'Por favor, insira um destino.');
+                return;
+            }
+
+            requestRideBtn.disabled = true;
+            requestRideBtn.textContent = 'Solicitando...';
+
+            document.getElementById('user-status-message').textContent = 'Obtendo sua localização...';
+
+            if (!navigator.geolocation) {
+                showModal('modal', 'Geolocalização não é suportada pelo seu navegador.');
+                requestRideBtn.disabled = false;
+                requestRideBtn.textContent = 'SOLICITAR TAXI';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const userLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
+                const currentUser = state.users.find(u => u.id === state.currentUserId);
+
+                if (!currentUser) {
+                    showModal('modal', 'Erro: Usuário não encontrado. Por favor, faça login novamente.');
+                    logoutUser();
+                    requestRideBtn.disabled = false;
+                    requestRideBtn.textContent = 'SOLICITAR TAXI';
+                    return;
+                }
+
+                const newRide = {
+                    destination: destination,
+                    status: 'requested',
+                    userId: currentUser.id,
+                    userName: currentUser.name,
+                    userCompany: currentUser.company,
+                    requestTime: new Date().toISOString(),
+                    userLocation: userLocation 
+                };
+
+                const { data, error } = await supabaseClient.from('rides').insert([newRide]).select().single();
+
+                if (error) {
+                    console.error("Erro ao solicitar corrida:", error);
+                    showModal('modal', "Não foi possível solicitar a corrida.");
+                    requestRideBtn.disabled = false;
+                    requestRideBtn.textContent = 'SOLICITAR TAXI';
+                    checkUserRideStatus(); 
+                    return;
+                }
+
+                state.currentUserRideId = data.id;
+                localStorage.setItem('currentUserRideId', data.id); 
+                document.getElementById('destination').value = ''; 
+                checkUserRideStatus(); 
+                
+            }, (error) => {
+                console.error("Erro ao obter localização do usuário:", error);
+                showModal('modal', 'Não foi possível obter sua localização. Verifique as permissões de localização no seu dispositivo/navegador.');
+                requestRideBtn.disabled = false;
+                requestRideBtn.textContent = 'SOLICITAR TAXI';
+                checkUserRideStatus();
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        }
+        
+        async function checkUserRideStatus() {
+            const requestForm = document.getElementById('user-request-form');
+            const userStatusDiv = document.getElementById('user-status');
+            const requestRideBtn = document.getElementById('request-ride-btn');
+            const destinationInput = document.getElementById('destination');
+            const guegueiImage = document.getElementById('cheguei-image'); 
+
+            if (state.userStatusInterval) clearInterval(state.userStatusInterval);
+
+            if (!state.currentUserRideId && state.currentUserId) {
+                const storedRideId = localStorage.getItem('currentUserRideId');
+                if (storedRideId) {
+                    const { data: activeRide, error: rideError } = await supabaseClient.from('rides').select('*').eq('id', parseInt(storedRideId)).single();
+                    if (!rideError && activeRide && activeRide.userId === state.currentUserId && !['completed', 'canceled'].includes(activeRide.status)) {
+                        state.currentUserRideId = activeRide.id;
+                    } else {
+                        localStorage.removeItem('currentUserRideId');
+                    }
+                }
+            }
+
+            if (state.currentUserRideId) {
+                const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
+
+                if (!error && myRide && myRide.userId === state.currentUserId && !['completed', 'canceled'].includes(myRide.status)) {
+                    requestForm.classList.add('hidden');
+                    userStatusDiv.classList.remove('hidden');
+                    updateUserStatusMessage(myRide); 
+                    startUserStatusCheck(); 
+                    
+                    if (myRide.status === 'arrived_pickup') {
+                        guegueiImage.classList.remove('hidden');
+                    } else {
+                        guegueiImage.classList.add('hidden');
+                    }
+                } else {
+                    state.currentUserRideId = null;
+                    localStorage.removeItem('currentUserRideId');
+                    requestForm.classList.remove('hidden');
+                    userStatusDiv.classList.add('hidden');
+                    requestRideBtn.disabled = false; 
+                    requestRideBtn.textContent = 'SOLICITAR TAXI';
+                    destinationInput.value = ''; 
+                    document.getElementById('user-status-message').textContent = ''; 
+                    guegueiImage.classList.add('hidden'); 
+                }
+            } else {
+                requestForm.classList.remove('hidden');
+                userStatusDiv.classList.add('hidden');
+                requestRideBtn.disabled = false; 
+                requestRideBtn.textContent = 'SOLICITAR TAXI';
+                destinationInput.value = '';
+                document.getElementById('user-status-message').textContent = '';
+                guegueiImage.classList.add('hidden'); 
+            }
+            renderUserRideHistory(); 
+        }
+
+        function startUserStatusCheck() {
+            if (state.userStatusInterval) clearInterval(state.userStatusInterval);
+            state.userStatusInterval = setInterval(async () => {
+                if (!state.currentUserRideId) {
+                    clearInterval(state.userStatusInterval);
+                    checkUserRideStatus(); 
+                    return;
+                }
+                const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
+                if (myRide) {
+                   updateUserStatusMessage(myRide);
+                   checkUserRideStatus(); 
+                } else {
+                    clearInterval(state.userStatusInterval);
+                    state.currentUserRideId = null;
+                    localStorage.removeItem('currentUserRideId');
+                    checkUserRideStatus(); 
+                }
+            }, 10000); 
+        }
+        
+        function updateUserStatusMessage(ride) {
+            const searchingIconContainer = document.getElementById('status-icon-searching');
+            const enRouteIconContainer = document.getElementById('status-icon-en-route');
+            const arrivedPickupIconContainer = document.getElementById('status-icon-arrived-pickup');
+            const inProgressIconContainer = document.getElementById('status-icon-in-progress');
+            const cancelRideBtn = document.getElementById('cancel-ride-btn');
+            const guegueiImage = document.getElementById('cheguei-image'); 
+
+            searchingIconContainer.classList.add('hidden');
+            enRouteIconContainer.classList.add('hidden');
+            arrivedPickupIconContainer.classList.add('hidden');
+            inProgressIconContainer.classList.add('hidden');
+
+            enRouteIconContainer.innerHTML = ''; 
+            arrivedPickupIconContainer.innerHTML = '';
+            inProgressIconContainer.innerHTML = '';
+
+            if (['requested', 'assigned', 'accepted', 'arrived_pickup'].includes(ride.status)) {
+                cancelRideBtn.classList.remove('hidden');
+            } else {
+                cancelRideBtn.classList.add('hidden');
+            }
+
+            let message = '';
+
+            switch(ride.status) {
+                case 'requested':
+                    message = 'Aguardando um motorista aceitar...';
+                    searchingIconContainer.classList.remove('hidden');
+                    break;
+                case 'assigned':
+                    message = `Motorista ${ride.driverName || 'designado'} foi designado. Aguardando aceite...`;
+                    searchingIconContainer.classList.remove('hidden');
+                    break;
+                case 'accepted':
+                    message = `Motorista ${ride.driverName || 'designado'} está a caminho!`;
+                    if (ride.driverCurrentLocation && ride.userLocation) {
+                        const distance = getDistanceFromLatLonInKm(
+                            ride.userLocation.lat, ride.userLocation.lon,
+                            ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon
+                        );
+                        message += ` Distância: ${distance.toFixed(2)} km`;
+                    }
+                    const acceptedImg = document.createElement('img');
+                    acceptedImg.src = 'images/aceitou.png'; 
+                    acceptedImg.alt = 'Motorista Aceitou';
+                    acceptedImg.className = 'h-20 w-20 mx-auto'; 
+                    enRouteIconContainer.appendChild(acceptedImg);
+                    enRouteIconContainer.classList.remove('hidden');
+                    break;
+                case 'arrived_pickup':
+                    message = `Seu motorista, ${ride.driverName || 'designado'}, chegou no local de embarque.`;
+                    break;
+                case 'in_progress':
+                     message = `Viagem para ${ride.destination} em andamento.`;
+                     const inProgressImg = document.createElement('img');
+                     inProgressImg.src = 'images/destino.png'; 
+                     inProgressImg.alt = 'Viagem Iniciada';
+                     inProgressImg.className = 'h-20 w-20 mx-auto animate-bounce'; 
+                     inProgressIconContainer.appendChild(inProgressImg);
+                     inProgressIconContainer.classList.remove('hidden');
+                     break;
+                 case 'completed':
+                    message = `Viagem finalizada! Obrigado por escolher a GARCIAS TAXI.`;
+                    state.currentUserRideId = null;
+                    localStorage.removeItem('currentUserRideId'); 
+                    setTimeout(() => {
+                        checkUserRideStatus(); 
+                    }, 5000);
+                    break;
+                case 'canceled':
+                    message = `Sua viagem foi cancelada.`;
+                    state.currentUserRideId = null;
+                    localStorage.removeItem('currentUserRideId'); 
+                    setTimeout(() => {
+                        checkUserRideStatus(); 
+                    }, 3000);
+                    break;
+                default:
+                    message = `Status desconhecido: ${ride.status}`;
+                    break;
+            }
+            document.getElementById('user-status-message').textContent = message;
+        }
+
+        async function cancelRide() {
+            if (state.currentUserRideId) {
+                showModal('modal', 'Tem certeza que deseja cancelar esta solicitação?', async () => {
+                    const { error } = await supabaseClient.from('rides').update({ status: 'canceled' }).eq('id', state.currentUserRideId);
+                    if (error) {
+                        showModal('modal', 'Não foi possível cancelar a corrida.');
+                        console.error('Erro ao cancelar corrida:', error);
+                    }
+                }, true); 
+            }
+        }
+
+        // --- CÁLCULO DE DISTÂNCIA ---
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; 
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const d = R * c; 
+            return d;
+        }
+
+        function deg2rad(deg) { 
+            return deg * (Math.PI / 180); 
+        }
+
+        // --- INICIALIZAÇÃO DO APP E SUPABASE ---
+        async function fetchAllData() {
+            const { data: users, error: usersError } = await supabaseClient.from('users').select('*');
+            if (usersError) console.error('Error fetching users:', usersError); else state.users = users;
+            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*');
+            if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
+        }
+
+        function setupRealtimeSubscriptions() {
+            supabaseClient.channel('public:users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, payload => {
+                 fetchAllData(); 
+            }).subscribe();
+            
+            supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
+                const { eventType, new: newRecord, old: oldRecord } = payload;
+                
+                if (eventType === 'INSERT') {
+                    if (!state.rides.some(ride => ride.id === newRecord.id)) state.rides.push(newRecord);
+                } else if (eventType === 'UPDATE') {
+                    const rideIndex = state.rides.findIndex(r => r.id === newRecord.id);
+                    if (rideIndex !== -1) state.rides[rideIndex] = newRecord;
+                } else if (eventType === 'DELETE') {
+                    state.rides = state.rides.filter(r => r.id !== oldRecord.id);
+                }
+
+                const activeScreenId = document.querySelector('.screen.active')?.id;
+                if (activeScreenId === 'user-screen') {
+                    if (state.currentUserRideId && (newRecord?.id === state.currentUserRideId || oldRecord?.id === state.currentUserRideId)) {
+                        checkUserRideStatus(); 
+                    }
+                    updateAvailableDriversCount();
+                    renderUserRideHistory(); 
+                }
+            }).subscribe();
+        }
+
+        function initApp() {
+            initAutocomplete();
+            loadAppIcon();
+            fetchAllData();
+            setupRealtimeSubscriptions();
+
+            const loggedInUserId = localStorage.getItem('loggedInUserId');
+            const lastScreen = localStorage.getItem('lastScreen'); 
+
+            if (loggedInUserId) {
+                state.currentUserId = parseInt(loggedInUserId);
+                const user = state.users.find(u => u.id === state.currentUserId);
+                if (user) {
+                    // A tela do app será mostrada após o vídeo terminar
+                } else {
+                    logoutUser(); 
+                    showScreen('initial-screen'); 
+                }
+            } else if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
+                showScreen(lastScreen);
+            }
+            else {
+                showScreen('initial-screen');
+            }
+        }
+
+        // Adiciona um listener para quando o vídeo terminar de tocar
+        document.getElementById('intro-video').addEventListener('ended', () => {
+            document.getElementById('video-container').style.display = 'none'; // Oculta o contêiner do vídeo
+            document.getElementById('app-container').classList.remove('hidden'); // Mostra o restante do app
+            // Verifica o status do usuário após o vídeo terminar
+            const loggedInUserId = localStorage.getItem('loggedInUserId');
+            if (loggedInUserId) {
+                state.currentUserId = parseInt(loggedInUserId);
+                showScreen('user-screen'); 
+            } else {
+                showScreen('initial-screen');
+            }
+        });
+
+        // Chamar initApp() quando a API do Google Maps estiver pronta
+        function initAppWhenMapsLoaded() {
+            if (typeof google !== 'undefined' && google.maps && google.maps.places) {
+                initApp();
+            } else {
+                setTimeout(initAppWhenMapsLoaded, 100);
+            }
+        }
+        // Inicia o carregamento do app, que por sua vez espera o Google Maps
+        initAppWhenMapsLoaded();
+
+
+        function initAutocomplete() {
+            const destinationInput = document.getElementById('destination');
+            if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
+                new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
+            } else {
+                console.warn('Google Maps Places API not loaded or destination input not found.');
+            }
+        }
+        
+        function updateAvailableDriversCount() {
+            const countEl = document.getElementById('available-drivers-count');
+            if (countEl) {
+                // O texto "Aguardando motoristas..." já está com a classe text-cyan-400 para ficar ciano.
+            }
+        }
+        
+        function translateStatus(status) {
+            switch (status) {
+                case 'requested': return 'SOLICITADO'; 
+                case 'assigned': return 'DESIGNADO'; 
+                case 'accepted': return 'ACEITO';
+                case 'arrived_pickup': return 'CHEGOU NO EMBARQUE'; 
+                case 'in_progress': return 'EM ANDAMENTO';
+                case 'completed': return 'FINALIZADA'; 
+                case 'canceled': return 'CANCELADA';
+                default: return status.toUpperCase();
+            }
+        }
+
+        function loadAppIcon() {
+            const iconContainer = document.getElementById('app-icon-container');
+            iconContainer.innerHTML = ''; 
+            if (state.appIcon) {
+                const img = document.createElement('img');
+                img.src = state.appIcon;
+                img.className = 'h-full w-full object-contain'; 
+                iconContainer.appendChild(img);
+            } else {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('class', 'h-12 w-12 text-black'); svg.setAttribute('fill', 'currentColor');
+                svg.setAttribute('viewBox', '0 0 24 24');
+                svg.innerHTML = `<path d="M21.9,8.2L21,6.2c-0.5-1.2-1.7-2-3-2H6C4.7,4.2,3.5,5,3,6.2L2.1,8.2C2,8.4,2,8.6,2,8.8V16c0,1.1,0.9,2,2,2h1v1 c0,0.6,0.4,1,1,1h1c0.6,0,1-0.4,1-1v-1h1c1.1,0,2-0.9,2-2V8.8C22,8.6,22,8.4,21.9,8.2z M6.8,14.8c-0.8,0-1.5-0.7-1.5-1.5s0.7-1.5,1.5-1.5s1.5,0.7,1.5,1.5S7.6,14.8,6.8,14.8z M17.2,14.8c-0.8,0-1.5-0.7-1.5-1.5 s0.7-1.5,1.5-1.5s1.5,0.7,1.5,1.5S18.1,14.8,17.2,14.8z M4.5,10.8h15l-1.2-3c-0.2-0.5-0.7-0.8-1.3-0.8H6c-0.6,0-1.1,0.3-1.3,0.8 L4.5,10.8z"/>
+                    <rect height="1.5" width="4" x="10" y="2.2"/>`;
+                iconContainer.appendChild(svg);
+            }
+        }
+
+        function renderUserRideHistory() {
+            const historyContainer = document.getElementById("user-ride-history-modal");
+            if (!historyContainer) {
+                console.error("Elemento '#user-ride-history' não encontrado.");
+                return; 
+            }
+
+            historyContainer.innerHTML = '';
+            const userRides = state.rides.filter(r => r.userId === state.currentUserId);
+            if (userRides.length === 0) {
+                historyContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum histórico de corrida.</p>';
+                return;
+            }
+            const table = document.createElement('table');
+            table.className = 'w-full text-sm text-left';
+            table.innerHTML = `
+                <thead class="text-xs text-gray-300 uppercase bg-gray-900/30">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Data e Hora</th> 
+                        <th scope="col" class="px-4 py-3">Destino</th>
+                        <th scope="col" class="px-4 py-3">Status</th>
+                    </tr>
+                </thead>`;
+            const tbody = document.createElement('tbody');
+            userRides.sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
+            userRides.forEach(ride => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-700';
+                const dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                row.innerHTML = `
+                    <td class="px-4 py-3">${dateTimeString}</td> 
+                    <td class="px-4 py-3">${ride.destination}</td>
+                    <td class="px-4 py-3">${translateStatus(ride.status)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            historyContainer.appendChild(table);
+        }
+
+        function showHistoryModal() {
+            renderUserRideHistory();
+            showModal("history-modal", "", null, false);
+        }
+
+        document.getElementById('menu-toggle-btn').onclick = function() {
+            toggleMenu();
+            if (document.getElementById('mobile-menu').classList.contains('active')) {
+                renderUserRideHistory(); 
+            }
+        };
+        
+        function exportUserRidesToExcel() {
+            const userRides = state.rides.filter(r => r.userId === state.currentUserId);
+            if (userRides.length === 0) { showModal("modal", "Nenhum histórico de corrida para exportar."); return; }
+
+            const dataToExport = userRides.map(ride => ({
+                'Data e Hora da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR', {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                }),
+                'Destino': ride.destination,
+                'Motorista': ride.driverName || 'N/A',
+                'Status': translateStatus(ride.status)
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Minhas Corridas");
+            XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
+        }
+
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places&callback=initAppWhenMapsLoaded" async defer></script>
+</body>
+</html>
