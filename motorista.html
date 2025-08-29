@@ -12,12 +12,15 @@
     <style>
         body {
             font-family: 'Poppins', sans-serif;
+            background-color: black; /* Fundo preto */
         }
-        .main-gradient {
-            background: linear-gradient(135deg, #3b82f6, #a855f7);
-        }
+        /* Removemos o gradiente principal do body pois agora ele é preto */
+        /* .main-gradient { background: linear-gradient(135deg, #3b82f6, #a855f7); } */
+
         .button-gradient {
             background: linear-gradient(to right, #6d28d9, #4f46e5);
+            border: 1px solid white; /* Contorno branco nos botões */
+            color: white; /* Garante que o texto seja branco */
         }
         .button-gradient:hover {
             background: linear-gradient(to right, #4f46e5, #6d28d9);
@@ -94,19 +97,18 @@
 
     </style>
 </head>
-<body class="main-gradient text-white min-h-screen p-4"> <!-- Gradiente, min-h-screen e padding na body -->
+<body class="text-white min-h-screen p-4"> <!-- Removido main-gradient e adicionado black background -->
 
     <div id="app-container" class="w-full mx-auto max-w-md"> <!-- Sem o gradiente aqui, mas com a estrutura -->
 
         <!-- TELA INICIAL (Simplificada para acesso do Motorista) -->
-        <!-- A classe active já está aqui, e a centralização será gerenciada pelo JS na showScreen -->
         <div id="initial-screen" class="screen active text-center">
             <img src="images/motorista.png" alt="Motorista Icon" class="w-32 h-32 mx-auto mb-4 object-contain">
             <div class="flex justify-center items-center gap-4 mb-2">
                 <div id="app-icon-container" class="h-12 w-12">
                     <img src="images/destino.png" alt="App Icon" class="h-12 w-12 object-contain">
                 </div>
-                <h1 class="text-4xl sm:text-5xl font-bold text-black">GARCIAS TAXI</h1>
+                <h1 class="text-4xl sm:text-5xl font-bold text-white">GARCIAS TAXI</h1> <!-- Garantindo texto branco -->
             </div>
             <div class="space-y-4">
                 <button onclick="showScreen('driver-selection-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
@@ -118,7 +120,7 @@
         <!-- TELA DE SELEÇÃO DE MOTORISTA -->
         <div id="driver-selection-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
-            <h2 class="text-3xl font-bold mb-1 text-center">Selecionar Motorista</h2>
+            <h2 class="text-3xl font-bold mb-1 text-center text-white">Selecionar Motorista</h2> <!-- Garantindo texto branco -->
             <p id="driver-selection-timestamp" class="text-center text-gray-300 text-sm mb-4"></p>
             <div id="driver-list-selection" class="space-y-3"></div>
         </div>
@@ -126,25 +128,25 @@
         <!-- TELA DO MOTORISTA -->
         <div id="driver-screen" class="screen">
             <button onclick="logoutDriver()" class="mb-4 text-yellow-300">&larr; Sair</button>
-            <h2 class="text-3xl font-bold mb-2 text-center">Minhas Corridas</h2>
+            <h2 class="text-3xl font-bold mb-2 text-center text-white">Minhas Corridas</h2> <!-- Garantindo texto branco -->
             <p id="driver-name-display" class="text-center text-yellow-300 mb-1"></p>
             <p id="driver-stats-display" class="text-center text-red-500 font-semibold text-sm mb-6"></p>
             <div class="flex items-center justify-between mb-4 card-gradient p-3 rounded-lg">
-                <span class="font-semibold text-lg">Meu Status</span>
+                <span class="font-semibold text-lg text-white">Meu Status</span> <!-- Garantindo texto branco -->
                 <div class="flex items-center gap-3">
-                    <span id="driver-status-label" class="font-bold"></span>
+                    <span id="driver-status-label" class="font-bold text-white"></span> <!-- Garantindo texto branco -->
                     <label class="toggle-switch">
                         <input type="checkbox" id="driver-status-toggle" onchange="toggleDriverStatus()">
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
             </div>
-            <button id="silence-btn" onclick="stopBeeping()" class="hidden w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900">Silenciar Alerta</button>
+            <button id="silence-btn" onclick="stopBeeping()" class="hidden w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900 border border-white">Silenciar Alerta</button> <!-- Contorno branco e texto para contraste -->
             <div id="driver-jobs-list" class="space-y-4"></div>
              <div class="card-gradient p-4 rounded-lg mt-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-semibold text-xl">Histórico de Corridas</h3>
-                    <button onclick="exportDriverRidesToExcel()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700">Exportar</button>
+                    <h3 class="font-semibold text-xl text-white">Histórico de Corridas</h3> <!-- Garantindo texto branco -->
+                    <button onclick="exportDriverRidesToExcel()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">Exportar</button> <!-- Contorno branco -->
                 </div>
                 <div id="driver-ride-history" class="overflow-x-auto"></div>
             </div>
@@ -155,12 +157,12 @@
     <!-- MODAL DE ALERTA / EDIÇÃO (Simplificado para login do motorista e alertas gerais) -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
-            <p id="modal-message" class="mb-4 text-lg"></p>
+            <p id="modal-message" class="mb-4 text-lg text-white"></p> <!-- Garantindo texto branco -->
             <div id="modal-input-container" class="hidden mb-4 space-y-2">
-                <input type="password" id="modal-input-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Senha do Motorista">
+                <input type="password" id="modal-input-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-white" placeholder="Senha do Motorista"> <!-- Garantindo texto branco -->
             </div>
             <div id="modal-buttons" class="flex justify-center gap-4">
-                 <button id="modal-cancel" onclick="closeModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
+                 <button id="modal-cancel" onclick="closeModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600 border border-white">Cancelar</button> <!-- Contorno branco -->
                  <button id="modal-confirm" class="py-2 px-8 font-semibold rounded-lg button-gradient">OK</button>
             </div>
         </div>
@@ -293,10 +295,10 @@
                 // Modificado: Motorista está ocupado se tiver uma corrida com status diferente de 'completed' ou 'canceled'
                 const isDriverBusy = state.rides.some(ride => ride.driverId === driver.id && ride.status !== 'completed' && ride.status !== 'canceled');
                 const button = document.createElement('button');
-                button.className = 'w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg transform hover:scale-105 transition-transform flex justify-between items-center';
+                button.className = 'w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg transform hover:scale-105 transition-transform flex justify-between items-center border border-white'; /* Adicionado contorno branco */
                 button.onclick = () => selectDriver(driver.id);
                 button.innerHTML = `
-                    <span>${driver.name}</span>
+                    <span class="text-white">${driver.name}</span>
                     <span class="text-sm font-bold py-1 px-3 rounded-full ${driver.status === 'active' && !isDriverBusy ? 'bg-green-500 text-white' : 'bg-red-600 text-white'}">
                         ${driver.status === 'active' && !isDriverBusy ? 'Livre' : 'Ocupado'}
                     </span>
@@ -422,11 +424,11 @@
             let hasAssignedJob = false;
             myJobs.forEach(ride => {
                 const card = document.createElement('div');
-                card.className = 'card-gradient p-4 rounded-lg shadow-md';
+                card.className = 'card-gradient p-4 rounded-lg shadow-md border border-white'; /* Adicionado contorno branco */
                 const requestDateTime = new Date(ride.requestTime).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 let content = `
                     <div class="flex justify-between items-start mb-1">
-                        <p class="font-semibold pr-2">Destino Final: <span class="font-normal">${ride.destination}</span></p>
+                        <p class="font-semibold pr-2 text-white">Destino Final: <span class="font-normal text-gray-300">${ride.destination}</span></p>
                         <p class="text-sm text-gray-300">Solicitado por: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
                         <p class="text-xs text-gray-400 whitespace-nowrap">${requestDateTime}</p>
                     </div>
@@ -452,7 +454,7 @@
                 } else if (ride.status === 'arrived_pickup') {
                     content += `<button onclick="startTrip(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM PARA O DESTINO</button>`;
                 } else if (ride.status === 'in_progress') {
-                    content += `<button onclick="completeRide(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700">FINALIZAR CORRIDA</button>`;
+                    content += `<button onclick="completeRide(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">FINALIZAR CORRIDA</button>`;
                 }
                 card.innerHTML = content;
                 list.appendChild(card);
@@ -735,9 +737,9 @@
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-700';
                 row.innerHTML = `
-                    <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td>
-                    <td class="px-4 py-3">${ride.userName || 'N/A'}</td>
-                    <td class="px-4 py-3">${ride.destination}</td>
+                    <td class="px-4 py-3 text-white">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td>
+                    <td class="px-4 py-3 text-white">${ride.userName || 'N/A'}</td>
+                    <td class="px-4 py-3 text-white">${ride.destination}</td>
                 `;
                 tbody.appendChild(row);
             });
