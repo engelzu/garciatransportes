@@ -11,6 +11,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Reset básico para garantir que nada saia do lugar */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #000000; /* Fundo preto */
@@ -20,8 +25,8 @@
             align-items: center;
             min-height: 100vh;
             padding: 0; /* Remove padding para o vídeo ocupar toda a tela */
-            overflow: hidden; /* Evita barras de rolagem desnecessárias */
             margin: 0; /* Remove margem padrão do body */
+            overflow: hidden; /* Crucial para evitar barras de rolagem */
         }
         .main-gradient {
             background: linear-gradient(135deg, #000000, #000000); /* Degradê transformado em preto */
@@ -183,12 +188,13 @@
             z-index: 100; /* Garante que fique acima de tudo, mas abaixo da UI final */
             overflow: hidden; /* Essencial para o vídeo não vazar para fora */
             background-color: #000; /* Fundo preto caso o vídeo não carregue */
+            max-width: 100%; /* Garante que não ultrapasse a largura da viewport */
         }
 
         #splash-video {
             display: block; /* Remove espaço extra abaixo do vídeo */
-            width: 100%; /* O vídeo tentará ocupar 100% da largura do contêiner pai */
-            height: 100%; /* O vídeo tentará ocupar 100% da altura do contêiner pai */
+            width: 100%;
+            height: 100%;
             object-fit: cover; /* Importante: Cobre toda a área do contêiner, mantendo a proporção */
             object-position: center; /* Centraliza o vídeo se o aspect ratio não bater exatamente */
         }
@@ -820,51 +826,57 @@
                 
                 // Add event listener for when the video ends
                 splashVideo.onended = () => {
-                    document.getElementById('splash-screen').classList.add('hidden-splash'); // Hide splash screen
-                    document.getElementById('app-container').classList.remove('hidden'); // Show main app content
-                    
-                    if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
-                        showScreen(lastScreen);
-                    } else {
-                        showScreen('initial-screen'); // Default to initial screen if no last screen or invalid
-                    }
+                    console.log("Video ended event triggered.");
+                    transitionToApp();
                 };
 
-                // If the video doesn't play automatically (e.g., user interaction required),
-                // you might need a button to start it. For now, assuming autoplay works.
-                // If it fails to play, the splash screen will remain visible.
-                
+                // Add error listener for the video, in case it fails to load or play
+                splashVideo.onerror = () => {
+                    console.error("Error loading or playing the splash video.");
+                    // If there's an error, transition immediately to the app
+                    transitionToApp();
+                };
+
                 // Set a timeout as a fallback in case the video 'ended' event doesn't fire
                 // (e.g., browser limitations, video not loading properly).
                 // Adjust the timeout duration as needed (e.g., 10 seconds).
                 const fallbackTimeout = setTimeout(() => {
-                    if (!document.getElementById('app-container').classList.contains('hidden')) { // If app container is already shown, do nothing
-                        console.warn('Fallback timeout triggered for splash screen.');
-                        document.getElementById('splash-screen').classList.add('hidden-splash');
-                        document.getElementById('app-container').classList.remove('hidden');
-                        if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
-                            showScreen(lastScreen);
-                        } else {
-                            showScreen('initial-screen');
-                        }
-                    }
+                    console.warn('Fallback timeout triggered for splash screen.');
+                    transitionToApp();
                 }, 10000); // 10 seconds
 
-                // Clear the fallback timeout if the video actually ends
+                // Clear the fallback timeout if the video actually ends or errors out
                 splashVideo.onended = () => {
                     clearTimeout(fallbackTimeout);
-                    // ... rest of the onended logic ...
-                    document.getElementById('splash-screen').classList.add('hidden-splash'); // Hide splash screen
-                    document.getElementById('app-container').classList.remove('hidden'); // Show main app content
-                    
-                    if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
-                        showScreen(lastScreen);
-                    } else {
-                        showScreen('initial-screen'); // Default to initial screen if no last screen or invalid
-                    }
+                    transitionToApp();
+                };
+                splashVideo.onerror = () => {
+                    clearTimeout(fallbackTimeout);
+                    transitionToApp();
                 };
             }
         }
+
+        // Helper function to handle the transition from splash to app
+        function transitionToApp() {
+            const splashScreen = document.getElementById('splash-screen');
+            const appContainer = document.getElementById('app-container');
+            
+            if (splashScreen && appContainer) {
+                splashScreen.classList.add('hidden-splash'); // Hide splash screen
+                appContainer.classList.remove('hidden'); // Show main app content
+                
+                const lastScreen = localStorage.getItem('lastScreen');
+                if (lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen')) {
+                    showScreen(lastScreen);
+                } else {
+                    showScreen('initial-screen'); // Default to initial screen
+                }
+            } else {
+                console.error("Could not find splash-screen or app-container elements for transition.");
+            }
+        }
+
 
         function initAutocomplete() {
             const destinationInput = document.getElementById('destination');
