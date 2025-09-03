@@ -307,9 +307,9 @@
             rides: [],
             users: [],
             appIcon: 'images/user.png', // O ícone que você enviou será carregado por esta variável
-            currentUserRideId: null,
+            currentUserRideId: null, // ID da corrida que o usuário está gerenciando no momento
             currentUserId: null,
-            userStatusInterval: null
+            userStatusInterval: null // Referência para o intervalo de verificação de status
         };
 
         // --- CONFIGURAÇÃO DO SUPABASE ---
@@ -385,9 +385,15 @@
 
         // --- LÓGICA DE LOGIN ---
         async function loginUser() {
-            const matricula = document.getElementById('user-id').value;
+            const matricula = document.getElementById('user-id').value.trim();
             const password = document.getElementById('user-password').value;
             const errorEl = document.getElementById('user-login-error');
+
+            if (!matricula || !password) {
+                errorEl.textContent = 'Por favor, preencha todos os campos.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
 
             const { data: user, error } = await supabaseClient
                 .from('users')
@@ -406,10 +412,13 @@
             if (user) {
                 state.currentUserId = user.id;
                 localStorage.setItem('loggedInUserId', user.id);
-                localStorage.setItem('lastScreen', 'user-screen'); // Salva a tela do usuário como a última
+                localStorage.setItem('lastScreen', 'user-screen'); 
                 errorEl.classList.add('hidden');
                 document.getElementById('user-id').value = '';
                 document.getElementById('user-password').value = '';
+                
+                // Ao logar, verifica o status da corrida para garantir que a tela correta seja exibida
+                checkUserRideStatus(); 
                 showScreen('user-screen');
             } else {
                 errorEl.textContent = 'Matrícula ou senha incorreta!';
@@ -433,27 +442,39 @@
             if (activeScreen) {
                 activeScreen.classList.add('active');
             }
-            localStorage.setItem('lastScreen', screenId);
+            // Armazena a última tela visitada APENAS se for uma tela principal do app
+            if (screenId === 'initial-screen' || screenId === 'user-login-screen' || screenId === 'user-screen') {
+                localStorage.setItem('lastScreen', screenId);
+            }
 
+            // Chama checkUserRideStatus quando a tela do usuário é ativada
             if (screenId === 'user-screen') {
                 checkUserRideStatus();
                 updateAvailableDriversCount(); 
             } else {
+                // Limpa o intervalo de status quando saímos da tela do usuário
                 if (state.userStatusInterval) clearInterval(state.userStatusInterval);
             }
+            // Fecha o menu se ele estiver aberto ao navegar
             if (document.getElementById('mobile-menu').classList.contains('active')) {
                 toggleMenu();
             }
         }
 
-        // --- LÓGICA DO USUÁRIO ---
+        // --- LÓGICA DE SOLICITAÇÃO DE CORRIDA ---
         async function requestRide() {
-            const destination = document.getElementById('destination').value;
+            const destination = document.getElementById('destination').value.trim();
             const requestRideBtn = document.getElementById('request-ride-btn');
 
             if (!destination) {
                 showModal('modal', 'Por favor, insira um destino.');
                 return;
+            }
+            
+            // Verifica se já existe uma corrida ativa antes de permitir nova solicitação
+            if (state.currentUserRideId) {
+                showModal('modal', 'Você já possui uma solicitação de corrida ativa. Aguarde a conclusão ou o cancelamento da corrida atual.');
+                return; // Impede a solicitação de uma nova corrida
             }
 
             requestRideBtn.disabled = true;
@@ -482,7 +503,7 @@
 
                 const newRide = {
                     destination: destination,
-                    status: 'requested',
+                    status: 'requested', // O status inicial é 'requested'
                     userId: currentUser.id,
                     userName: currentUser.name,
                     userCompany: currentUser.company,
@@ -497,28 +518,32 @@
                     showModal('modal', "Não foi possível solicitar a corrida.");
                     requestRideBtn.disabled = false;
                     requestRideBtn.textContent = 'SOLICITAR TAXI';
-                    checkUserRideStatus(); 
+                    checkUserRideStatus(); // Tenta revalidar o status da corrida
                     return;
                 }
 
+                // Atualiza o estado e o localStorage com a NOVA corrida solicitada
                 state.currentUserRideId = data.id;
                 localStorage.setItem('currentUserRideId', data.id); 
-                document.getElementById('destination').value = ''; 
-                checkUserRideStatus(); 
+                
+                document.getElementById('destination').value = ''; // Limpa o campo de destino
+                
+                checkUserRideStatus(); // Atualiza a tela para mostrar o status da nova corrida
                 
             }, (error) => {
                 console.error("Erro ao obter localização do usuário:", error);
                 showModal('modal', 'Não foi possível obter sua localização. Verifique as permissões de localização no seu dispositivo/navegador.');
                 requestRideBtn.disabled = false;
                 requestRideBtn.textContent = 'SOLICITAR TAXI';
-                checkUserRideStatus();
+                checkUserRideStatus(); // Tenta revalidar o status da corrida
             }, {
                 enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
+                timeout: 10000, 
+                maximumAge: 0 
             });
         }
         
+        // Verifica e atualiza a UI com base no status da corrida atual do usuário
         async function checkUserRideStatus() {
             const requestForm = document.getElementById('user-request-form');
             const userStatusDiv = document.getElementById('user-status');
@@ -529,32 +554,28 @@
             // Limpa qualquer intervalo de verificação de status anterior
             if (state.userStatusInterval) clearInterval(state.userStatusInterval);
 
-            // Verifica se há um ID de corrida armazenado no state, senão tenta buscar do localStorage
-            if (!state.currentUserRideId) {
-                const storedRideId = localStorage.getItem('currentUserRideId');
-                if (storedRideId) {
-                    // Tenta encontrar a corrida no array state.rides (que é preenchido por fetchAllData)
-                    const activeRide = state.rides.find(ride => ride.id === parseInt(storedRideId));
-                    if (activeRide && activeRide.userId === state.currentUserId && !['completed', 'canceled'].includes(activeRide.status)) {
-                        state.currentUserRideId = activeRide.id;
-                    } else {
-                        // Se a corrida armazenada não é mais válida ou pertence a outro usuário, limpa
-                        localStorage.removeItem('currentUserRideId');
-                        state.currentUserRideId = null; // Garante que state.currentUserRideId também seja limpo
-                    }
-                }
+            // Obtém o ID da corrida do localStorage E sincroniza com o state
+            let currentRideIdFromStorage = localStorage.getItem('currentUserRideId');
+            
+            // Sincroniza state.currentUserRideId com o localStorage
+            if (currentRideIdFromStorage) {
+                state.currentUserRideId = parseInt(currentRideIdFromStorage);
+            } else {
+                state.currentUserRideId = null; // Se não houver no localStorage, limpa o state
             }
 
+            // Se temos um ID de corrida válido no estado
             if (state.currentUserRideId) {
-                // Busca a corrida específica pelo ID
+                // Busca a corrida específica no Supabase para ter o status mais recente
                 const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
 
                 if (!error && myRide && myRide.userId === state.currentUserId && !['completed', 'canceled'].includes(myRide.status)) {
                     // Corrida válida e ativa encontrada
-                    requestForm.classList.add('hidden'); // Oculta o formulário de solicitação
+                    requestForm.classList.add('hidden');      // Oculta o formulário de solicitação
                     userStatusDiv.classList.remove('hidden'); // Mostra a área de status
-                    updateUserStatusMessage(myRide); // Atualiza a mensagem e ícones de status
-                    startUserStatusCheck(); // Inicia o monitoramento contínuo do status
+                    
+                    updateUserStatusMessage(myRide);          // Atualiza a mensagem e ícones de status
+                    startUserStatusCheck();                   // Inicia o monitoramento contínuo do status
                     
                     if (myRide.status === 'arrived_pickup') {
                         guegueiImage.classList.remove('hidden');
@@ -563,11 +584,13 @@
                     }
                 } else {
                     // Se a corrida não foi encontrada, ocorreu um erro, ou o status é finalizado/cancelado
-                    state.currentUserRideId = null;
-                    localStorage.removeItem('currentUserRideId');
+                    // Isso significa que a corrida não está mais ativa ou é inválida.
+                    state.currentUserRideId = null; // Limpa o ID da corrida no estado
+                    localStorage.removeItem('currentUserRideId'); // Remove do localStorage
                     
-                    requestForm.classList.remove('hidden');  // Mostra o formulário de solicitação
-                    userStatusDiv.classList.add('hidden');   // Oculta a área de status
+                    // Atualiza a UI para mostrar o formulário de solicitação novamente
+                    requestForm.classList.remove('hidden');  
+                    userStatusDiv.classList.add('hidden');   
                     
                     requestRideBtn.disabled = false; 
                     requestRideBtn.textContent = 'SOLICITAR TAXI';
@@ -576,9 +599,9 @@
                     guegueiImage.classList.add('hidden'); 
                 }
             } else {
-                // Se não há currentUserRideId (nem no state, nem no localStorage)
-                requestForm.classList.remove('hidden');  // Mostra o formulário de solicitação
-                userStatusDiv.classList.add('hidden');   // Oculta a área de status
+                // Se não há currentUserRideId definido (nem no state, nem no localStorage)
+                requestForm.classList.remove('hidden');  
+                userStatusDiv.classList.add('hidden');   
                 
                 requestRideBtn.disabled = false; 
                 requestRideBtn.textContent = 'SOLICITAR TAXI';
@@ -586,35 +609,37 @@
                 document.getElementById('user-status-message').textContent = '';
                 guegueiImage.classList.add('hidden'); 
             }
-            renderUserRideHistory(); // Atualiza o histórico sempre que verifica o status
+            // Sempre renderiza o histórico para garantir que o modal esteja correto
+            renderUserRideHistory(); 
         }
 
+        // Inicia um intervalo para verificar o status da corrida do usuário periodicamente
         function startUserStatusCheck() {
-            // Garante que apenas um intervalo esteja rodando por vez
             if (state.userStatusInterval) clearInterval(state.userStatusInterval);
             
             state.userStatusInterval = setInterval(async () => {
                 if (!state.currentUserRideId) {
-                    clearInterval(state.userStatusInterval); // Para o intervalo se não houver mais corrida ativa
-                    checkUserRideStatus(); // Tenta revalidar o estado geral
+                    clearInterval(state.userStatusInterval); 
+                    checkUserRideStatus(); 
                     return;
                 }
-                // Busca novamente a corrida para obter o status mais recente
+                
                 const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
                 
                 if (myRide) {
-                   updateUserStatusMessage(myRide); // Atualiza a mensagem e ícones
-                   checkUserRideStatus(); // Revalida todo o estado da tela, pois pode ter mudado para concluída/cancelada
+                   updateUserStatusMessage(myRide); 
+                   checkUserRideStatus(); 
                 } else {
-                    // Se a corrida não foi encontrada (talvez deletada), limpa tudo
+                    // Corrida não encontrada (talvez deletada)
                     clearInterval(state.userStatusInterval);
-                    state.currentUserRideId = null;
-                    localStorage.removeItem('currentUserRideId');
-                    checkUserRideStatus(); // Atualiza a tela para o estado normal (sem corrida)
+                    state.currentUserRideId = null; 
+                    localStorage.removeItem('currentUserRideId'); 
+                    checkUserRideStatus(); 
                 }
-            }, 10000); // Verifica a cada 10 segundos
+            }, 10000); 
         }
         
+        // Atualiza a mensagem de status e os ícones na tela do usuário
         function updateUserStatusMessage(ride) {
             const searchingIconContainer = document.getElementById('status-icon-searching');
             const enRouteIconContainer = document.getElementById('status-icon-en-route');
@@ -623,7 +648,7 @@
             const cancelRideBtn = document.getElementById('cancel-ride-btn');
             const guegueiImage = document.getElementById('cheguei-image'); 
 
-            // Limpa os ícones anteriores
+            // Resetar todas as áreas de ícones
             searchingIconContainer.classList.add('hidden');
             enRouteIconContainer.classList.add('hidden');
             arrivedPickupIconContainer.classList.add('hidden');
@@ -632,7 +657,7 @@
             arrivedPickupIconContainer.innerHTML = '';
             inProgressIconContainer.innerHTML = '';
 
-            // Atualiza a visibilidade do botão de cancelar
+            // Controlar visibilidade do botão de cancelar
             if (['requested', 'assigned', 'accepted', 'arrived_pickup'].includes(ride.status)) {
                 cancelRideBtn.classList.remove('hidden');
             } else {
@@ -652,7 +677,6 @@
                     break;
                 case 'accepted':
                     message = `Motorista ${ride.driverName || 'designado'} está a caminho!`;
-                    // Opcional: adicionar cálculo de distância se tiver as localizações
                     if (ride.driverCurrentLocation && ride.userLocation) {
                         const distance = getDistanceFromLatLonInKm(
                             ride.userLocation.lat, ride.userLocation.lon,
@@ -661,7 +685,7 @@
                         message += ` Distância: ${distance.toFixed(2)} km`;
                     }
                     const acceptedImg = document.createElement('img');
-                    acceptedImg.src = 'images/aceitou.png'; // Certifique-se que este caminho está correto
+                    acceptedImg.src = 'images/aceitou.png'; 
                     acceptedImg.alt = 'Motorista Aceitou';
                     acceptedImg.className = 'h-20 w-20 mx-auto'; 
                     enRouteIconContainer.appendChild(acceptedImg);
@@ -669,12 +693,11 @@
                     break;
                 case 'arrived_pickup':
                     message = `Seu motorista, ${ride.driverName || 'designado'}, chegou no local de embarque.`;
-                    // A imagem "cheguei" é controlada separadamente por guegueiImage.classList.remove/add('hidden')
                     break;
                 case 'in_progress':
                      message = `Viagem para ${ride.destination} em andamento.`;
                      const inProgressImg = document.createElement('img');
-                     inProgressImg.src = 'images/destino.png'; // Certifique-se que este caminho está correto
+                     inProgressImg.src = 'images/destino.png'; 
                      inProgressImg.alt = 'Viagem Iniciada';
                      inProgressImg.className = 'h-20 w-20 mx-auto animate-bounce'; 
                      inProgressIconContainer.appendChild(inProgressImg);
@@ -682,21 +705,19 @@
                      break;
                  case 'completed':
                     message = `Viagem finalizada! Obrigado por escolher a GARCIA TRANSPORTES.`;
-                    // Limpa o estado da corrida e agenda a verificação para reexibir o formulário
-                    state.currentUserRideId = null;
+                    state.currentUserRideId = null; // Limpa o ID da corrida
                     localStorage.removeItem('currentUserRideId'); 
                     setTimeout(() => {
-                        checkUserRideStatus(); 
-                    }, 5000); // Exibe a mensagem por 5 segundos
+                        checkUserRideStatus(); // Atualiza a UI para o formulário
+                    }, 5000); 
                     break;
                 case 'canceled':
                     message = `Sua viagem foi cancelada.`;
-                    // Limpa o estado da corrida e agenda a verificação para reexibir o formulário
-                    state.currentUserRideId = null;
+                    state.currentUserRideId = null; // Limpa o ID da corrida
                     localStorage.removeItem('currentUserRideId'); 
                     setTimeout(() => {
-                        checkUserRideStatus(); 
-                    }, 3000); // Exibe a mensagem por 3 segundos
+                        checkUserRideStatus(); // Atualiza a UI para o formulário
+                    }, 3000); 
                     break;
                 default:
                     message = `Status desconhecido: ${ride.status}`;
@@ -705,27 +726,27 @@
             document.getElementById('user-status-message').textContent = message;
         }
 
+        // Cancela uma corrida ativa
         async function cancelRide() {
             if (state.currentUserRideId) {
                 showModal('modal', 'Tem certeza que deseja cancelar esta solicitação?', async () => {
-                    // Atualiza o status no Supabase para 'canceled'
                     const { error } = await supabaseClient.from('rides').update({ status: 'canceled' }).eq('id', state.currentUserRideId);
                     if (error) {
                         showModal('modal', 'Não foi possível cancelar a corrida.');
                         console.error('Erro ao cancelar corrida:', error);
                     } else {
                         // Limpa o estado local e espera a atualização do Supabase
-                        state.currentUserRideId = null;
-                        localStorage.removeItem('currentUserRideId');
-                        checkUserRideStatus(); // Atualiza a UI para o estado normal
+                        state.currentUserRideId = null; 
+                        localStorage.removeItem('currentUserRideId'); 
+                        checkUserRideStatus(); 
                     }
-                }, true); // Mostra o botão de cancelar no modal
+                }, true); 
             }
         }
 
         // --- CÁLCULO DE DISTÂNCIA ---
         function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Raio da Terra em km
+            const R = 6371; 
             const dLat = deg2rad(lat2 - lat1);
             const dLon = deg2rad(lon2 - lon1);
             const a =
@@ -733,7 +754,7 @@
                 Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
                 Math.sin(dLon / 2) * Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const d = R * c; // Distância em km
+            const d = R * c; 
             return d;
         }
 
@@ -751,12 +772,10 @@
         }
 
         function setupRealtimeSubscriptions() {
-            // Assinatura para mudanças na tabela 'users'
             supabaseClient.channel('public:users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, payload => {
-                 fetchAllData(); // Atualiza os dados do usuário em tempo real
+                 fetchAllData(); 
             }).subscribe();
             
-            // Assinatura para mudanças na tabela 'rides'
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
                 
@@ -766,53 +785,62 @@
                 } else if (eventType === 'UPDATE') {
                     const rideIndex = state.rides.findIndex(r => r.id === newRecord.id);
                     if (rideIndex !== -1) state.rides[rideIndex] = newRecord;
+                    // Se a corrida atualizada é a do usuário e ele está na tela de status, revalida
+                    if (state.currentUserRideId && newRecord.id === state.currentUserRideId) {
+                        checkUserRideStatus();
+                    }
                 } else if (eventType === 'DELETE') {
                     state.rides = state.rides.filter(r => r.id !== oldRecord.id);
+                    // Se a corrida deletada era a do usuário, limpa o estado
+                    if (state.currentUserRideId && oldRecord.id === state.currentUserRideId) {
+                        state.currentUserRideId = null;
+                        localStorage.removeItem('currentUserRideId');
+                        checkUserRideStatus(); 
+                    }
                 }
 
-                // Se a tela ativa é a do usuário, verifica o status da corrida
                 const activeScreenId = document.querySelector('.screen.active')?.id;
                 if (activeScreenId === 'user-screen') {
-                    // Se o ID da corrida ativa mudou ou se a corrida atualizada é a do usuário
-                    if (state.currentUserRideId && (newRecord?.id === state.currentUserRideId || oldRecord?.id === state.currentUserRideId)) {
-                        checkUserRideStatus(); // Revalida o status da corrida
-                    }
-                    updateAvailableDriversCount(); // Atualiza a contagem de motoristas disponíveis
-                    renderUserRideHistory(); // Atualiza o histórico no modal
+                    updateAvailableDriversCount(); 
+                    renderUserRideHistory(); 
                 }
             }).subscribe();
         }
 
-        // --- INICIALIZAÇÃO PRINCIPAL DO APP ---
+        // --- FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO DO APP ---
         async function initApp() {
-            initAutocomplete();
-            loadAppIcon();
+            initAutocomplete(); 
+            loadAppIcon();      
             
-            // Busca todos os dados do Supabase antes de qualquer outra coisa
-            await fetchAllData();
+            await fetchAllData(); // Busca todos os dados do Supabase primeiro
 
-            // Configura os listeners de tempo real APÓS buscar os dados iniciais
-            setupRealtimeSubscriptions();
+            setupRealtimeSubscriptions(); // Configura os listeners de tempo real
 
             const loggedInUserId = localStorage.getItem('loggedInUserId');
             const lastScreen = localStorage.getItem('lastScreen'); 
-            const storedRideId = localStorage.getItem('currentUserRideId'); // Busca o ID da corrida do localStorage
+            const storedRideId = localStorage.getItem('currentUserRideId'); 
 
             if (loggedInUserId) {
                 state.currentUserId = parseInt(loggedInUserId);
                 const user = state.users.find(u => u.id === state.currentUserId);
 
                 if (user) {
-                    // Verifica se há um ID de corrida válido no localStorage E se essa corrida existe nos dados carregados
+                    // Verifica se há um ID de corrida válido no localStorage
                     if (storedRideId) {
-                        const activeRide = state.rides.find(ride => ride.id === parseInt(storedRideId) && ride.userId === state.currentUserId && !['completed', 'canceled'].includes(ride.status));
+                        const activeRide = state.rides.find(ride => 
+                            ride.id === parseInt(storedRideId) && 
+                            ride.userId === state.currentUserId && 
+                            !['completed', 'canceled'].includes(ride.status)
+                        );
+                        
                         if (activeRide) {
-                            state.currentUserRideId = activeRide.id; // Define o ID da corrida atual no estado
+                            state.currentUserRideId = activeRide.id; // Define o ID da corrida atual no state
                             showScreen('user-screen'); // Força a exibição da tela do usuário
                         } else {
-                            // Se o ID da corrida no localStorage não é mais válido, limpa-o
+                            // ID da corrida no localStorage não é mais válido
                             localStorage.removeItem('currentUserRideId');
-                            // Decide qual tela mostrar: a última tela registrada ou a tela inicial
+                            state.currentUserRideId = null; // Limpa o state também
+                            // Mostra a última tela válida ou a tela inicial
                             showScreen(lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen') ? lastScreen : 'initial-screen');
                         }
                     } else {
@@ -820,9 +848,9 @@
                         showScreen(lastScreen && (lastScreen === 'user-login-screen' || lastScreen === 'initial-screen') ? lastScreen : 'initial-screen');
                     }
                 } else {
-                    // Usuário estava logado, mas não foi encontrado nos dados do Supabase (possível erro ou desatualização)
-                    logoutUser(); // Executa logout para limpar dados incorretos
-                    showScreen('initial-screen'); // Volta para a tela inicial
+                    // Usuário estava logado, mas não foi encontrado nos dados do Supabase
+                    logoutUser(); // Limpa dados incorretos
+                    showScreen('initial-screen'); 
                 }
             } else {
                 // Usuário não estava logado
@@ -830,54 +858,45 @@
             }
         }
 
-        // Adiciona um listener para quando o vídeo terminar de tocar
+        // Listener para quando o vídeo de introdução terminar
         document.getElementById('intro-video').addEventListener('ended', () => {
-            document.getElementById('video-container').style.display = 'none'; // Oculta o contêiner do vídeo
-            document.getElementById('app-container').classList.remove('hidden'); // Mostra o restante do app
-            
-            // Após o vídeo, tenta inicializar o app com base no estado do localStorage
-            initApp(); 
+            document.getElementById('video-container').style.display = 'none'; 
+            document.getElementById('app-container').classList.remove('hidden'); 
+            initApp(); // Inicializa o app após o vídeo
         });
 
         // Função wrapper para garantir que o app só inicie quando o Google Maps estiver pronto
         function initAppWhenMapsLoaded() {
-            // Verifica se a API do Google Maps e seus componentes estão carregados
             if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-                // Se estiverem carregados, inicia o aplicativo
-                initApp();
+                initApp(); 
             } else {
-                // Se não, tenta novamente em um curto intervalo
-                setTimeout(initAppWhenMapsLoaded, 100);
+                setTimeout(initAppWhenMapsLoaded, 100); 
             }
         }
-        // Inicia o processo de carregamento do app, que por sua vez espera o Google Maps
-        initAppWhenMapsLoaded();
+        initAppWhenMapsLoaded(); // Inicia o processo de carregamento
 
-
+        // Inicializa o autocomplete para o campo de destino
         function initAutocomplete() {
             const destinationInput = document.getElementById('destination');
-            // Verifica se o campo de input e a API do Google Maps estão disponíveis
             if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                // Inicializa o Autocomplete do Google Places
                 new google.maps.places.Autocomplete(destinationInput, { 
-                    types: ['address'], // Limita os resultados a endereços
-                    componentRestrictions: { 'country': 'br' } // Restringe ao Brasil
+                    types: ['address'], 
+                    componentRestrictions: { 'country': 'br' } 
                 });
             } else {
                 console.warn('Google Maps Places API não carregada ou campo de destino não encontrado.');
             }
         }
         
-        // Atualiza a contagem de motoristas disponíveis (esta função está apenas como placeholder)
+        // Atualiza a contagem de motoristas disponíveis (placeholder)
         function updateAvailableDriversCount() {
             const countEl = document.getElementById('available-drivers-count');
             if (countEl) {
-                // A mensagem "Aguardando motoristas..." já está no HTML. 
-                // Se você quiser exibir um número, precisará buscar essa informação via Supabase.
+                // Exibe apenas a mensagem fixa por enquanto
             }
         }
         
-        // Função para traduzir os status de corrida para português legível
+        // Traduz os status de corrida para português
         function translateStatus(status) {
             switch (status) {
                 case 'requested': return 'SOLICITADO'; 
@@ -887,22 +906,20 @@
                 case 'in_progress': return 'EM ANDAMENTO';
                 case 'completed': return 'FINALIZADA'; 
                 case 'canceled': return 'CANCELADA';
-                default: return status.toUpperCase(); // Retorna o status em maiúsculas se não for um caso conhecido
+                default: return status.toUpperCase();
             }
         }
 
-        // Carrega o ícone do aplicativo no contêiner designado
+        // Carrega o ícone do aplicativo
         function loadAppIcon() {
             const iconContainer = document.getElementById('app-icon-container');
-            iconContainer.innerHTML = ''; // Limpa o contêiner antes de adicionar o ícone
+            iconContainer.innerHTML = ''; 
             if (state.appIcon) {
-                // Cria um elemento <img> para o ícone
                 const img = document.createElement('img');
                 img.src = state.appIcon;
-                img.className = 'h-full w-full object-contain'; // Estilos para o ícone
+                img.className = 'h-full w-full object-contain'; 
                 iconContainer.appendChild(img);
             } else {
-                // Se não houver ícone definido em state.appIcon, usa um SVG placeholder
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('class', 'h-12 w-12 text-black'); svg.setAttribute('fill', 'currentColor');
                 svg.setAttribute('viewBox', '0 0 24 24');
@@ -921,16 +938,13 @@
             }
 
             historyContainer.innerHTML = ''; // Limpa o conteúdo anterior
-            // Filtra as corridas apenas do usuário logado
             const userRides = state.rides.filter(r => r.userId === state.currentUserId);
             
-            // Se não houver corridas, exibe uma mensagem
             if (userRides.length === 0) {
                 historyContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum histórico de corrida.</p>';
                 return;
             }
             
-            // Cria a tabela para exibir o histórico
             const table = document.createElement('table');
             table.className = 'w-full text-sm text-left';
             table.innerHTML = `
@@ -942,13 +956,11 @@
                     </tr>
                 </thead>`;
             const tbody = document.createElement('tbody');
-            // Ordena as corridas pela data de solicitação (da mais recente para a mais antiga)
             userRides.sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
             
             userRides.forEach(ride => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-700';
-                // Formata a data e hora para exibição
                 const dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', {
                     year: 'numeric',
                     month: 'numeric',
@@ -957,7 +969,6 @@
                     minute: '2-digit',
                     second: '2-digit'
                 });
-                // Preenche as células da linha
                 row.innerHTML = `
                     <td class="px-4 py-3">${dateTimeString}</td> 
                     <td class="px-4 py-3">${ride.destination}</td>
@@ -966,25 +977,24 @@
                 tbody.appendChild(row);
             });
             table.appendChild(tbody);
-            historyContainer.appendChild(table); // Adiciona a tabela ao contêiner do modal
+            historyContainer.appendChild(table); 
         }
 
-        // Função para abrir o modal de histórico
+        // Abre o modal de histórico de corridas
         function showHistoryModal() {
-            renderUserRideHistory(); // Garante que o histórico está atualizado antes de abrir
-            showModal("history-modal", "", null, false); // Abre o modal de histórico
+            renderUserRideHistory(); 
+            showModal("history-modal", "", null, false); 
         }
 
-        // Listener para o botão do menu (sanduíche)
+        // Handler para o botão de abrir o menu lateral
         document.getElementById('menu-toggle-btn').onclick = function() {
             toggleMenu();
-            // Se o menu abrir, atualiza o histórico de corridas caso o usuário acesse esta opção
             if (document.getElementById('mobile-menu').classList.contains('active')) {
                 renderUserRideHistory(); 
             }
         };
         
-        // Função para exportar o histórico de corridas para um arquivo Excel (XLSX)
+        // Exporta o histórico de corridas para um arquivo Excel
         function exportUserRidesToExcel() {
             const userRides = state.rides.filter(r => r.userId === state.currentUserId);
             if (userRides.length === 0) { 
@@ -992,7 +1002,6 @@
                 return; 
             }
 
-            // Mapeia os dados para o formato esperado pela biblioteca XLSX
             const dataToExport = userRides.map(ride => ({
                 'Data e Hora da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR', {
                     year: 'numeric',
@@ -1003,21 +1012,18 @@
                     second: '2-digit'
                 }),
                 'Destino': ride.destination,
-                'Motorista': ride.driverName || 'N/A', // Nome do motorista, se disponível
-                'Status': translateStatus(ride.status) // Status traduzido
+                'Motorista': ride.driverName || 'N/A',
+                'Status': translateStatus(ride.status)
             }));
 
-            // Cria a planilha e o workbook
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Minhas Corridas");
             
-            // Salva o arquivo
             XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
         }
 
     </script>
-    <!-- Carrega a API do Google Maps -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places&callback=initAppWhenMapsLoaded" async defer></script>
 </body>
 </html>
