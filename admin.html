@@ -310,12 +310,14 @@
                 <div class="lg:col-span-1">
                     <h3 class="text-2xl font-bold mb-4">Novas Solicitações</h3>
                     <div id="admin-requests-list" class="space-y-4">
+                        <!-- Novas solicitações serão carregadas aqui -->
                         </div>
                 </div>
 
                 <div class="lg:col-span-2">
                     <h3 class="text-2xl font-bold mb-4">Corridas em Andamento</h3>
                     <div id="admin-ongoing-rides-table" class="card-gradient p-4 rounded-lg overflow-x-auto">
+                        <!-- Corridas em andamento serão carregadas aqui -->
                         </div>
                 </div>
             </div>
@@ -446,9 +448,11 @@
                             <th scope="col" class="px-4 py-3">Destino</th>
                             <th scope="col" class="px-4 py-3">Motorista</th>
                             <th scope="col" class="px-4 py-3">Status</th>
+                            <th scope="col" class="px-4 py-3">Distância (km)</th> <!-- Adicionado o cabeçalho de Distância -->
                             </tr>
                     </thead>
                     <tbody id="all-records-body">
+                        <!-- Registros serão carregados aqui -->
                         </tbody>
                 </table>
             </div>
@@ -553,6 +557,7 @@
         let driverChart = null; // Referência para o gráfico de pizza dos motoristas
         let countdownInterval = null;
         let countdownSeconds = 5;
+        let adminCurrentLocation = null; // Para armazenar a localização atual do admin
 
         let state = {
             rides: [],
@@ -750,6 +755,7 @@
             if (screenId === 'admin-requests-screen') {
                 loadAdminRequests();
                 renderOngoingRidesTable();
+                getAdminLocation(); // Obtém a localização do admin quando esta tela se torna ativa
             }
             if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
             if (screenId === 'admin-user-crud-screen') renderUserCrudList();
@@ -994,6 +1000,8 @@
 
                     const card = document.createElement('div');
                     card.className = 'card-gradient p-4 rounded-lg shadow-md';
+                    // Armazena a localização do usuário como um atributo data para acesso fácil
+                    card.setAttribute('data-user-location', JSON.stringify(ride.userLocation));
                     card.innerHTML = `
                         <p class="font-semibold">Destino: <span class="font-normal">${ride.destination}</span></p>
                         <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
@@ -1008,9 +1016,69 @@
                     `;
                     list.appendChild(card);
                 });
+                // Após popular os cards, atualiza as distâncias
+                updateDistancesForNewRequests();
             }
         }
         
+        // Função para obter a localização atual do admin
+        function getAdminLocation() {
+            if (!navigator.geolocation) {
+                console.error('Geolocalização não é suportada pelo seu navegador');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    adminCurrentLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
+                    // Assim que tivermos a localização do admin, podemos atualizar as distâncias para as solicitações ativas
+                    updateDistancesForNewRequests();
+                },
+                (error) => {
+                    console.error('Erro ao obter localização do admin:', error);
+                    // Lida com o erro, talvez exiba uma mensagem para o admin
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        // Função para atualizar as distâncias exibidas para novas solicitações
+        async function updateDistancesForNewRequests() {
+            if (!adminCurrentLocation) return; // Espera até que a localização do admin esteja disponível
+
+            const newRequestsList = document.getElementById('admin-requests-list');
+            if (!newRequestsList) return;
+
+            const requestCards = newRequestsList.querySelectorAll('.card-gradient');
+
+            for (const card of requestCards) {
+                const userLocationStr = card.getAttribute('data-user-location');
+                if (!userLocationStr) continue; // Pula se não houver dados de localização do usuário
+
+                try {
+                    const userLocation = JSON.parse(userLocationStr);
+                    if (!userLocation || typeof userLocation.lat === 'undefined' || typeof userLocation.lon === 'undefined') continue;
+
+                    const distance = getDistanceFromLatLonInKm(
+                        userLocation.lat, userLocation.lon,
+                        adminCurrentLocation.lat, adminCurrentLocation.lon
+                    );
+
+                    // Encontra ou cria o elemento de exibição de distância no card
+                    let distanceElement = card.querySelector('.distance-display');
+                    if (!distanceElement) {
+                        distanceElement = document.createElement('p');
+                        distanceElement.className = 'text-sm text-gray-400 mt-2 distance-display';
+                        card.appendChild(distanceElement); // Adiciona ao card
+                    }
+                    distanceElement.textContent = `Distância até você: ${distance.toFixed(2)} km`;
+
+                } catch (e) {
+                    console.error("Erro ao analisar a localização do usuário ou calcular a distância:", e);
+                    // Lida com possíveis erros na análise JSON ou cálculo de distância
+                }
+            }
+        }
+
         function renderOngoingRidesTable() {
             const tableContainer = document.getElementById('admin-ongoing-rides-table');
             tableContainer.innerHTML = '';
@@ -1545,43 +1613,16 @@
             }).subscribe();
         }
 
-        async function initApp() {
-            // Verifica se o Google Maps API e seus componentes estão carregados antes de prosseguir
-            if (typeof google === 'undefined' || !google.maps || !google.maps.Geocoder) {
-                 console.error("Google Maps API não carregada corretamente. Aguardando callback...");
-                 // O callback 'initApp' na tag script garante que isso seja chamado após o carregamento.
-                 // Se estiver aqui, pode ser que o callback não esteja funcionando como esperado ou há um problema de tempo.
-                 // Para robustez, poderíamos adicionar uma lógica de nova tentativa aqui, mas o callback é o ideal.
-                 return; // Sai da função se a API não estiver pronta (o callback cuidará disso)
-            }
-            
-            initAutocomplete(); 
-            loadAppIcon(); 
-            await fetchAllData(); 
-            setupRealtimeSubscriptions(); 
-
-            const loggedInUserId = localStorage.getItem('loggedInUserId');
-            if (loggedInUserId) {
-                state.currentUserId = parseInt(loggedInUserId);
-                const user = state.users.find(u => u.id === state.currentUserId);
-                if (user) {
-                    showScreen('user-screen');
-                    checkUserRideStatus(); 
-                } else {
-                    logoutUser(); 
-                }
-            } else {
-                showScreen('initial-screen');
-            }
-        }
-
+        // Inicializa o autocomplete do Google Places
         function initAutocomplete() {
             const destinationInput = document.getElementById('destination');
+            // Verifica se o input existe e se a API do Google Maps está carregada
             if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
                 const autocomplete = new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
             }
         }
         
+        // Inicializa o mapa de calor
         async function initHeatmap() {
             const mapDiv = document.getElementById('heatmap-canvas');
             if (!mapDiv) return;
@@ -1590,18 +1631,19 @@
             const geocoder = new google.maps.Geocoder();
             const heatmapData = [];
             
+            // Mapeia os usuários e geocodifica seus endereços para o heatmap
             const geocodePromises = state.users.map(user => {
                 return new Promise((resolve) => {
                     if (user.address) { 
-                        // Usa a função geocodeAddress que foi movida para o escopo global
+                        // Utiliza a função geocodeAddress definida globalmente
                         geocodeAddress(user.address)
                             .then(coords => {
                                 if (coords) heatmapData.push(new google.maps.LatLng(coords.lat, coords.lng));
                                 resolve();
                             })
                             .catch(error => {
-                                console.error(`Failed to geocode for heatmap: ${error}`);
-                                resolve(); // Resolve mesmo em caso de erro para não travar o loop
+                                console.error(`Falha ao geocodificar para o heatmap: ${error}`);
+                                resolve(); 
                             });
                     } else { 
                         resolve(); 
@@ -1610,6 +1652,7 @@
             });
             await Promise.all(geocodePromises); 
             
+            // Cria a camada de heatmap se houver dados
             if (heatmapData.length > 0) {
                 heatmap = new google.maps.visualization.HeatmapLayer({ data: heatmapData, map: map });
                 heatmap.set('radius', 20);
@@ -1618,6 +1661,7 @@
                 console.log("Nenhum dado de heatmap para exibir.");
             }
         }
+
 
         // --- FUNÇÕES DE STATUS ---
         function updateDriverStatusButton() {
@@ -1889,6 +1933,7 @@
             const sortedRides = [...state.rides].sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
 
             const headerRow = document.querySelector('#all-records-table thead tr');
+            // Verifica se o cabeçalho de Distância já foi adicionado para evitar duplicidade
             if (!headerRow.querySelector('th[scope="col"]:last-child')?.textContent.includes('Distância')) {
                 const distanceHeader = document.createElement('th');
                 distanceHeader.scope = 'col';
@@ -1898,10 +1943,13 @@
             }
 
             const rowPromises = sortedRides.map(async (ride) => {
-                let distanceKm = '-'; 
+                let distanceKm = '-'; // Valor padrão
 
-                if (ride.userLocation && ride.userLocation.lat && ride.userLocation.lon && ride.destination) {
+                // Calcula a distância apenas se tivermos a localização do usuário e o destino,
+                // e se o adminCurrentLocation estiver disponível.
+                if (ride.userLocation && ride.userLocation.lat && ride.userLocation.lon && ride.destination && adminCurrentLocation) {
                     try {
+                        // Geocodifica o endereço de destino para obter as coordenadas
                         const destinationCoords = await geocodeAddress(ride.destination);
 
                         if (destinationCoords) {
@@ -1911,11 +1959,13 @@
                             ).toFixed(2); 
                         }
                     } catch (error) {
-                        console.error(`Could not calculate distance for ride ${ride.id} with destination "${ride.destination}":`, error); 
-                        distanceKm = 'Erro'; 
+                        console.error(`Não foi possível calcular a distância para a corrida ${ride.id} com destino "${ride.destination}":`, error); 
+                        distanceKm = 'Erro'; // Indica erro no cálculo
                     }
                 } else if (!ride.userLocation || !ride.destination) {
-                    distanceKm = 'N/D'; 
+                    distanceKm = 'N/D'; // Não disponível se faltarem dados do usuário ou destino
+                } else if (!adminCurrentLocation) {
+                    distanceKm = 'Aguardando admin...'; // Indica que a localização do admin ainda não foi obtida
                 }
 
                 const row = document.createElement('tr');
@@ -1948,33 +1998,37 @@
             const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
 
             if (!startDate && !endDate) {
-                loadAllRecords(); 
+                loadAllRecords(); // Recarrega todos os registros se nenhum filtro de data for aplicado
                 return;
             }
 
+            // Ajusta a data final para incluir o dia inteiro
             const actualEndDate = endDate ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999) : null;
 
             for (let i = 0; i < rows.length; i++) {
                 const cells = rows[i].getElementsByTagName('td');
                 if (cells.length > 0) {
-                    const dateCell = cells[0]; 
+                    const dateCell = cells[0]; // A célula da data é a primeira
                     const recordDateStr = dateCell.innerText;
                     
+                    // Tenta parsear a data do formato "DD/MM/AAAA, HH:MM:SS"
                     const parts = recordDateStr.match(/(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/);
                     let recordDate = null;
                     if (parts) {
+                        // Cria um objeto Date a partir das partes extraídas
                         recordDate = new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1]), parseInt(parts[4]), parseInt(parts[5]), parseInt(parts[6]));
                     }
 
                     let isVisible = true;
+                    // Verifica se a data do registro está dentro do intervalo especificado
                     if (startDate && recordDate && recordDate < startDate) {
-                        isVisible = false;
+                        isVisible = false; // Oculta se a data for anterior à data inicial
                     }
                     if (actualEndDate && recordDate && recordDate > actualEndDate) {
-                        isVisible = false;
+                        isVisible = false; // Oculta se a data for posterior à data final
                     }
 
-                    rows[i].style.display = isVisible ? '' : 'none';
+                    rows[i].style.display = isVisible ? '' : 'none'; // Exibe ou oculta a linha
                 }
             }
         }
@@ -2009,56 +2063,7 @@
             }
         }
 
-        // Inicializa o autocomplete do Google Places
-        function initAutocomplete() {
-            const destinationInput = document.getElementById('destination');
-            // Verifica se o input existe e se a API do Google Maps está carregada
-            if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                const autocomplete = new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
-            }
-        }
-        
-        // Inicializa o mapa de calor
-        async function initHeatmap() {
-            const mapDiv = document.getElementById('heatmap-canvas');
-            if (!mapDiv) return;
-            const center = { lat: -30.0346, lng: -51.2177 };
-            map = new google.maps.Map(mapDiv, { center: center, zoom: 12, mapTypeId: 'satellite' });
-            const geocoder = new google.maps.Geocoder();
-            const heatmapData = [];
-            
-            // Mapeia os usuários e geocodifica seus endereços para o heatmap
-            const geocodePromises = state.users.map(user => {
-                return new Promise((resolve) => {
-                    if (user.address) { 
-                        // Utiliza a função geocodeAddress definida globalmente
-                        geocodeAddress(user.address)
-                            .then(coords => {
-                                if (coords) heatmapData.push(new google.maps.LatLng(coords.lat, coords.lng));
-                                resolve();
-                            })
-                            .catch(error => {
-                                console.error(`Falha ao geocodificar para o heatmap: ${error}`);
-                                resolve(); 
-                            });
-                    } else { 
-                        resolve(); 
-                    }
-                });
-            });
-            await Promise.all(geocodePromises); 
-            
-            // Cria a camada de heatmap se houver dados
-            if (heatmapData.length > 0) {
-                heatmap = new google.maps.visualization.HeatmapLayer({ data: heatmapData, map: map });
-                heatmap.set('radius', 20);
-                heatmap.set('gradient', ['rgba(0, 255, 255, 0)','rgba(0, 255, 255, 1)','rgba(0, 191, 255, 1)','rgba(0, 127, 255, 1)','rgba(0, 63, 255, 1)','rgba(0, 0, 255, 1)','rgba(0, 0, 223, 1)','rgba(0, 0, 191, 1)','rgba(0, 0, 159, 1)','rgba(0, 0, 127, 1)','rgba(63, 0, 91, 1)','rgba(127, 0, 63, 1)','rgba(191, 0, 31, 1)','rgba(255, 0, 0, 1)']);
-            } else {
-                console.log("Nenhum dado de heatmap para exibir.");
-            }
-        }
-
     </script>
    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
 </body>
-</html>
+</html
