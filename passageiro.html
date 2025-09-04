@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -194,13 +195,15 @@
         }
 
         .immediate-button {
-            background: linear-gradient(to right, #00ff00, #00cc00); /* Verde limão */
+            background: linear-gradient(to right, #166416, #00cc00); /* Verde limão */
             color: #000000; /* Texto preto para contraste */
+            font-weight: 700; /* Negrito */
         }
 
         .scheduled-button {
-            background: linear-gradient(to right, #ffff00, #cccc00); /* Amarelo */
+            background: linear-gradient(to right, #2c0ae9, #4c7ce2); /* Amarelo */
             color: #000000; /* Texto preto para contraste */
+            font-weight: 700; /* Negrito */
         }
     </style>
 </head>
@@ -677,7 +680,7 @@
                     scheduleDatetimeInput.classList.add('hidden'); // Garante que o input de agendamento esteja oculto
                 }
             } else {
-                // Se não há corrida ativa, exibe o formulário de solicitação
+                // Se não houver corrida ativa, exibe o formulário de solicitação
                 requestForm.classList.remove('hidden');
                 userStatusDiv.classList.add('hidden');
                 requestRideBtn.disabled = true; // Começa desabilitado até selecionar tipo e destino
