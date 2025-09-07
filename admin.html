@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- AQUI: Altere o texto dentro da tag <title> para mudar o título da página -->
     <title>GARCIA TRANSPORTES</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -214,13 +213,11 @@
                     <h3 class="font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
                     <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-300 font-semibold"></p>
                     
-                    <!-- Campo de Destino -->
                     <div class="mb-4">
                         <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
                         <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço completo">
                     </div>
                 
-                    <!-- Opção de Agendamento -->
                     <div class="flex items-center mb-4">
                         <input id="schedule-toggle" type="checkbox" onchange="document.getElementById('schedule-datetime-container').classList.toggle('hidden')" class="h-4 w-4 rounded border-gray-300 text-yellow-300 focus:ring-yellow-300">
                         <label for="schedule-toggle" class="ml-2 block text-sm text-gray-300">Agendar para mais tarde?</label>
@@ -1065,6 +1062,7 @@
             }
         }
         
+        // --- FUNÇÃO MODIFICADA ---
         function renderOngoingRidesTable() {
             const tableContainer = document.getElementById('admin-ongoing-rides-table');
             tableContainer.innerHTML = '';
@@ -1086,6 +1084,7 @@
                             <th scope="col" class="px-4 py-3">Status</th>
                             <th scope="col" class="px-4 py-3">Tipo</th>
                             <th scope="col" class="px-4 py-3">Data/Hora</th>
+                            <th scope="col" class="px-4 py-3">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1110,17 +1109,37 @@
                 } else {
                     dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', options);
                 }
+                
+                let driverCellHTML = ride.driverName || 'N/A';
+                let actionsCellHTML = '';
+
+                // Apenas permite a edição se a corrida não estiver em progresso
+                if (ride.status !== 'in_progress' && ride.status !== 'arrived_pickup') {
+                    const activeDrivers = state.drivers.filter(d => d.status === 'active');
+                    let driverOptions = activeDrivers.map(d => `<option value="${d.id}" ${ride.driverId == d.id ? 'selected' : ''}>${d.name}</option>`).join('');
+
+                    driverCellHTML = `
+                        <select id="ongoing-driver-select-${ride.id}" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none">
+                            <option value="">Selecione...</option>
+                            ${driverOptions}
+                        </select>
+                    `;
+
+                    actionsCellHTML = `<button onclick="updateRideDriver(${ride.id})" class="py-2 px-4 font-semibold rounded-lg button-gradient whitespace-nowrap">Salvar</button>`;
+                }
+
 
                 tableHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20">
                         <td class="px-4 py-3 font-medium">${ride.userName}</td>
                         <td class="px-4 py-3">${ride.destination}</td>
-                        <td class="px-4 py-3">${ride.driverName || 'N/A'}</td>
+                        <td class="px-4 py-3">${driverCellHTML}</td>
                         <td class="px-4 py-3">
                             <span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span>
                         </td>
                         <td class="px-4 py-3">${rideTypeInfo}</td>
                         <td class="px-4 py-3">${dateTimeString}</td>
+                        <td class="px-4 py-3">${actionsCellHTML}</td>
                     </tr>
                 `;
             });
@@ -1128,6 +1147,43 @@
             tableHTML += `</tbody></table>`;
             tableContainer.innerHTML = tableHTML;
         }
+        
+        // --- NOVA FUNÇÃO ---
+        async function updateRideDriver(rideId) {
+            const selectElement = document.getElementById(`ongoing-driver-select-${rideId}`);
+            if (!selectElement) return;
+            
+            const selectedDriverId = selectElement.value;
+
+            if (!selectedDriverId) {
+                showModal("Por favor, selecione um motorista para salvar.");
+                return;
+            }
+
+            const driver = state.drivers.find(d => d.id == selectedDriverId);
+            if (!driver) {
+                showModal("Motorista selecionado não encontrado.");
+                return;
+            }
+            
+            // Atualiza a corrida com o novo motorista e garante que o status seja 'assigned'
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ 
+                    status: 'assigned', 
+                    driverId: parseInt(driver.id), 
+                    driverName: driver.name 
+                })
+                .eq('id', rideId);
+                
+            if (error) {
+                console.error("Erro ao atualizar motorista da corrida:", error);
+                showModal("Não foi possível atualizar o motorista.");
+            } else {
+                showModal("Motorista atribuído com sucesso!");
+            }
+        }
+
 
         async function assignDriver(rideId) {
             const selectedDriverId = document.getElementById(`driver-select-${rideId}`).value;
