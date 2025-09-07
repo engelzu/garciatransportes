@@ -377,6 +377,7 @@
         let selectedDestination = ''; 
         let selectedRequestType = ''; // 'immediate' ou 'scheduled'
         let scheduledDateTime = null;
+        let isProcessingRequest = false; // <<< MUDANÇA 1: Variável de controle (bloqueio)
 
         // --- CONFIGURAÇÃO DO SUPABASE ---
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
@@ -540,23 +541,17 @@
 
         // --- LÓGICA DE SOLICITAÇÃO DE CORRIDA ---
         
-        // <<< FUNÇÃO ATUALIZADA >>>
         function selectRequestType(type) {
-            showScreen('user-screen');
-
             selectedRequestType = type;
-            // Garante que o destino está salvo na variável global antes de prosseguir
             selectedDestination = document.getElementById('destination').value.trim();
 
             if (type === 'immediate') {
-                // Pega o botão e altera seu estado imediatamente para dar feedback visual
-                const requestRideBtn = document.getElementById('request-ride-btn');
-                requestRideBtn.disabled = true;
-                requestRideBtn.textContent = 'Processando...';
                 requestRide();
             } else if (type === 'scheduled') {
                 openScheduleModal();
             }
+            
+            showScreen('user-screen');
         }
 
         function openScheduleModal() {
@@ -587,49 +582,53 @@
             requestRide();
         }
 
+        // <<< MUDANÇA 2: Função modificada para respeitar o bloqueio >>>
         function resetRequestButton() {
+            if (isProcessingRequest) return; // Não faz nada se uma solicitação estiver em andamento
             const requestRideBtn = document.getElementById('request-ride-btn');
             requestRideBtn.disabled = false;
             requestRideBtn.textContent = 'SOLICITAR TAXI';
         }
 
-        // <<< FUNÇÃO ATUALIZADA >>>
+        // <<< MUDANÇA 3: Função completamente reescrita para melhor controle >>>
         async function requestRide() {
-            // Usa a variável global 'selectedDestination' em vez de ler o campo novamente.
             const destination = selectedDestination;
             const requestRideBtn = document.getElementById('request-ride-btn');
 
             if (!destination) {
                 showModal('modal', 'Por favor, insira um destino.');
-                resetRequestButton(); // Garante que o botão seja reativado em caso de erro
                 return;
             }
 
             if (state.currentUserRideId) {
-                showModal('modal', 'Você já possui uma solicitação de corrida ativa. Aguarde a conclusão ou o cancelamento da corrida atual.');
+                showModal('modal', 'Você já possui uma solicitação de corrida ativa.');
                 return;
             }
 
-            // Garante que o botão esteja no estado de processamento
-            // (Isso é importante para o fluxo de 'agendamento')
+            // Ativa o bloqueio e muda o botão para "Processando"
+            isProcessingRequest = true;
             requestRideBtn.disabled = true;
             requestRideBtn.textContent = 'Processando...';
 
-            if (!navigator.geolocation) {
-                showModal('modal', 'Geolocalização não é suportada pelo seu navegador.');
-                resetRequestButton();
-                return;
-            }
+            try {
+                if (!navigator.geolocation) {
+                    throw new Error('Geolocalização não é suportada pelo seu navegador.');
+                }
 
-            navigator.geolocation.getCurrentPosition(async (position) => {
+                // Transforma a chamada de geolocalização em uma Promise para usar com async/await
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                });
+
                 const userLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
                 const currentUser = state.users.find(u => u.id === state.currentUserId);
 
                 if (!currentUser) {
-                    showModal('modal', 'Erro: Usuário não encontrado. Por favor, faça login novamente.');
-                    logoutUser();
-                    resetRequestButton();
-                    return;
+                    throw new Error('Usuário não encontrado. Por favor, faça login novamente.');
                 }
 
                 let newRideData = {
@@ -640,7 +639,7 @@
                     userCompany: currentUser.company,
                     requestTime: new Date().toISOString(),
                     userLocation: userLocation,
-                    request_type: selectedRequestType 
+                    request_type: selectedRequestType
                 };
 
                 if (selectedRequestType === 'scheduled') {
@@ -651,34 +650,28 @@
                 const { data, error } = await supabaseClient.from('rides').insert([newRideData]).select().single();
 
                 if (error) {
-                    console.error("Erro ao solicitar corrida:", error);
-                    showModal('modal', "Não foi possível solicitar a corrida.");
-                    resetRequestButton();
-                    checkUserRideStatus(); 
-                    return;
+                    throw new Error('Não foi possível solicitar a corrida: ' + error.message);
                 }
 
                 state.currentUserRideId = data.id;
                 localStorage.setItem('currentUserRideId', data.id);
-                
-                document.getElementById('destination').value = ''; 
+
+                document.getElementById('destination').value = '';
                 selectedDestination = '';
                 selectedRequestType = '';
                 scheduledDateTime = null;
-                
-                checkUserRideStatus(); 
-                
-            }, (error) => {
-                console.error("Erro ao obter localização do usuário:", error);
-                showModal('modal', 'Não foi possível obter sua localização. Verifique as permissões de localização.');
-                resetRequestButton();
+
+            } catch (error) {
+                console.error("Erro no processo de solicitação:", error);
+                showModal('modal', error.message || 'Ocorreu um erro inesperado.');
+            } finally {
+                // Ao final de tudo (sucesso ou falha), desativa o bloqueio
+                isProcessingRequest = false;
+                // E atualiza a tela para refletir o estado final
                 checkUserRideStatus();
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000, 
-                maximumAge: 0 
-            });
+            }
         }
+
         
         async function checkUserRideStatus() {
             const requestForm = document.getElementById('user-request-form');
