@@ -541,6 +541,8 @@
         // --- LÓGICA DE SOLICITAÇÃO DE CORRIDA ---
         
         function selectRequestType(type) {
+            showScreen('user-screen'); // <<< LINHA ATUALIZADA
+
             selectedRequestType = type;
             const destinationInput = document.getElementById('destination');
             selectedDestination = destinationInput.value.trim();
