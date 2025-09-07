@@ -188,6 +188,15 @@
             object-fit: contain;
             margin-bottom: 1rem; /* Espaçamento abaixo do ícone */
         }
+        
+        /* Novos estilos para a tela de login */
+        #user-id, #user-password {
+            font-size: 14px;
+            text-align: center;
+        }
+        #user-id::placeholder, #user-password::placeholder {
+            text-align: center;
+        }
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
@@ -197,6 +206,7 @@
             <source src="images/video1.mp4" type="video/mp4">
             Seu navegador não suporta o elemento de vídeo.
         </video>
+    }
     </div>
 
     <div id="menu-backdrop" class="fixed inset-0 z-40 hidden menu-backdrop" onclick="toggleMenu()"></div>
@@ -213,7 +223,7 @@
                     <button onclick="exportUserRidesToExcel(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Exportar Histórico</button>
                 </li>
             </ul>
-            </nav>
+        </nav>
     </div>
 
     <div id="app-container" class="w-full max-w-md mx-auto relative hidden"> 
@@ -236,6 +246,9 @@
         
         <div id="user-login-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
+            
+            <img src="images/icone_passageiro.png" alt="Ícone do Passageiro" class="mx-auto" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 1rem;">
+
             <h2 class="text-3xl font-bold mb-6 text-center">Login do Passageiro</h2>
             <div class="mb-4">
                 <label for="user-id" class="block mb-2 text-sm font-medium">Matrícula</label>
@@ -255,6 +268,7 @@
             </div>
 
             <div class="flex justify-between items-center mb-2 title-and-button-alignment">
+                
                 <img id="passenger-icon" src="images/icone_passageiro.png" alt="Ícone do Passageiro" class="mx-auto"> 
                 <h2 class="text-3xl font-bold">Área do Passageiro</h2>
                 <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none">
