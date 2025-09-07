@@ -98,7 +98,6 @@
         .text-gray-600 { color: #ffffff !important; }
         .text-gray-700 { color: #ffffff !important; }
         .text-gray-500 { color: #ffffff !important; }
-        .text-red-500 { color: #ffffff !important; }
         .text-green-300 { color: #ffffff !important; }
         .text-yellow-300 { color: #ffffff !important; }
         .text-cyan-400 { color: #00ffff !important; }
@@ -106,6 +105,18 @@
         h1, h2, h3, p, button, label, input::placeholder {
             color: #ffffff !important;
         }
+
+        /* Estilo para o novo botão Sair verde */
+        .logout-button-green {
+            background-color: #16a34a; /* Cor verde (Tailwind green-600) */
+            border: 2px solid #16a34a;
+            color: #ffffff !important;
+        }
+        .logout-button-green:hover {
+            background-color: #15803d; /* Cor verde mais escura no hover (Tailwind green-700) */
+            border-color: #15803d;
+        }
+
 
         #menu-toggle-btn svg path {
             stroke: #ffffff !important;
@@ -169,6 +180,14 @@
             justify-content: center;
             align-items: center;
         }
+
+        /* Estilo para o ícone do passageiro na user-screen */
+        #passenger-icon {
+            width: 80px; /* ou o tamanho desejado */
+            height: 80px; /* ou o tamanho desejado */
+            object-fit: contain;
+            margin-bottom: 1rem; /* Espaçamento abaixo do ícone */
+        }
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
@@ -185,7 +204,7 @@
         <div class="flex justify-end mb-8">
             <button onclick="toggleMenu()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
         </div>
-        <nav>
+        <nav class="flex flex-col justify-between h-[calc(100%-5rem)]">
             <ul>
                 <li class="mb-4">
                     <button onclick="showHistoryModal(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Minhas Solicitações</button>
@@ -194,7 +213,7 @@
                     <button onclick="exportUserRidesToExcel(); toggleMenu()" class="block w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700">Exportar Histórico</button>
                 </li>
             </ul>
-        </nav>
+            </nav>
     </div>
 
     <div id="app-container" class="w-full max-w-md mx-auto relative hidden"> 
@@ -236,6 +255,7 @@
             </div>
 
             <div class="flex justify-between items-center mb-2 title-and-button-alignment">
+                <img id="passenger-icon" src="images/icone_passageiro.png" alt="Ícone do Passageiro" class="mx-auto"> 
                 <h2 class="text-3xl font-bold">Área do Passageiro</h2>
                 <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
@@ -257,8 +277,7 @@
             </div>
 
             <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6 content-wrapper">
-                 <h3 class="text-center font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
-                <p id="available-drivers-count" class="text-center mb-4 text-lg text-cyan-400 font-semibold">Aguardando motoristas...</p>
+                 <h3 class="text-center font-semibold mb-4 text-xl">Solicitar uma Viagem</h3>
                 <div class="mb-4 input-and-button-container">
                     <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
                     <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço completo">
@@ -266,6 +285,11 @@
                 <div class="input-and-button-container">
                     <button id="request-ride-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
                         SOLICITAR TAXI
+                    </button>
+                </div>
+                <div class="input-and-button-container mt-4">
+                    <button onclick="logoutUser()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg transform hover:scale-105 transition-transform logout-button-green">
+                        SAIR
                     </button>
                 </div>
             </div>
@@ -1004,7 +1028,8 @@
         // Atualiza a contagem de motoristas disponíveis (placeholder)
         function updateAvailableDriversCount() {
             const countEl = document.getElementById('available-drivers-count');
-            // Por enquanto, apenas mantém a mensagem fixa. Uma implementação real envolveria consultar o Supabase.
+            // Como o elemento foi removido do HTML, esta função não fará mais nada,
+            // o que é o comportamento esperado.
             if (countEl) {
                 // countEl.textContent = `X motoristas disponíveis.`; // Exemplo
             }
