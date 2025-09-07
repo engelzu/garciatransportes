@@ -381,7 +381,14 @@
                 </div>
 
                 <div class="card-gradient p-4 rounded-lg md:col-span-2">
-                    <h3 class="font-semibold mb-4">Usuários Cadastrados</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold text-xl">
+                            Usuários Cadastrados (<span id="user-count">0</span>)
+                        </h3>
+                        <button onclick="exportUsersToExcel()" class="py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-sm">
+                            Exportar Excel
+                        </button>
+                    </div>
                     <div id="user-crud-list" class="max-h-[60vh] overflow-y-auto"></div>
                 </div>
             </div>
@@ -389,7 +396,7 @@
 
         <div id="admin-heatmap-screen" class="screen">
             <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
-            <h2 class="text-3xl font-bold mb-6 text-center">Mapa de Calor de Usuários</h2>
+            <h2 class="text-3xl font-bold mb-6 text-center">Mapa de Localização de Usuários</h2>
             <div id="heatmap-canvas"></div>
         </div>
 
@@ -1359,8 +1366,11 @@
         function renderUserCrudList() {
             const listContainer = document.getElementById('user-crud-list');
             listContainer.innerHTML = ''; 
-            if (state.users.length > 10) listContainer.classList.add('max-h-[400px]', 'overflow-y-auto');
-            else listContainer.classList.remove('max-h-[400px]', 'overflow-y-auto');
+            
+            const userCountEl = document.getElementById('user-count');
+            if (userCountEl) {
+                userCountEl.textContent = state.users.length;
+            }
 
             if (state.users.length === 0) {
                 listContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum usuário cadastrado.</p>';
@@ -1441,6 +1451,36 @@
             };
             showModal('Tem certeza que deseja excluir este usuário?', onConfirm, true);
         }
+
+        function exportUsersToExcel() {
+            if (state.users.length === 0) {
+                showModal("Nenhum usuário cadastrado para exportar.");
+                return;
+            }
+
+            const dataToExport = state.users.map(user => ({
+                'Matrícula': user.matricula,
+                'Nome Completo': user.name,
+                'Empresa': user.company || 'N/A',
+                'Endereço': user.address || 'N/A',
+                'Telefone': user.phone
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Lista de Usuários");
+
+            worksheet['!cols'] = [
+                { wch: 15 }, // Matrícula
+                { wch: 35 }, // Nome Completo
+                { wch: 20 }, // Empresa
+                { wch: 40 }, // Endereço
+                { wch: 20 }  // Telefone
+            ];
+
+            XLSX.writeFile(workbook, "relatorio_usuarios.xlsx");
+        }
+
 
         // --- LÓGICA DO MOTORISTA ---
         function populateDriverSelection() {
@@ -2072,43 +2112,60 @@
             }
         }
         
-        // Inicializa o mapa de calor
+        // Inicializa o mapa para exibir marcadores individuais
         async function initHeatmap() {
             const mapDiv = document.getElementById('heatmap-canvas');
             if (!mapDiv) return;
             const center = { lat: -30.0346, lng: -51.2177 };
-            map = new google.maps.Map(mapDiv, { center: center, zoom: 12, mapTypeId: 'satellite' });
-            const geocoder = new google.maps.Geocoder();
-            const heatmapData = [];
-            
-            // Mapeia os usuários e geocodifica seus endereços para o heatmap
+            map = new google.maps.Map(mapDiv, {
+                center: center,
+                zoom: 12,
+                mapTypeId: 'satellite'
+            });
+
+            // Array para armazenar os dados de localização (coordenadas e nome)
+            const locationsData = [];
+
+            // Geocodifica os endereços dos usuários
             const geocodePromises = state.users.map(user => {
                 return new Promise((resolve) => {
-                    if (user.address) { 
-                        // Utiliza a função geocodeAddress definida globalmente
+                    // Garante que o endereço não está vazio antes de tentar geocodificar
+                    if (user.address && user.address.trim() !== '') {
                         geocodeAddress(user.address)
                             .then(coords => {
-                                if (coords) heatmapData.push(new google.maps.LatLng(coords.lat, coords.lng));
+                                if (coords) {
+                                    // Adiciona a posição e o nome do usuário à nossa lista
+                                    locationsData.push({
+                                        position: new google.maps.LatLng(coords.lat, coords.lng),
+                                        name: user.name 
+                                    });
+                                }
                                 resolve();
                             })
                             .catch(error => {
-                                console.error(`Falha ao geocodificar para o heatmap: ${error}`);
-                                resolve(); 
+                                console.error(`Falha ao geocodificar o endereço "${user.address}" para o marcador: ${error}`);
+                                resolve();
                             });
-                    } else { 
-                        resolve(); 
+                    } else {
+                        resolve();
                     }
                 });
             });
-            await Promise.all(geocodePromises); 
-            
-            // Cria a camada de heatmap se houver dados
-            if (heatmapData.length > 0) {
-                heatmap = new google.maps.visualization.HeatmapLayer({ data: heatmapData, map: map });
-                heatmap.set('radius', 20);
-                heatmap.set('gradient', ['rgba(0, 255, 255, 0)','rgba(0, 255, 255, 1)','rgba(0, 191, 255, 1)','rgba(0, 127, 255, 1)','rgba(0, 63, 255, 1)','rgba(0, 0, 255, 1)','rgba(0, 0, 223, 1)','rgba(0, 0, 191, 1)','rgba(0, 0, 159, 1)','rgba(0, 0, 127, 1)','rgba(63, 0, 91, 1)','rgba(127, 0, 63, 1)','rgba(191, 0, 31, 1)','rgba(255, 0, 0, 1)']);
+            await Promise.all(geocodePromises);
+
+            // Verifica se temos alguma localização para exibir
+            if (locationsData.length > 0) {
+                // --- CRIAÇÃO DOS MARCADORES ---
+                // Loop para criar um marcador vermelho para cada endereço de usuário
+                locationsData.forEach(data => {
+                    new google.maps.Marker({
+                        position: data.position,
+                        map: map,
+                        title: data.name // O nome do usuário aparecerá quando você passar o mouse sobre o pino
+                    });
+                });
             } else {
-                console.log("Nenhum dado de heatmap para exibir.");
+                console.log("Nenhum dado de endereço de usuário encontrado para exibir os marcadores.");
             }
         }
 
