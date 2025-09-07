@@ -45,6 +45,7 @@
         }
         .screen {
             display: none;
+            background-color: #000;
         }
         .screen.active {
             display: block;
@@ -183,10 +184,10 @@
 
         /* Estilo para o ícone do passageiro na user-screen */
         #passenger-icon {
-            width: 80px; /* ou o tamanho desejado */
-            height: 80px; /* ou o tamanho desejado */
+            width: 80px;
+            height: 80px;
             object-fit: contain;
-            margin-bottom: 1rem; /* Espaçamento abaixo do ícone */
+            margin-bottom: 1rem;
         }
         
         /* Novos estilos para a tela de login */
@@ -267,7 +268,6 @@
             </div>
 
             <div class="flex justify-between items-center mb-2 title-and-button-alignment">
-                
                 <img id="passenger-icon" src="images/icone_passageiro.png" alt="Ícone do Passageiro" class="mx-auto"> 
                 <h2 class="text-3xl font-bold">Área do Passageiro</h2>
                 <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none">
@@ -300,11 +300,12 @@
                         SOLICITAR TAXI
                     </button>
                 </div>
-                <div class="input-and-button-container mt-4">
-                    <button onclick="logoutUser()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg transform hover:scale-105 transition-transform logout-button-green">
-                        SAIR
-                    </button>
-                </div>
+            </div>
+
+            <div class="mt-6">
+                <button onclick="logoutUser()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg transform hover:scale-105 transition-transform logout-button-green">
+                    SAIR
+                </button>
             </div>
         </div>
 
@@ -438,7 +439,6 @@
                 const historyContainer = document.getElementById('user-ride-history-modal');
                 if (historyContainer) historyContainer.innerHTML = '';
             } else if (modalId === 'schedule-modal') {
-                // Limpa os campos do modal de agendamento ao fechar sem confirmar
                 document.getElementById('schedule-date').value = '';
                 document.getElementById('schedule-time').value = '';
             }
@@ -481,14 +481,12 @@
             if (user) {
                 state.currentUserId = user.id;
                 localStorage.setItem('loggedInUserId', user.id);
-                // **NOVA LINHA: Exibe a mensagem de boas-vindas**
                 document.getElementById('user-welcome-message').textContent = `Olá, ${user.name}!`;
                 
                 errorEl.classList.add('hidden');
                 document.getElementById('user-id').value = '';
                 document.getElementById('user-password').value = '';
                 
-                // Limpa estados temporários de solicitação ao logar
                 selectedDestination = '';
                 selectedRequestType = '';
                 scheduledDateTime = null;
@@ -508,10 +506,8 @@
             localStorage.removeItem('lastScreen'); 
             if (state.userStatusInterval) clearInterval(state.userStatusInterval); 
             
-            // **NOVA LINHA: Limpa a mensagem de boas-vindas**
             document.getElementById('user-welcome-message').textContent = '';
 
-            // Limpa estados temporários de solicitação ao deslogar
             selectedDestination = '';
             selectedRequestType = '';
             scheduledDateTime = null;
@@ -527,20 +523,16 @@
                 activeScreen.classList.add('active');
             }
             
-            // Armazena a última tela visitada APENAS se for uma tela principal do app
             if (screenId === 'initial-screen' || screenId === 'user-login-screen' || screenId === 'user-screen') {
                 localStorage.setItem('lastScreen', screenId);
             }
 
-            // Chama checkUserRideStatus quando a tela do usuário é ativada
-            if (screenId === 'user-screen') {
+            if (screenId === 'user-screen' && state.currentUserId) {
                 checkUserRideStatus();
-                updateAvailableDriversCount(); 
             } else {
-                // Limpa o intervalo de verificação de status quando saímos da tela do usuário
                 if (state.userStatusInterval) clearInterval(state.userStatusInterval);
             }
-            // Fecha o menu se ele estiver aberto ao navegar
+
             if (document.getElementById('mobile-menu').classList.contains('active')) {
                 toggleMenu();
             }
@@ -548,36 +540,30 @@
 
         // --- LÓGICA DE SOLICITAÇÃO DE CORRIDA ---
         
-        // Nova função para selecionar o tipo de solicitação
         function selectRequestType(type) {
             selectedRequestType = type;
             const destinationInput = document.getElementById('destination');
-            selectedDestination = destinationInput.value.trim(); // Salva o destino
+            selectedDestination = destinationInput.value.trim();
 
             if (type === 'immediate') {
-                // Solicita a corrida imediatamente
                 requestRide();
             } else if (type === 'scheduled') {
-                // Abre o modal de agendamento
                 openScheduleModal();
             }
         }
 
-        // Abre o modal de agendamento
         function openScheduleModal() {
             const modal = document.getElementById('schedule-modal');
-            // Preenche os campos de data e hora com a data e hora atuais como default (opcional)
             const today = new Date();
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1); 
-            document.getElementById('schedule-date').value = tomorrow.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-            document.getElementById('schedule-time').value = '09:00'; // Hora default
+            document.getElementById('schedule-date').value = tomorrow.toISOString().split('T')[0];
+            document.getElementById('schedule-time').value = '09:00';
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
 
-        // Confirma o agendamento e chama a solicitação
         function confirmSchedule() {
             const dateInput = document.getElementById('schedule-date');
             const timeInput = document.getElementById('schedule-time');
@@ -587,14 +573,13 @@
                 return;
             }
 
-            const dateTimeString = `${dateInput.value}T${timeInput.value}:00`; // Formato ISO 8601
-            scheduledDateTime = new Date(dateTimeString).toISOString(); // Armazena em formato ISO
+            const dateTimeString = `${dateInput.value}T${timeInput.value}:00`;
+            scheduledDateTime = new Date(dateTimeString).toISOString();
             
             closeModal('schedule-modal');
-            requestRide(); // Continua o fluxo chamando requestRide com o tipo agendado
+            requestRide();
         }
 
-        // Função auxiliar para resetar o botão de solicitar
         function resetRequestButton() {
             const requestRideBtn = document.getElementById('request-ride-btn');
             requestRideBtn.disabled = false;
@@ -605,7 +590,7 @@
             const destination = document.getElementById('destination').value.trim();
             const requestRideBtn = document.getElementById('request-ride-btn');
 
-            if (!destination) { // Caso já não tenha sido validado
+            if (!destination) {
                 showModal('modal', 'Por favor, insira um destino.');
                 return;
             }
@@ -637,7 +622,7 @@
 
                 let newRideData = {
                     destination: destination,
-                    status: 'requested', // Status padrão para 'imediato'
+                    status: 'requested',
                     userId: currentUser.id,
                     userName: currentUser.name,
                     userCompany: currentUser.company,
@@ -648,7 +633,7 @@
 
                 if (selectedRequestType === 'scheduled') {
                     newRideData.scheduled_datetime = scheduledDateTime;
-                    newRideData.status = 'scheduled'; // Status inicial para corridas agendadas
+                    newRideData.status = 'scheduled';
                 }
 
                 const { data, error } = await supabaseClient.from('rides').insert([newRideData]).select().single();
@@ -665,7 +650,6 @@
                 localStorage.setItem('currentUserRideId', data.id);
                 
                 document.getElementById('destination').value = ''; 
-                // Limpa os estados temporários de solicitação após o sucesso
                 selectedDestination = '';
                 selectedRequestType = '';
                 scheduledDateTime = null;
@@ -684,71 +668,49 @@
             });
         }
         
-        // Verifica e atualiza a UI com base no status da corrida atual do usuário
         async function checkUserRideStatus() {
             const requestForm = document.getElementById('user-request-form');
-            const requestTypeScreen = document.getElementById('request-type-screen');
             const userStatusDiv = document.getElementById('user-status');
-            const requestRideBtn = document.getElementById('request-ride-btn');
-            const destinationInput = document.getElementById('destination');
             const guegueiImage = document.getElementById('cheguei-image'); 
 
-            // Limpa qualquer intervalo de verificação de status anterior
             if (state.userStatusInterval) clearInterval(state.userStatusInterval);
-
-            let currentRideIdFromStorage = localStorage.getItem('currentUserRideId');
             
-            if (currentRideIdFromStorage) {
-                state.currentUserRideId = parseInt(currentRideIdFromStorage);
-            } else {
-                state.currentUserRideId = null; 
-            }
+            const { data: activeRide, error } = await supabaseClient
+                .from('rides')
+                .select('*')
+                .eq('userId', state.currentUserId)
+                .in('status', ['requested', 'assigned', 'accepted', 'arrived_pickup', 'in_progress', 'scheduled'])
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
 
-            if (state.currentUserRideId) {
-                const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
+            if (activeRide) {
+                state.currentUserRideId = activeRide.id;
+                localStorage.setItem('currentUserRideId', activeRide.id);
 
-                if (!error && myRide && myRide.userId === state.currentUserId && !['completed', 'canceled'].includes(myRide.status)) {
-                    // Corrida válida e ativa encontrada
-                    requestForm.classList.add('hidden');     
-                    requestTypeScreen.classList.add('hidden'); // Oculta a tela de escolha de tipo também
-                    userStatusDiv.classList.remove('hidden');
-                    
-                    updateUserStatusMessage(myRide);          
-                    startUserStatusCheck();                   
-                    
-                    if (myRide.status === 'arrived_pickup') {
-                        guegueiImage.classList.remove('hidden');
-                    } else {
-                        guegueiImage.classList.add('hidden');
-                    }
+                requestForm.classList.add('hidden');
+                userStatusDiv.classList.remove('hidden');
+                updateUserStatusMessage(activeRide);
+                startUserStatusCheck();
+                
+                if (activeRide.status === 'arrived_pickup') {
+                    guegueiImage.classList.remove('hidden');
                 } else {
-                    // Corrida não encontrada ou status finalizado/cancelado
-                    state.currentUserRideId = null; 
-                    localStorage.removeItem('currentUserRideId'); 
-                    
-                    // Atualiza a UI para mostrar o formulário de solicitação novamente
-                    requestForm.classList.remove('hidden');  
-                    requestTypeScreen.classList.add('hidden'); // Garante que a tela de tipo fique oculta
-                    userStatusDiv.classList.add('hidden');   
-                    
-                    resetRequestButton();
-                    document.getElementById('user-status-message').textContent = ''; 
-                    guegueiImage.classList.add('hidden'); 
+                    guegueiImage.classList.add('hidden');
                 }
             } else {
-                // Se não há currentUserRideId definido
-                requestForm.classList.remove('hidden');  
-                requestTypeScreen.classList.add('hidden'); // Garante que a tela de tipo fique oculta
-                userStatusDiv.classList.add('hidden');   
+                state.currentUserRideId = null;
+                localStorage.removeItem('currentUserRideId');
                 
+                requestForm.classList.remove('hidden');
+                userStatusDiv.classList.add('hidden');
                 resetRequestButton();
                 document.getElementById('user-status-message').textContent = '';
-                guegueiImage.classList.add('hidden'); 
+                guegueiImage.classList.add('hidden');
             }
-            renderUserRideHistory(); 
+            renderUserRideHistory();
         }
 
-        // Inicia um intervalo para verificar o status da corrida do usuário periodicamente
         function startUserStatusCheck() {
             if (state.userStatusInterval) clearInterval(state.userStatusInterval);
             
@@ -761,9 +723,8 @@
                 
                 const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
                 
-                if (myRide) {
+                if (myRide && !['completed', 'canceled'].includes(myRide.status)) {
                    updateUserStatusMessage(myRide); 
-                   checkUserRideStatus(); 
                 } else {
                     clearInterval(state.userStatusInterval);
                     state.currentUserRideId = null; 
@@ -773,14 +734,12 @@
             }, 10000); 
         }
         
-        // Atualiza a mensagem de status e os ícones na tela do usuário
         function updateUserStatusMessage(ride) {
             const searchingIconContainer = document.getElementById('status-icon-searching');
             const enRouteIconContainer = document.getElementById('status-icon-en-route');
             const arrivedPickupIconContainer = document.getElementById('status-icon-arrived-pickup');
             const inProgressIconContainer = document.getElementById('status-icon-in-progress');
             const cancelRideBtn = document.getElementById('cancel-ride-btn');
-            const guegueiImage = document.getElementById('cheguei-image'); 
 
             searchingIconContainer.classList.add('hidden');
             enRouteIconContainer.classList.add('hidden');
@@ -790,7 +749,7 @@
             arrivedPickupIconContainer.innerHTML = '';
             inProgressIconContainer.innerHTML = '';
 
-            if (['requested', 'assigned', 'accepted', 'arrived_pickup', 'scheduled'].includes(ride.status)) { // Adicionado 'scheduled'
+            if (['requested', 'assigned', 'accepted', 'arrived_pickup', 'scheduled'].includes(ride.status)) {
                 cancelRideBtn.classList.remove('hidden');
             } else {
                 cancelRideBtn.classList.add('hidden');
@@ -800,7 +759,7 @@
 
             switch(ride.status) {
                 case 'requested':
-                    message = 'Aguardando um motorista aceitar...';
+                    message = 'Sua Solicitação está salva, pode SAIR quando achar necessário. Volte quando precisar!';
                     searchingIconContainer.classList.remove('hidden');
                     break;
                 case 'assigned':
@@ -825,7 +784,6 @@
                     break;
                 case 'arrived_pickup':
                     message = `Seu motorista, ${ride.driverName || 'designado'}, chegou no local de embarque.`;
-                    // A imagem "cheguei" é controlada separadamente pela guegueiImage
                     break;
                 case 'in_progress':
                      message = `Viagem para ${ride.destination} em andamento.`;
@@ -836,7 +794,7 @@
                      inProgressIconContainer.appendChild(inProgressImg);
                      inProgressIconContainer.classList.remove('hidden');
                      break;
-                 case 'scheduled': // Novo status para corridas agendadas
+                 case 'scheduled':
                     const scheduledDate = new Date(ride.scheduled_datetime);
                     const formattedScheduledDateTime = scheduledDate.toLocaleString('pt-BR', {
                         day: '2-digit',
@@ -846,23 +804,15 @@
                         minute: '2-digit'
                     });
                     message = `Sua corrida está agendada para ${formattedScheduledDateTime}. Aguardando um motorista aceitar próximo ao horário.`;
-                    searchingIconContainer.classList.remove('hidden'); // Pode mostrar o loader de "aguardando"
+                    searchingIconContainer.classList.remove('hidden');
                     break;
                  case 'completed':
                     message = `Viagem finalizada! Obrigado por escolher a GARCIA TRANSPORTES.`;
-                    state.currentUserRideId = null; 
-                    localStorage.removeItem('currentUserRideId'); 
-                    setTimeout(() => {
-                        checkUserRideStatus(); 
-                    }, 5000); 
+                    setTimeout(() => checkUserRideStatus(), 5000); 
                     break;
                 case 'canceled':
                     message = `Sua viagem foi cancelada.`;
-                    state.currentUserRideId = null; 
-                    localStorage.removeItem('currentUserRideId'); 
-                    setTimeout(() => {
-                        checkUserRideStatus(); 
-                    }, 3000); 
+                    setTimeout(() => checkUserRideStatus(), 3000); 
                     break;
                 default:
                     message = `Status desconhecido: ${ride.status}`;
@@ -871,7 +821,6 @@
             document.getElementById('user-status-message').textContent = message;
         }
 
-        // Cancela uma corrida ativa
         async function cancelRide() {
             if (state.currentUserRideId) {
                 showModal('modal', 'Tem certeza que deseja cancelar esta solicitação?', async () => {
@@ -880,15 +829,12 @@
                         showModal('modal', 'Não foi possível cancelar a corrida.');
                         console.error('Erro ao cancelar corrida:', error);
                     } else {
-                        state.currentUserRideId = null; 
-                        localStorage.removeItem('currentUserRideId'); 
                         checkUserRideStatus(); 
                     }
                 }, true); 
             }
         }
 
-        // --- CÁLCULO DE DISTÂNCIA ---
         function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
             const R = 6371; 
             const dLat = deg2rad(lat2 - lat1);
@@ -906,7 +852,6 @@
             return deg * (Math.PI / 180); 
         }
 
-        // --- INICIALIZAÇÃO DO APP E SUPABASE ---
         async function fetchAllData() {
             const { data: users, error: usersError } = await supabaseClient.from('users').select('*');
             if (usersError) console.error('Error fetching users:', usersError); else state.users = users;
@@ -921,102 +866,43 @@
             }).subscribe();
             
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
-                const { eventType, new: newRecord, old: oldRecord } = payload;
-                
-                if (eventType === 'INSERT') {
-                    if (!state.rides.some(ride => ride.id === newRecord.id)) state.rides.push(newRecord);
-                } else if (eventType === 'UPDATE') {
-                    const rideIndex = state.rides.findIndex(r => r.id === newRecord.id);
-                    if (rideIndex !== -1) state.rides[rideIndex] = newRecord;
-                    if (state.currentUserRideId && newRecord.id === state.currentUserRideId) {
-                        checkUserRideStatus();
+                fetchAllData().then(() => {
+                    if (state.currentUserId) {
+                       checkUserRideStatus();
                     }
-                } else if (eventType === 'DELETE') {
-                    state.rides = state.rides.filter(r => r.id !== oldRecord.id);
-                    if (state.currentUserRideId && oldRecord.id === state.currentUserRideId) {
-                        state.currentUserRideId = null;
-                        localStorage.removeItem('currentUserRideId');
-                        checkUserRideStatus(); 
-                    }
-                }
-
-                const activeScreenId = document.querySelector('.screen.active')?.id;
-                if (activeScreenId === 'user-screen') {
-                    updateAvailableDriversCount(); 
-                    renderUserRideHistory(); 
-                }
+                });
             }).subscribe();
         }
 
-        // --- AJUSTE NA INICIALIZAÇÃO DO APP ---
-        // A função initApp agora é 'async' para aguardar os dados do Supabase
         async function initApp() {
             initAutocomplete(); 
             loadAppIcon();      
             
             await fetchAllData(); 
-
             setupRealtimeSubscriptions(); 
 
             const loggedInUserId = localStorage.getItem('loggedInUserId');
-            const lastScreen = localStorage.getItem('lastScreen'); 
-            const storedRideId = localStorage.getItem('currentUserRideId'); 
-
             if (loggedInUserId) {
                 state.currentUserId = parseInt(loggedInUserId);
                 const user = state.users.find(u => u.id === state.currentUserId);
-
                 if (user) {
-                    // **NOVA LINHA: Exibe o nome do usuário ao carregar o app**
                     document.getElementById('user-welcome-message').textContent = `Olá, ${user.name}!`;
-
-                    if (storedRideId) {
-                        const activeRide = state.rides.find(ride => 
-                            ride.id === parseInt(storedRideId) && 
-                            ride.userId === state.currentUserId && 
-                            !['completed', 'canceled'].includes(ride.status)
-                        );
-                        
-                        if (activeRide) {
-                            state.currentUserRideId = activeRide.id; 
-                            showScreen('user-screen'); 
-                        } else {
-                            // ID da corrida no localStorage não é mais válido
-                            localStorage.removeItem('currentUserRideId');
-                            state.currentUserRideId = null; 
-                            // Limpa os estados temporários de solicitação
-                            selectedDestination = '';
-                            selectedRequestType = '';
-                            scheduledDateTime = null;
-                            showScreen('user-screen'); // Mostra a tela do usuário logado, mas com o formulário
-                        }
-                    } else {
-                        // Usuário logado, mas sem corrida ativa
-                        selectedDestination = '';
-                        selectedRequestType = '';
-                        scheduledDateTime = null;
-                        showScreen('user-screen'); // Direciona para a tela do usuário
-                    }
+                    showScreen('user-screen');
                 } else {
-                    // Usuário estava logado, mas não foi encontrado nos dados do Supabase
                     logoutUser(); 
-                    showScreen('initial-screen'); 
                 }
             } else {
-                // Usuário não estava logado
+                const lastScreen = localStorage.getItem('lastScreen'); 
                 showScreen(lastScreen || 'initial-screen');
             }
         }
 
-
-        // Listener para quando o vídeo de introdução terminar
         document.getElementById('intro-video').addEventListener('ended', () => {
             document.getElementById('video-container').style.display = 'none'; 
             document.getElementById('app-container').classList.remove('hidden'); 
             initApp(); 
         });
 
-        // Função wrapper para garantir que o app só inicie quando o Google Maps estiver pronto
         function initAppWhenMapsLoaded() {
             if (typeof google !== 'undefined' && google.maps && google.maps.places) {
                 initApp(); 
@@ -1025,7 +911,6 @@
             }
         }
         
-        // Inicializa o autocomplete para o campo de destino
         function initAutocomplete() {
             const destinationInput = document.getElementById('destination');
             if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
@@ -1038,17 +923,6 @@
             }
         }
         
-        // Atualiza a contagem de motoristas disponíveis (placeholder)
-        function updateAvailableDriversCount() {
-            const countEl = document.getElementById('available-drivers-count');
-            // Como o elemento foi removido do HTML, esta função não fará mais nada,
-            // o que é o comportamento esperado.
-            if (countEl) {
-                // countEl.textContent = `X motoristas disponíveis.`; // Exemplo
-            }
-        }
-        
-        // Traduz os status de corrida para português
         function translateStatus(status) {
             switch (status) {
                 case 'requested': return 'SOLICITADO'; 
@@ -1056,14 +930,13 @@
                 case 'accepted': return 'ACEITO';
                 case 'arrived_pickup': return 'CHEGOU NO EMBARQUE'; 
                 case 'in_progress': return 'EM ANDAMENTO';
-                case 'scheduled': return 'AGENDADO'; // Novo status
+                case 'scheduled': return 'AGENDADO';
                 case 'completed': return 'FINALIZADA'; 
                 case 'canceled': return 'CANCELADA';
                 default: return status.toUpperCase();
             }
         }
 
-        // Carrega o ícone do aplicativo
         function loadAppIcon() {
             const iconContainer = document.getElementById('app-icon-container');
             iconContainer.innerHTML = ''; 
@@ -1072,23 +945,12 @@
                 img.src = state.appIcon;
                 img.className = 'h-full w-full object-contain'; 
                 iconContainer.appendChild(img);
-            } else {
-                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.setAttribute('class', 'h-12 w-12 text-black'); svg.setAttribute('fill', 'currentColor');
-                svg.setAttribute('viewBox', '0 0 24 24');
-                svg.innerHTML = `<path d="M21.9,8.2L21,6.2c-0.5-1.2-1.7-2-3-2H6C4.7,4.2,3.5,5,3,6.2L2.1,8.2C2,8.4,2,8.6,2,8.8V16c0,1.1,0.9,2,2,2h1V18c0,0.6,0.4,1,1,1h1c0.6,0,1-0.4,1-1v-1h1c1.1,0,2-0.9,2-2V8.8C22,8.6,22,8.4,21.9,8.2z M6.8,14.8c-0.8,0-1.5-0.7-1.5-1.5s0.7-1.5,1.5-1.5s1.5,0.7,1.5,1.5S7.6,14.8,6.8,14.8z M17.2,14.8c-0.8,0-1.5-0.7-1.5-1.5 s0.7-1.5,1.5-1.5s1.5,0.7,1.5,1.5S18.1,14.8,17.2,14.8z M4.5,10.8h15l-1.2-3c-0.2-0.5-0.7-0.8-1.3-0.8H6c-0.6,0-1.1,0.3-1.3,0.8 L4.5,10.8z"/>
-                    <rect height="1.5" width="4" x="10" y="2.2"/>`;
-                iconContainer.appendChild(svg);
             }
         }
 
-        // Renderiza o histórico de corridas no modal
         function renderUserRideHistory() {
             const historyContainer = document.getElementById("user-ride-history-modal");
-            if (!historyContainer) {
-                console.error("Elemento '#user-ride-history-modal' não encontrado.");
-                return; 
-            }
+            if (!historyContainer || !state.currentUserId) return;
 
             historyContainer.innerHTML = ''; 
             const userRides = state.rides.filter(r => r.userId === state.currentUserId);
@@ -1109,19 +971,14 @@
                     </tr>
                 </thead>`;
             const tbody = document.createElement('tbody');
-            // Ordena as corridas pela data de solicitação (mais recente primeiro)
             userRides.sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
             
             userRides.forEach(ride => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-700';
                 const dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', {
-                    year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
+                    year: 'numeric', month: 'numeric', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
                 });
                 row.innerHTML = `
                     <td class="px-4 py-3">${dateTimeString}</td> 
@@ -1134,21 +991,13 @@
             historyContainer.appendChild(table); 
         }
 
-        // Abre o modal de histórico de corridas
         function showHistoryModal() {
-            renderUserRideHistory(); 
-            showModal("history-modal", "", null, false); 
-        }
-
-        // Handler para o botão de abrir o menu lateral
-        document.getElementById('menu-toggle-btn').onclick = function() {
-            toggleMenu();
-            if (document.getElementById('mobile-menu').classList.contains('active')) {
+            fetchAllData().then(() => {
                 renderUserRideHistory(); 
-            }
-        };
+                showModal("history-modal", "", null, false); 
+            });
+        }
         
-        // Exporta o histórico de corridas para um arquivo Excel
         function exportUserRidesToExcel() {
             const userRides = state.rides.filter(r => r.userId === state.currentUserId);
             if (userRides.length === 0) { 
@@ -1157,25 +1006,12 @@
             }
 
             const dataToExport = userRides.map(ride => ({
-                'Data e Hora da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR', {
-                    year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                }),
+                'Data e Hora da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                 'Destino': ride.destination,
                 'Motorista': ride.driverName || 'N/A',
                 'Status': translateStatus(ride.status),
-                'Tipo de Solicitação': ride.request_type === 'immediate' ? 'Imediato' : (ride.request_type === 'scheduled' ? 'Agendado' : 'Desconhecido'),
-                'Data/Hora Agendada': ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR', {
-                    year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                }) : 'N/A'
+                'Tipo de Solicitação': ride.request_type === 'immediate' ? 'Imediato' : 'Agendado',
+                'Data/Hora Agendada': ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : 'N/A'
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -1185,16 +1021,13 @@
             XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
         }
 
-        // --- Ajuste final: O botão de solicitar taxi deve agora chamar a tela de tipo ---
         document.getElementById('request-ride-btn').onclick = function() {
             const destination = document.getElementById('destination').value.trim();
             if (!destination) {
                 showModal('modal', 'Por favor, insira um destino.');
                 return;
             }
-            // Salva o destino antes de mudar de tela
             selectedDestination = destination; 
-            // Mostra a tela de escolha do tipo de solicitação
             showScreen('request-type-screen'); 
         };
         
