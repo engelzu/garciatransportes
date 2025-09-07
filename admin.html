@@ -10,10 +10,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Poppins', sans-serif;
+        }
+        .font-mono {
+            font-family: 'Roboto Mono', monospace;
         }
         .main-gradient {
             background: linear-gradient(135deg, #3b82f6, #a855f7);
@@ -270,7 +273,7 @@
         
         <div id="admin-requests-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
-                <button onclick="showScreen('admin-screen')" class="text-yellow-300">← Voltar ao Painel</button>
+                <button onclick="promptToGoBack()" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
                 <div class="w-32"></div> </div>
             
@@ -291,31 +294,33 @@
                             <p class="text-xs text-gray-300">Concluídas</p>
                         </div>
                     </div>
-                </div>
-                <div class="card-gradient p-4 rounded-lg flex items-center justify-center gap-4 w-full">
-                    <div class="text-center md:text-left">
-                        <h3 class="font-semibold mb-2">Motoristas</h3>
-                        <p class="text-xs text-gray-300">Total: <span id="total-drivers-count" class="font-bold">0</span></p>
-                        <p class="text-xs text-green-400">Ativos: <span id="active-drivers-count" class="font-bold">0</span></p>
-                        <p class="text-xs text-red-400">Inativos: <span id="inactive-drivers-count" class="font-bold">0</span></p>
-                    </div>
-                    <div class="w-24 h-24">
-                        <canvas id="driver-status-chart"></canvas>
+                    <div class="mt-4 pt-4 border-t border-gray-600 text-center">
+                        <div id="digital-clock" class="text-5xl font-mono text-cyan-300 mb-3">00:00:00</div>
+                        <button onclick="exportDailyReportNow()" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700">
+                            EXPORTAR RELATÓRIO DIÁRIO
+                        </button>
                     </div>
                 </div>
-                <div class="card-gradient p-4 rounded-lg">
-                    <h3 class="font-semibold mb-2">Exportar Relatório de Corridas</h3>
-                    <div class="space-y-3">
-                        <div class="w-full">
-                            <label for="start-date" class="text-sm">Data Inicial</label>
-                            <input type="date" id="start-date" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mt-1">
+                
+                <div class="card-gradient p-6 rounded-lg w-full lg:col-span-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <div>
+                            <h3 class="font-semibold text-2xl mb-4">Motoristas</h3>
+                            <div class="space-y-2 text-lg">
+                                <p>Total: <span id="total-drivers-count" class="font-bold">0</span></p>
+                                <p class="text-green-400">Ativos: <span id="active-drivers-count" class="font-bold">0</span></p>
+                                <p class="text-red-400">Inativos: <span id="inactive-drivers-count" class="font-bold">0</span></p>
+                            </div>
                         </div>
-                        <div class="w-full">
-                            <label for="end-date" class="text-sm">Data Final</label>
-                            <input type="date" id="end-date" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mt-1">
+                        <div class="flex flex-col items-center gap-4">
+                            <div class="w-40 h-40">
+                                <canvas id="driver-status-chart"></canvas>
+                            </div>
+                            <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-3 px-4 font-semibold rounded-lg button-gradient">
+                                Gerenciar Motoristas
+                            </button>
                         </div>
                     </div>
-                    <button onclick="exportRidesToExcel()" class="w-full mt-3 py-2 px-4 font-semibold rounded-lg button-gradient">Exportar para Excel</button>
                 </div>
             </div>
 
@@ -573,6 +578,7 @@
         let driverChart = null; // Referência para o gráfico de pizza dos motoristas
         let countdownInterval = null;
         let countdownSeconds = 5;
+        let clockInterval = null;
 
         let state = {
             rides: [],
@@ -757,6 +763,8 @@
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
             stopBeeping(); 
+            
+            if(clockInterval) clearInterval(clockInterval);
 
             const fullHeightScreens = ['admin-requests-screen', 'admin-driver-crud-screen', 'admin-user-crud-screen', 'admin-heatmap-screen', 'admin-records-screen'];
             if (fullHeightScreens.includes(screenId)) {
@@ -770,6 +778,7 @@
             if (screenId === 'admin-requests-screen') {
                 loadAdminRequests();
                 renderOngoingRidesTable();
+                startDigitalClock('digital-clock');
             }
             if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
             if (screenId === 'admin-user-crud-screen') renderUserCrudList();
@@ -789,6 +798,49 @@
                 document.getElementById('records-start-date').value = '';
                 document.getElementById('records-end-date').value = '';
             }
+        }
+        
+        function startDigitalClock(elementId) {
+            const clockElement = document.getElementById(elementId);
+            if (!clockElement) return;
+
+            if (clockInterval) clearInterval(clockInterval);
+
+            clockInterval = setInterval(() => {
+                const now = new Date();
+                clockElement.textContent = now.toLocaleTimeString('pt-BR');
+            }, 1000);
+        }
+
+        function promptToGoBack() {
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+            
+            cancelBtn.textContent = 'Apenas Voltar';
+            cancelBtn.onclick = () => {
+                closeModal();
+                showScreen('admin-screen');
+            };
+
+            confirmBtn.textContent = 'Exportar e Voltar';
+            confirmBtn.onclick = () => {
+                // Verificamos se há corridas ANTES de tentar exportar
+                if (state.rides.length === 0) {
+                    showModal("Nenhuma corrida para exportar. Voltando ao painel...");
+                    // Aguarda 2 segundos para o usuário ler e depois volta
+                    setTimeout(() => {
+                        closeModal();
+                        showScreen('admin-screen');
+                    }, 2000);
+                } else {
+                    // Se houver dados, exporta e volta imediatamente
+                    exportDailyReportNow();
+                    closeModal();
+                    showScreen('admin-screen');
+                }
+            };
+
+            showModal('Deseja exportar o relatório diário antes de sair?', null, true);
         }
 
         // --- LÓGICA DO USUÁRIO ---
@@ -1037,7 +1089,6 @@
                     card.className = 'card-gradient p-4 rounded-lg shadow-md';
                     
                     let rideTypeInfo = '';
-                    // **INÍCIO DA LÓGICA CORRIGIDA**
                     if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
                         const scheduledDate = new Date(ride.scheduled_datetime);
                         const formattedTime = scheduledDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -1045,7 +1096,6 @@
                     } else {
                         rideTypeInfo = '<span class="text-xs font-bold py-1 px-2 rounded-full bg-blue-500 text-white">IMEDIATA</span>';
                     }
-                    // **FIM DA LÓGICA CORRIGIDA**
 
                     card.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
@@ -1069,7 +1119,6 @@
             }
         }
         
-        // --- FUNÇÃO MODIFICADA ---
         function renderOngoingRidesTable() {
             const tableContainer = document.getElementById('admin-ongoing-rides-table');
             tableContainer.innerHTML = '';
@@ -1120,7 +1169,6 @@
                 let driverCellHTML = ride.driverName || 'N/A';
                 let actionsCellHTML = '';
 
-                // Apenas permite a edição se a corrida não estiver em progresso
                 if (ride.status !== 'in_progress' && ride.status !== 'arrived_pickup') {
                     const activeDrivers = state.drivers.filter(d => d.status === 'active');
                     let driverOptions = activeDrivers.map(d => `<option value="${d.id}" ${ride.driverId == d.id ? 'selected' : ''}>${d.name}</option>`).join('');
@@ -1155,7 +1203,6 @@
             tableContainer.innerHTML = tableHTML;
         }
         
-        // --- NOVA FUNÇÃO ---
         async function updateRideDriver(rideId) {
             const selectElement = document.getElementById(`ongoing-driver-select-${rideId}`);
             if (!selectElement) return;
@@ -1173,7 +1220,6 @@
                 return;
             }
             
-            // Atualiza a corrida com o novo motorista e garante que o status seja 'assigned'
             const { error } = await supabaseClient
                 .from('rides')
                 .update({ 
@@ -1765,30 +1811,53 @@
         
         const customDataLabels = {
             id: 'customDataLabels',
-            afterDatasetsDraw(chart, args, options) {
+            afterDraw(chart, args, options) {
                 const { ctx, data } = chart;
+                const total = data.datasets[0].data.reduce((acc, current) => acc + current, 0);
+
+                if (total === 0) return;
+
+                const centerX = chart.getDatasetMeta(0).data[0].x;
+                const centerY = chart.getDatasetMeta(0).data[0].y;
+                
                 ctx.save();
-                data.datasets[0].data.forEach((datapoint, index) => {
-                    if (datapoint > 0) {
-                        const { x, y } = chart.getDatasetMeta(0).data[index].tooltipPosition();
-                        ctx.font = 'bold 16px Poppins'; ctx.fillStyle = 'white';
-                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                        ctx.fillText(datapoint, x, y);
-                    }
-                });
+                ctx.font = 'bold 40px Poppins';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(total, centerX, centerY);
+                ctx.restore();
             }
         };
 
         function renderDriverStatusChart(active, inactive) {
             const ctx = document.getElementById('driver-status-chart').getContext('2d');
-            if (driverChart) driverChart.destroy(); 
+            if (driverChart) driverChart.destroy();
             driverChart = new Chart(ctx, {
-                type: 'pie',
-                data: { labels: ['Ativos', 'Inativos'], datasets: [{ data: [active, inactive], backgroundColor: ['#39FF14', '#FF0000'], borderColor: '#374151', borderWidth: 2 }] },
-                options: { responsive: true, plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+                type: 'doughnut',
+                data: {
+                    labels: ['Ativos', 'Inativos'],
+                    datasets: [{
+                        data: [active, inactive],
+                        backgroundColor: ['#22c55e', '#ef4444'],
+                        borderColor: '#374151',
+                        borderWidth: 5,
+                        hoverBorderWidth: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                },
                 plugins: [customDataLabels]
             });
         }
+
 
         function translateStatus(status) {
             switch (status) {
@@ -1802,6 +1871,32 @@
                 default: return { text: status.toUpperCase(), colorClass: '' }; 
             }
         }
+        
+        function exportDailyReportNow() {
+            if (state.rides.length === 0) {
+                // The calling function will handle the message now.
+                return;
+            }
+
+            const dataToExport = state.rides.map(ride => ({
+                'ID da Corrida': ride.id,
+                'Usuário': ride.userName,
+                'Empresa': ride.userCompany,
+                'Destino': ride.destination,
+                'Motorista': ride.driverName || 'N/A',
+                'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
+                'Data do Aceite': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A',
+                'Status': translateStatus(ride.status).text
+            }));
+            
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio de Corridas");
+            XLSX.writeFile(workbook, `Relatorio_Diario_${dateStr}.xlsx`);
+        }
+
 
         function exportRidesToExcel() {
             const startDate = document.getElementById('start-date').value;
@@ -1970,7 +2065,6 @@
             loadAllRecords(); 
         }
 
-        // Esta função agora está definida globalmente e deve ser acessível
         async function loadAllRecords() {
             const tableBody = document.getElementById('all-records-body');
             tableBody.innerHTML = ''; 
@@ -2123,18 +2217,14 @@
                 mapTypeId: 'satellite'
             });
 
-            // Array para armazenar os dados de localização (coordenadas e nome)
             const locationsData = [];
 
-            // Geocodifica os endereços dos usuários
             const geocodePromises = state.users.map(user => {
                 return new Promise((resolve) => {
-                    // Garante que o endereço não está vazio antes de tentar geocodificar
                     if (user.address && user.address.trim() !== '') {
                         geocodeAddress(user.address)
                             .then(coords => {
                                 if (coords) {
-                                    // Adiciona a posição e o nome do usuário à nossa lista
                                     locationsData.push({
                                         position: new google.maps.LatLng(coords.lat, coords.lng),
                                         name: user.name 
@@ -2153,15 +2243,12 @@
             });
             await Promise.all(geocodePromises);
 
-            // Verifica se temos alguma localização para exibir
             if (locationsData.length > 0) {
-                // --- CRIAÇÃO DOS MARCADORES ---
-                // Loop para criar um marcador vermelho para cada endereço de usuário
                 locationsData.forEach(data => {
                     new google.maps.Marker({
                         position: data.position,
                         map: map,
-                        title: data.name // O nome do usuário aparecerá quando você passar o mouse sobre o pino
+                        title: data.name 
                     });
                 });
             } else {
