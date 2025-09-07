@@ -540,14 +540,19 @@
 
         // --- LÓGICA DE SOLICITAÇÃO DE CORRIDA ---
         
+        // <<< FUNÇÃO ATUALIZADA >>>
         function selectRequestType(type) {
-            showScreen('user-screen'); // <<< LINHA ATUALIZADA
+            showScreen('user-screen');
 
             selectedRequestType = type;
-            const destinationInput = document.getElementById('destination');
-            selectedDestination = destinationInput.value.trim();
+            // Garante que o destino está salvo na variável global antes de prosseguir
+            selectedDestination = document.getElementById('destination').value.trim();
 
             if (type === 'immediate') {
+                // Pega o botão e altera seu estado imediatamente para dar feedback visual
+                const requestRideBtn = document.getElementById('request-ride-btn');
+                requestRideBtn.disabled = true;
+                requestRideBtn.textContent = 'Processando...';
                 requestRide();
             } else if (type === 'scheduled') {
                 openScheduleModal();
@@ -588,12 +593,15 @@
             requestRideBtn.textContent = 'SOLICITAR TAXI';
         }
 
+        // <<< FUNÇÃO ATUALIZADA >>>
         async function requestRide() {
-            const destination = document.getElementById('destination').value.trim();
+            // Usa a variável global 'selectedDestination' em vez de ler o campo novamente.
+            const destination = selectedDestination;
             const requestRideBtn = document.getElementById('request-ride-btn');
 
             if (!destination) {
                 showModal('modal', 'Por favor, insira um destino.');
+                resetRequestButton(); // Garante que o botão seja reativado em caso de erro
                 return;
             }
 
@@ -602,6 +610,8 @@
                 return;
             }
 
+            // Garante que o botão esteja no estado de processamento
+            // (Isso é importante para o fluxo de 'agendamento')
             requestRideBtn.disabled = true;
             requestRideBtn.textContent = 'Processando...';
 
