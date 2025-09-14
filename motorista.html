@@ -206,6 +206,7 @@
         let tempDriverId = null; // Para login do motorista
         let audioUnlocked = false; // Flag para controlar o desbloqueio do áudio
         let wakeLock = null; // Variável para a funcionalidade de manter o ecrã ativo
+        let mapOpenedForRideIds = []; // NOVO: Armazena IDs de corridas agendadas cujo mapa foi aberto
 
         let state = {
             rides: [],
@@ -498,6 +499,10 @@
         
         // --- NOVAS FUNÇÕES PARA ABRIR MAPAS ---
         function openMapToPickup(rideId) {
+            // Adiciona o ID da corrida ao array para libertar o botão de "chegada"
+            if (!mapOpenedForRideIds.includes(rideId)) {
+                mapOpenedForRideIds.push(rideId);
+            }
             const ride = state.rides.find(r => r.id === rideId);
             if (ride && ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) {
                 const { lat, lon } = ride.userLocation;
@@ -505,6 +510,8 @@
             } else {
                 showModal("Não foi possível obter a localização do usuário para navegação.");
             }
+            // Recarrega os cards para exibir o botão "CHEGUEI NO LOCAL"
+            loadDriverJobs();
         }
 
         function openMapToDestination(rideId) {
@@ -525,29 +532,17 @@
             today.setHours(0, 0, 0, 0);
 
             const myJobs = state.rides.filter(r => {
-                // Regra base: pertence ao motorista e não está finalizada
                 if (r.driverId !== state.currentDriverId || r.status === 'completed') {
                     return false;
                 }
-
                 const isScheduled = r.request_type && r.request_type.trim().toLowerCase() === 'scheduled';
                 const rideDateSource = isScheduled && r.scheduled_datetime ? r.scheduled_datetime : r.requestTime;
                 const rideDate = new Date(rideDateSource);
-                
-                // Comparação de datas (ignora a hora)
                 const rideDay = new Date(rideDate.getFullYear(), rideDate.getMonth(), rideDate.getDate());
 
-                // Manter se for uma corrida AGENDADA para hoje ou para o futuro
-                if (isScheduled && rideDay >= today) {
-                    return true;
-                }
+                if (isScheduled && rideDay >= today) return true;
+                if (!isScheduled && rideDay.getTime() === today.getTime()) return true;
 
-                // Manter se for uma corrida IMEDIATA do dia de hoje
-                if (!isScheduled && rideDay.getTime() === today.getTime()) {
-                    return true;
-                }
-
-                // Todas as outras corridas (passadas) são filtradas
                 return false;
             });
 
@@ -619,23 +614,34 @@
                 if (ride.status === 'assigned' || ride.status === 'accepted' || ride.status === 'arrived_pickup') {
                     buttonsContent = '<div class="mt-4 space-y-2">';
                     if (ride.status === 'assigned') {
-                        buttonsContent += `<button onclick="acceptRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR CORRIDA</button>`;
+                        if (isScheduled) {
+                            buttonsContent += `<button onclick="acceptScheduledRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR AGENDAMENTO</button>`;
+                        } else {
+                            buttonsContent += `<button onclick="acceptRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR CORRIDA</button>`;
+                        }
                     }
                     if (ride.status === 'accepted') {
-                        buttonsContent += `<button onclick="arriveAtPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
-                        buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
+                        if (isScheduled) {
+                            if (mapOpenedForRideIds.includes(ride.id)) {
+                                buttonsContent += `<button onclick="arriveAtPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
+                                buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
+                            } else {
+                                buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
+                            }
+                        } else {
+                            buttonsContent += `<button onclick="arriveAtPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
+                            buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
+                        }
                     }
                     if (ride.status === 'arrived_pickup') {
                         buttonsContent += `<button onclick="startTrip(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM PARA O DESTINO</button>`;
                         buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (DESTINO)</button>`;
-
                     }
                     buttonsContent += `<button onclick="promptCancelRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 border border-white">CANCELAR</button></div>`;
                 } else if (ride.status === 'in_progress') {
                     buttonsContent = '<div class="mt-4 space-y-2">';
                     buttonsContent += `<button onclick="completeRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">FINALIZAR CORRIDA</button>`;
-                    buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (DESTINO)</button>`;
-                    buttonsContent += '</div>';
+                    buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (DESTINO)</button></div>`;
                 }
                 card.innerHTML = content + rideSpecificContent + buttonsContent;
                 list.appendChild(card);
@@ -650,13 +656,20 @@
                 const { error } = await supabaseClient.from('rides').update({ status: 'accepted', acceptTime: new Date().toISOString(), driverCurrentLocation: driverLocation }).eq('id', rideId);
                 if (error) return showModal("Não foi possível aceitar a corrida.");
                 startDriverTracking(rideId);
-                const ride = state.rides.find(r => r.id === rideId);
-                if (ride && ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) {
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${ride.userLocation.lat},${ride.userLocation.lon}`, '_blank');
-                } else {
-                    showModal("Não foi possível obter a localização do usuário.");
-                }
+                openMapToPickup(rideId);
             }, () => showModal('Não foi possível obter sua localização.'), { enableHighAccuracy: true });
+        }
+        
+        async function acceptScheduledRide(rideId) {
+            stopRinging();
+            const { error } = await supabaseClient.from('rides').update({
+                status: 'accepted',
+                acceptTime: new Date().toISOString()
+            }).eq('id', rideId);
+            if (error) {
+                console.error("Erro ao aceitar agendamento:", error);
+                showModal("Não foi possível aceitar o agendamento.");
+            }
         }
 
         async function arriveAtPickup(rideId) {
@@ -671,7 +684,7 @@
                 if (error) return showModal("Não foi possível iniciar a viagem.");
                 if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
                 driverWatchId = null;
-                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.destination)}`, '_blank');
+                openMapToDestination(rideId);
             }
         }
 
