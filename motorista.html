@@ -99,7 +99,7 @@
 </head>
 <body class="text-white min-h-screen p-4"> <!-- Removido main-gradient e adicionado black background -->
 
-    <div id="app-container" class="w-full mx-auto max-w-md"> <!-- Sem o gradiente aqui, mas com a estrutura -->
+    <div id="app-container" class="w-full mx-auto max-w-md center-content-initial"> <!-- Sem o gradiente aqui, mas com a estrutura -->
 
         <!-- TELA INICIAL (Simplificada para acesso do Motorista) -->
         <div id="initial-screen" class="screen active text-center">
@@ -151,11 +151,10 @@
             <button id="silence-btn" onclick="stopRinging()" class="hidden w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900 border border-white">Silenciar Alerta</button> <!-- Contorno branco e texto para contraste -->
             <div id="driver-jobs-list" class="space-y-4"></div>
              <div class="card-gradient p-4 rounded-lg mt-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-semibold text-xl text-white">Histórico de Corridas</h3> <!-- Garantindo texto branco -->
-                    <button onclick="exportDriverRidesToExcel()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">Exportar</button> <!-- Contorno branco -->
+                <div class="flex justify-between items-center">
+                    <h3 class="font-semibold text-xl text-white">Exportar Histórico</h3>
+                    <button onclick="showExportModal()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">Exportar</button>
                 </div>
-                <div id="driver-ride-history" class="overflow-x-auto"></div>
             </div>
         </div>
 
@@ -171,6 +170,27 @@
             <div id="modal-buttons" class="flex justify-center gap-4">
                  <button id="modal-cancel" onclick="closeModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600 border border-white">Cancelar</button> <!-- Contorno branco -->
                  <button id="modal-confirm" class="py-2 px-8 font-semibold rounded-lg button-gradient">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- NOVO MODAL PARA EXPORTAÇÃO PDF -->
+    <div id="export-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="font-semibold text-xl text-white mb-4 text-center">Exportar Histórico para PDF</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="start-date" class="block text-sm font-medium text-gray-300">Data Inicial</label>
+                    <input type="date" id="start-date" class="w-full p-2 mt-1 rounded-lg bg-gray-800 border border-gray-600 text-white" style="color-scheme: dark;">
+                </div>
+                <div>
+                    <label for="end-date" class="block text-sm font-medium text-gray-300">Data Final</label>
+                    <input type="date" id="end-date" class="w-full p-2 mt-1 rounded-lg bg-gray-800 border border-gray-600 text-white" style="color-scheme: dark;">
+                </div>
+            </div>
+            <div class="flex justify-center gap-4 mt-6">
+                 <button onclick="closeExportModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600 border border-white">Cancelar</button>
+                 <button onclick="exportRidesToPdf()" class="py-2 px-8 font-semibold rounded-lg button-gradient">Gerar PDF</button>
             </div>
         </div>
     </div>
@@ -350,6 +370,16 @@
             modal.classList.remove('flex');
             document.getElementById('modal-input-driver-password').value = '';
         }
+        
+        function showExportModal() {
+            document.getElementById('export-modal').classList.remove('hidden');
+            document.getElementById('export-modal').classList.add('flex');
+        }
+
+        function closeExportModal() {
+            document.getElementById('export-modal').classList.add('hidden');
+            document.getElementById('export-modal').classList.remove('flex');
+        }
 
         // --- NAVEGAÇÃO ENTRE TELAS ---
         function showScreen(screenId) {
@@ -365,7 +395,6 @@
             if (screenId === 'driver-selection-screen') populateDriverSelection();
             if (screenId === 'driver-screen') {
                 loadDriverJobs();
-                renderDriverRideHistory();
                 updateDriverStatusButton();
             }
         }
@@ -471,7 +500,37 @@
             if (!state.currentDriverId) return;
             const list = document.getElementById('driver-jobs-list');
             list.innerHTML = '';
-            const myJobs = state.rides.filter(r => r.driverId === state.currentDriverId && r.status !== 'completed');
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const myJobs = state.rides.filter(r => {
+                // Regra base: pertence ao motorista e não está finalizada
+                if (r.driverId !== state.currentDriverId || r.status === 'completed') {
+                    return false;
+                }
+
+                const isScheduled = r.request_type && r.request_type.trim().toLowerCase() === 'scheduled';
+                const rideDateSource = isScheduled && r.scheduled_datetime ? r.scheduled_datetime : r.requestTime;
+                const rideDate = new Date(rideDateSource);
+                
+                // Comparação de datas (ignora a hora)
+                const rideDay = new Date(rideDate.getFullYear(), rideDate.getMonth(), rideDate.getDate());
+
+                // Manter se for uma corrida AGENDADA para hoje ou para o futuro
+                if (isScheduled && rideDay >= today) {
+                    return true;
+                }
+
+                // Manter se for uma corrida IMEDIATA do dia de hoje
+                if (!isScheduled && rideDay.getTime() === today.getTime()) {
+                    return true;
+                }
+
+                // Todas as outras corridas (passadas) são filtradas
+                return false;
+            });
+
             const statsDisplay = document.getElementById('driver-stats-display');
             const actionableJobCount = myJobs.filter(j => j.status !== 'canceled' && j.status !== 'canceled_by_driver').length;
             const timestamp = new Date().toLocaleString('pt-BR');
@@ -730,7 +789,7 @@
         function renderDriverRideHistory() {
             const historyContainer = document.getElementById('driver-ride-history');
             historyContainer.innerHTML = '';
-            const driverRides = state.rides.filter(r => r.driverId === state.currentDriverId && r.status === 'completed');
+            const driverRides = state.rides.filter(r => r.driverId === state.currentDriverId);
             if (driverRides.length === 0) {
                 historyContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum histórico de corrida.</p>';
                 return;
@@ -739,33 +798,87 @@
             table.className = 'w-full text-sm text-left';
             table.innerHTML = `
                 <thead class="text-xs text-gray-300 uppercase bg-gray-900/30">
-                    <tr><th scope="col" class="px-4 py-3">Data</th><th scope="col" class="px-4 py-3">Usuário</th><th scope="col" class="px-4 py-3">Destino</th></tr>
+                    <tr><th scope="col" class="px-4 py-3">Data</th><th scope="col" class="px-4 py-3">Usuário</th><th scope="col" class="px-4 py-3">Destino</th><th scope="col" class="px-4 py-3">Status</th></tr>
                 </thead>`;
             const tbody = document.createElement('tbody');
             driverRides.sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
             driverRides.forEach(ride => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-700';
-                row.innerHTML = `<td class="px-4 py-3 text-white">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td><td class="px-4 py-3 text-white">${ride.userName || 'N/A'}</td><td class="px-4 py-3 text-white">${ride.destination}</td>`;
+                row.innerHTML = `<td class="px-4 py-3 text-white">${new Date(ride.requestTime).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'})}</td><td class="px-4 py-3 text-white">${ride.userName || 'N/A'}</td><td class="px-4 py-3 text-white">${ride.destination}</td><td class="px-4 py-3 text-white">${translateStatus(ride.status)}</td>`;
                 tbody.appendChild(row);
             });
             table.appendChild(tbody);
             historyContainer.appendChild(table);
         }
 
-        function exportDriverRidesToExcel() {
-            const driverRides = state.rides.filter(r => r.driverId === state.currentDriverId && r.status === 'completed');
-            if (driverRides.length === 0) return showModal("Nenhum histórico para exportar.");
-            const dataToExport = driverRides.map(r => ({
-                'Data da Solicitação': new Date(r.requestTime).toLocaleString('pt-BR'), 'Usuário': r.userName||'N/A', 'Empresa': r.userCompany||'N/A', 'Destino': r.destination
-            }));
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Minhas Corridas");
-            XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
+        function exportRidesToPdf() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const startDateInput = document.getElementById('start-date').value;
+            const endDateInput = document.getElementById('end-date').value;
+
+            if (!startDateInput || !endDateInput) {
+                showModal("Por favor, selecione a data inicial e a data final.");
+                return;
+            }
+
+            const startDate = new Date(startDateInput + 'T00:00:00');
+            const endDate = new Date(endDateInput + 'T23:59:59');
+
+            if (startDate > endDate) {
+                showModal("A data inicial não pode ser posterior à data final.");
+                return;
+            }
+
+            const ridesToExport = state.rides.filter(r => {
+                if (r.driverId !== state.currentDriverId) return false;
+                const rideDate = new Date(r.requestTime);
+                return rideDate >= startDate && rideDate <= endDate;
+            });
+
+            if (ridesToExport.length === 0) {
+                showModal("Nenhum histórico de corrida encontrado para o período selecionado.");
+                return;
+            }
+
+            const driver = state.drivers.find(d => d.id === state.currentDriverId);
+            const driverName = driver ? driver.name : 'Motorista';
+            const period = `${startDate.toLocaleDateString('pt-BR')} a ${endDate.toLocaleDateString('pt-BR')}`;
+
+            doc.setFontSize(18);
+            doc.text('Relatório de Corridas', 14, 22);
+            doc.setFontSize(11);
+            doc.text(`Motorista: ${driverName}`, 14, 30);
+            doc.text(`Período: ${period}`, 14, 36);
+
+            const tableColumn = ["Data", "Usuário", "Destino", "Status"];
+            const tableRows = [];
+
+            ridesToExport.forEach(ride => {
+                const rideDate = new Date(ride.requestTime).toLocaleString('pt-BR');
+                const rideData = [
+                    rideDate,
+                    ride.userName || 'N/A',
+                    ride.destination,
+                    translateStatus(ride.status)
+                ];
+                tableRows.push(rideData);
+            });
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 40
+            });
+
+            doc.save(`relatorio_corridas_${driverName.replace(/\s/g, '_')}.pdf`);
+            closeExportModal();
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
 </body>
 </html>
