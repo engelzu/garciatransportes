@@ -618,34 +618,49 @@
                     statusColor = 'text-red-500';
                 }
 
-                // --- LÓGICA PARA EXIBIR DESTINOS ---
+                // --- LÓGICA ATUALIZADA PARA EXIBIR DESTINOS ---
                 let destinationsHtml = '';
-                const destinations = (ride.destination && typeof ride.destination === 'string') 
-                    ? ride.destination.split(';').map(d => d.trim()).filter(d => d) 
+                const destinations = (ride.destination && typeof ride.destination === 'string')
+                    ? ride.destination.split(';').map(d => d.trim()).filter(d => d)
                     : [];
-                const hasMultipleDestinations = destinations.length > 1;
 
-                if (hasMultipleDestinations) {
+                if (destinations.length > 1) {
+                    const stops = destinations.slice(0, -1);
+                    const finalDestination = destinations[destinations.length - 1];
+                    let stopsHtml = stops.map((stop, index) => `
+                        <div class="mb-1">
+                            <p class="text-xs text-gray-400">${stops.length > 1 ? `Ponto de Parada ${index + 1}` : 'Ponto de Parada'}:</p>
+                            <p class="font-normal text-gray-300 break-words">${stop}</p>
+                        </div>
+                    `).join('');
+
                     destinationsHtml = `
-                        <p class="text-xs text-gray-400">Destinos (${destinations.length} paradas):</p>
-                        <ol class="list-decimal list-inside text-gray-300 break-words pl-2">
-                            ${destinations.map(d => `<li>${d}</li>`).join('')}
-                        </ol>
+                        ${stopsHtml}
+                        <div>
+                            <p class="text-xs text-gray-400">Destino Final:</p>
+                            <p class="font-semibold text-white break-words">${finalDestination}</p>
+                        </div>
+                    `;
+                } else if (destinations.length === 1) {
+                    destinationsHtml = `
+                        <p class="text-xs text-gray-400">Destino:</p>
+                        <p class="font-normal text-gray-300 break-words">${destinations[0]}</p>
                     `;
                 } else {
                     destinationsHtml = `
                         <p class="text-xs text-gray-400">Destino:</p>
-                        <p class="font-normal text-gray-300 break-words">${ride.destination || 'N/A'}</p>
+                        <p class="font-normal text-gray-300 break-words">N/A</p>
                     `;
                 }
                 // --- FIM DA LÓGICA ---
+
 
                 let content = `
                     <div class="mb-2">
                         <p class="text-xs text-gray-400">${dateLabel}</p>
                         <p class="font-semibold text-white">${displayDateTime}</p>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3 space-y-2">
                         ${destinationsHtml}
                     </div>
                     ${ride.observation ? `
@@ -815,30 +830,22 @@
                 });
             }).subscribe();
 
-            supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
-                const { eventType, new: newRecord, old: oldRecord } = payload;
-                if (state.currentDriverId) {
-                    const oldStatus = oldRecord ? oldRecord.status : null;
-                    if (newRecord && newRecord.driverId === state.currentDriverId && newRecord.status === 'assigned' && oldStatus !== 'assigned') {
-                         showNewRideNotification(newRecord);
-                    }
+            supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, async (payload) => {
+                console.log('Real-time ride change received:', payload);
+                const { new: newRecord, old: oldRecord } = payload;
+                if (state.currentDriverId && newRecord && newRecord.driverId === state.currentDriverId && newRecord.status === 'assigned' && (oldRecord ? oldRecord.status : null) !== 'assigned') {
+                    showNewRideNotification(newRecord);
                 }
-                if (eventType === 'INSERT') {
-                    if (!state.rides.some(r => r.id === newRecord.id)) state.rides.push(newRecord);
-                } else if (eventType === 'UPDATE') {
-                    const index = state.rides.findIndex(r => r.id === newRecord.id);
-                    if (index !== -1) state.rides[index] = newRecord;
-                } else if (eventType === 'DELETE' && oldRecord && oldRecord.id) {
-                    state.rides = state.rides.filter(r => r.id !== oldRecord.id);
-                }
+                await fetchAllData();
                 if (state.currentDriverId) {
                     const hasAssignedJob = state.rides.some(r => r.driverId === state.currentDriverId && r.status === 'assigned');
                     if (!hasAssignedJob) stopRinging();
                 }
-                if (document.visibilityState === 'visible') {
-                    const activeScreenId = document.querySelector('.screen.active')?.id;
-                    if (activeScreenId === 'driver-screen') loadDriverJobs();
-                    else if (activeScreenId === 'driver-selection-screen') populateDriverSelection();
+                const activeScreenId = document.querySelector('.screen.active')?.id;
+                if (activeScreenId === 'driver-screen') {
+                    loadDriverJobs();
+                } else if (activeScreenId === 'driver-selection-screen') {
+                    populateDriverSelection();
                 }
             }).subscribe();
         }
