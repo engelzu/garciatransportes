@@ -229,6 +229,19 @@
             currentDriverId: null,
             appIcon: 'images/destino.png', // Definido para usar o ícone "destino.png"
         };
+        
+        let rideProgress = {}; // To store current_stop_index locally
+
+        function loadRideProgress() {
+            const storedProgress = localStorage.getItem('rideProgress');
+            if (storedProgress) {
+                rideProgress = JSON.parse(storedProgress);
+            }
+        }
+
+        function saveRideProgress() {
+            localStorage.setItem('rideProgress', JSON.stringify(rideProgress));
+        }
 
         // --- CONFIGURAÇÃO DO SUPABASE ---
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
@@ -718,7 +731,16 @@
                     buttonsContent += `<button onclick="promptCancelRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 border border-white">CANCELAR</button></div>`;
                 } else if (ride.status === 'in_progress') {
                     buttonsContent = '<div class="mt-4 space-y-2">';
-                    buttonsContent += `<button onclick="completeRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">FINALIZAR CORRIDA</button>`;
+                    const destinations = (ride.destination && typeof ride.destination === 'string')
+                        ? ride.destination.split(';').map(d => d.trim()).filter(d => d)
+                        : [];
+                    const currentStopIndex = rideProgress[ride.id] || 0;
+
+                    if (destinations.length > 1 && currentStopIndex < destinations.length - 1) {
+                        buttonsContent += `<button onclick="advanceToNextStop(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CONFIRMAR CHEGADA NA PARADA ${currentStopIndex + 1}</button>`;
+                    } else {
+                        buttonsContent += `<button onclick="completeRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">FINALIZAR CORRIDA</button>`;
+                    }
                     buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">VER ROTA NO MAPA</button></div>`;
                 }
                 card.innerHTML = content + rideSpecificContent + buttonsContent;
@@ -760,15 +782,36 @@
             if (ride) {
                 const { error } = await supabaseClient.from('rides').update({ status: 'in_progress' }).eq('id', rideId);
                 if (error) return showModal("Não foi possível iniciar a viagem.");
+                
+                rideProgress[rideId] = 0;
+                saveRideProgress();
+                
                 if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
                 driverWatchId = null;
                 openMapToDestination(rideId);
             }
         }
+        
+        async function advanceToNextStop(rideId) {
+            const ride = state.rides.find(r => r.id === rideId);
+            if (!ride) return showModal("Corrida não encontrada.");
+
+            const currentStopIndex = rideProgress[ride.id] || 0;
+            rideProgress[ride.id] = currentStopIndex + 1;
+            saveRideProgress();
+            
+            loadDriverJobs();
+        }
 
         async function completeRide(rideId) {
             const { error } = await supabaseClient.from('rides').update({ status: 'completed' }).eq('id', rideId);
             if (error) return showModal("Não foi possível finalizar a corrida.");
+
+            if(rideProgress[rideId]) {
+                delete rideProgress[rideId];
+                saveRideProgress();
+            }
+
             if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
             driverWatchId = null;
             await fetchAllData();
@@ -851,6 +894,7 @@
         }
 
         async function initApp() {
+            loadRideProgress();
             loadAppIcon();
             await fetchAllData();
             setupRealtimeSubscriptions();
