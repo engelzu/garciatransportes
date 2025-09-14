@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GARCIAS TAXI - Motorista</title>
+    <title>GARCIA TRANSPORTES - Motorista</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,6 +25,20 @@
         .button-gradient:hover {
             background: linear-gradient(to right, #4f46e5, #6d28d9);
         }
+
+        /* NOVO ESTILO PARA O BOTÃO DA TELA INICIAL */
+        .button-initial-screen {
+            background-color: black;
+            border: 2px solid white;
+            color: white;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+            transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .button-initial-screen:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 16px rgba(255, 255, 255, 0.7);
+        }
+
         .card-gradient {
              background: linear-gradient(135deg, #1f2937, #374151);
         }
@@ -108,10 +122,11 @@
                 <div id="app-icon-container" class="h-12 w-12">
                     <img src="images/destino.png" alt="App Icon" class="h-12 w-12 object-contain">
                 </div>
-                <h1 class="text-4xl sm:text-5xl font-bold text-white">GARCIAS TAXI</h1> <!-- Garantindo texto branco -->
+                <h1 class="text-4xl sm:text-5xl font-bold text-white">GARCIA TRANSPORTES</h1> <!-- NOME ATUALIZADO -->
             </div>
             <div class="space-y-4">
-                <button onclick="showScreen('driver-selection-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                <!-- BOTÃO ATUALIZADO -->
+                <button onclick="showScreen('driver-selection-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-initial-screen">
                     ÁREA DO MOTORISTA
                 </button>
             </div>
@@ -497,9 +512,40 @@
             }
         }
         
-        // --- NOVAS FUNÇÕES PARA ABRIR MAPAS ---
+        // --- LÓGICA DE MAPAS ATUALIZADA ---
+        function openMapToDestination(rideId) {
+            const ride = state.rides.find(r => r.id === rideId);
+            if (!ride) {
+                showModal("Não foi possível encontrar os dados da corrida.");
+                return;
+            }
+
+            const origin = (ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) 
+                ? `&origin=${ride.userLocation.lat},${ride.userLocation.lon}` 
+                : '';
+
+            const destinations = (ride.destination && typeof ride.destination === 'string')
+                ? ride.destination.split(';').map(d => d.trim()).filter(d => d)
+                : [];
+            const hasDestinations = destinations.length > 0;
+
+            if (hasDestinations) {
+                const destinationPoints = destinations.map(d => encodeURIComponent(d));
+                const finalDestination = destinationPoints.pop();
+                
+                let mapsUrl = `https://www.google.com/maps/dir/?api=1${origin}&destination=${finalDestination}`;
+                
+                if (destinationPoints.length > 0) {
+                    mapsUrl += `&waypoints=${destinationPoints.join('|')}`;
+                }
+                window.open(mapsUrl, '_blank');
+
+            } else {
+                showModal("Nenhum destino definido para esta corrida.");
+            }
+        }
+
         function openMapToPickup(rideId) {
-            // Adiciona o ID da corrida ao array para libertar o botão de "chegada"
             if (!mapOpenedForRideIds.includes(rideId)) {
                 mapOpenedForRideIds.push(rideId);
             }
@@ -510,17 +556,7 @@
             } else {
                 showModal("Não foi possível obter a localização do usuário para navegação.");
             }
-            // Recarrega os cards para exibir o botão "CHEGUEI NO LOCAL"
             loadDriverJobs();
-        }
-
-        function openMapToDestination(rideId) {
-            const ride = state.rides.find(r => r.id === rideId);
-            if (ride && ride.destination) {
-                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.destination)}`, '_blank');
-            } else {
-                showModal("Não foi possível encontrar os dados da corrida.");
-            }
         }
 
         function loadDriverJobs() {
@@ -581,15 +617,42 @@
                 if (ride.status === 'canceled' || ride.status === 'canceled_by_driver') {
                     statusColor = 'text-red-500';
                 }
+
+                // --- LÓGICA PARA EXIBIR DESTINOS ---
+                let destinationsHtml = '';
+                const destinations = (ride.destination && typeof ride.destination === 'string') 
+                    ? ride.destination.split(';').map(d => d.trim()).filter(d => d) 
+                    : [];
+                const hasMultipleDestinations = destinations.length > 1;
+
+                if (hasMultipleDestinations) {
+                    destinationsHtml = `
+                        <p class="text-xs text-gray-400">Destinos (${destinations.length} paradas):</p>
+                        <ol class="list-decimal list-inside text-gray-300 break-words pl-2">
+                            ${destinations.map(d => `<li>${d}</li>`).join('')}
+                        </ol>
+                    `;
+                } else {
+                    destinationsHtml = `
+                        <p class="text-xs text-gray-400">Destino:</p>
+                        <p class="font-normal text-gray-300 break-words">${ride.destination || 'N/A'}</p>
+                    `;
+                }
+                // --- FIM DA LÓGICA ---
+
                 let content = `
                     <div class="mb-2">
                         <p class="text-xs text-gray-400">${dateLabel}</p>
                         <p class="font-semibold text-white">${displayDateTime}</p>
                     </div>
                     <div class="mb-3">
-                        <p class="text-xs text-gray-400">Destino:</p>
-                        <p class="font-normal text-gray-300 break-words">${ride.destination}</p>
+                        ${destinationsHtml}
                     </div>
+                    ${ride.observation ? `
+                    <div class="mb-3">
+                        <p class="text-xs text-gray-400">Observação:</p>
+                        <p class="font-normal text-yellow-300 break-words">${ride.observation}</p>
+                    </div>` : ''}
                     <p class="text-sm text-gray-300 mb-3">Solicitado por: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
                     <div class="mt-3 pt-3 border-t border-gray-600 flex justify-around items-center text-center">
                         <div>
@@ -634,14 +697,14 @@
                         }
                     }
                     if (ride.status === 'arrived_pickup') {
-                        buttonsContent += `<button onclick="startTrip(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM PARA O DESTINO</button>`;
-                        buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (DESTINO)</button>`;
+                        buttonsContent += `<button onclick="startTrip(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM</button>`;
+                        buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">VER ROTA NO MAPA</button>`;
                     }
                     buttonsContent += `<button onclick="promptCancelRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 border border-white">CANCELAR</button></div>`;
                 } else if (ride.status === 'in_progress') {
                     buttonsContent = '<div class="mt-4 space-y-2">';
                     buttonsContent += `<button onclick="completeRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">FINALIZAR CORRIDA</button>`;
-                    buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (DESTINO)</button></div>`;
+                    buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">VER ROTA NO MAPA</button></div>`;
                 }
                 card.innerHTML = content + rideSpecificContent + buttonsContent;
                 list.appendChild(card);
@@ -739,7 +802,7 @@
         async function fetchAllData() {
             const { data: drivers, error: dError } = await supabaseClient.from('drivers').select('*');
             if (dError) console.error('Erro a buscar motoristas:', dError); else state.drivers = drivers;
-            const cols = 'id, destination, status, driverId, userName, userCompany, requestTime, userLocation, driverCurrentLocation, request_type, scheduled_datetime';
+            const cols = 'id, destination, status, driverId, userName, userCompany, requestTime, userLocation, driverCurrentLocation, request_type, scheduled_datetime, observation';
             const { data: rides, error: rError } = await supabaseClient.from('rides').select(cols);
             if (rError) console.error('Erro a buscar corridas:', rError); else state.rides = rides;
         }
