@@ -267,12 +267,14 @@
                 <img id="cheguei-image" src="images/final.png" alt="Motorista Chegou" class="h-28 w-28 object-contain mb-4 hidden">
             </div>
 
-            <div class="flex justify-between items-center mb-2 title-and-button-alignment">
-                <img id="passenger-icon" src="images/icone_passageiro.png" alt="Ícone do Passageiro" class="mx-auto"> 
-                <h2 class="text-2xl font-bold">Área do Passageiro</h2>
-                <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                </button>
+            <div class="title-and-button-alignment mb-2">
+                <img id="passenger-icon" src="images/icone_passageiro.png" alt="Ícone do Passageiro" class="mx-auto">
+                <div class="relative w-full flex justify-center items-center">
+                    <h2 class="text-2xl font-bold">Área do Passageiro</h2>
+                    <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none absolute right-0">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    </button>
+                </div>
             </div>
 
             <p id="user-welcome-message" class="text-center text-xl text-gray-300 mb-4"></p>
