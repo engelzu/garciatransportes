@@ -525,7 +525,43 @@
             }
         }
         
-        // --- LÓGICA DE MAPAS ATUALIZADA ---
+        // --- FUNÇÃO CORRIGIDA E ROBUSTA PARA LIDAR COM MÚLTIPLOS DESTINOS ---
+        function parseDestinations(destinationString) {
+            if (!destinationString || typeof destinationString !== 'string') {
+                return [];
+            }
+            const str = destinationString.trim();
+
+            // 1. Método Primário: Tenta interpretar como um array JSON formal
+            if (str.startsWith('[') && str.endsWith(']')) {
+                try {
+                    const parsed = JSON.parse(str);
+                    if (Array.isArray(parsed)) {
+                        return parsed.map(d => String(d).trim()).filter(Boolean);
+                    }
+                } catch (e) {
+                    console.warn('Não foi possível interpretar o destino como JSON, tentando extração manual.', str);
+                    // 2. Método Alternativo: Se JSON.parse falhar, extrai manualmente o conteúdo.
+                    // Isso lida com casos como `[endereço 1, endereço 2]` (sem aspas) ou pequenos erros de sintaxe.
+                    const content = str.substring(1, str.length - 1); // Pega o conteúdo dentro de []
+                    // Separa por vírgula, mas não por vírgulas dentro de aspas (se houver)
+                    const parts = content.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                    if (parts.length > 0) {
+                        return parts.map(part => part.replace(/"/g, '').trim()).filter(Boolean);
+                    }
+                }
+            }
+
+            // 3. Fallback Legado: Para o formato antigo com ponto e vírgula
+            if (str.includes(';')) {
+                return str.split(';').map(d => d.trim()).filter(Boolean);
+            }
+
+            // 4. Fallback Final: Trata como um único destino
+            return [str];
+        }
+
+
         function openMapToDestination(rideId) {
             const ride = state.rides.find(r => r.id === rideId);
             if (!ride) {
@@ -536,19 +572,16 @@
             const origin = (ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) 
                 ? `&origin=${ride.userLocation.lat},${ride.userLocation.lon}` 
                 : '';
+            
+            const destinations = parseDestinations(ride.destination);
 
-            const destinations = (ride.destination && typeof ride.destination === 'string')
-                ? ride.destination.split(';').map(d => d.trim()).filter(d => d)
-                : [];
-            const hasDestinations = destinations.length > 0;
-
-            if (hasDestinations) {
+            if (destinations.length > 0) {
                 const destinationPoints = destinations.map(d => encodeURIComponent(d));
-                const finalDestination = destinationPoints.pop();
+                const finalDestination = destinationPoints.pop(); // Pega o último como destino final
                 
                 let mapsUrl = `https://www.google.com/maps/dir/?api=1${origin}&destination=${finalDestination}`;
                 
-                if (destinationPoints.length > 0) {
+                if (destinationPoints.length > 0) { // Os restantes viram pontos de parada (waypoints)
                     mapsUrl += `&waypoints=${destinationPoints.join('|')}`;
                 }
                 window.open(mapsUrl, '_blank');
@@ -633,9 +666,7 @@
 
                 // --- LÓGICA ATUALIZADA PARA EXIBIR DESTINOS ---
                 let destinationsHtml = '';
-                const destinations = (ride.destination && typeof ride.destination === 'string')
-                    ? ride.destination.split(';').map(d => d.trim()).filter(d => d)
-                    : [];
+                const destinations = parseDestinations(ride.destination);
 
                 if (destinations.length > 1) {
                     const stops = destinations.slice(0, -1);
@@ -731,9 +762,7 @@
                     buttonsContent += `<button onclick="promptCancelRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 border border-white">CANCELAR</button></div>`;
                 } else if (ride.status === 'in_progress') {
                     buttonsContent = '<div class="mt-4 space-y-2">';
-                    const destinations = (ride.destination && typeof ride.destination === 'string')
-                        ? ride.destination.split(';').map(d => d.trim()).filter(d => d)
-                        : [];
+                    const destinations = parseDestinations(ride.destination);
                     const currentStopIndex = rideProgress[ride.id] || 0;
 
                     if (destinations.length > 1 && currentStopIndex < destinations.length - 1) {
@@ -866,29 +895,56 @@
         }
 
         function setupRealtimeSubscriptions() {
-            supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => {
-                fetchAllData().then(() => {
-                    if (document.querySelector('.screen.active')?.id === 'driver-selection-screen') populateDriverSelection();
-                    if (document.querySelector('.screen.active')?.id === 'driver-screen') updateDriverStatusButton();
-                });
-            }).subscribe();
+            const ridesChannel = supabaseClient.channel('public:rides');
+            ridesChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, 
+                async (payload) => {
+                    console.log('Real-time event received:', payload.eventType);
+                    
+                    await fetchAllData(); 
+                    
+                    const newRecord = payload.new;
+                    const oldRecord = payload.old;
 
-            supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, async (payload) => {
-                console.log('Real-time ride change received:', payload);
-                const { new: newRecord, old: oldRecord } = payload;
-                if (state.currentDriverId && newRecord && newRecord.driverId === state.currentDriverId && newRecord.status === 'assigned' && (oldRecord ? oldRecord.status : null) !== 'assigned') {
-                    showNewRideNotification(newRecord);
+                    if (state.currentDriverId && newRecord && newRecord.driverId === state.currentDriverId && newRecord.status === 'assigned' && (!oldRecord || oldRecord.status !== 'assigned')) {
+                        showNewRideNotification(newRecord);
+                    }
+                    
+                    if (state.currentDriverId) {
+                        const hasAssignedJob = state.rides.some(r => r.driverId === state.currentDriverId && r.status === 'assigned');
+                        if (!hasAssignedJob) stopRinging();
+                    }
+                    
+                    const activeScreenId = document.querySelector('.screen.active')?.id;
+                    if (activeScreenId === 'driver-screen') {
+                        console.log('Refreshing driver jobs list due to real-time update.');
+                        loadDriverJobs();
+                    } else if (activeScreenId === 'driver-selection-screen') {
+                         console.log('Refreshing driver selection list due to real-time update.');
+                        populateDriverSelection();
+                    }
                 }
+            )
+            .subscribe((status, err) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('Successfully subscribed to real-time rides channel!');
+                }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('Failed to subscribe to rides channel. Error:', err);
+                }
+                if (status === 'TIMED_OUT') {
+                    console.warn('Rides channel subscription timed out.');
+                }
+            });
+
+            // Subscription for drivers table
+            supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, async () => {
+                console.log('Real-time event received for drivers table.');
                 await fetchAllData();
-                if (state.currentDriverId) {
-                    const hasAssignedJob = state.rides.some(r => r.driverId === state.currentDriverId && r.status === 'assigned');
-                    if (!hasAssignedJob) stopRinging();
-                }
-                const activeScreenId = document.querySelector('.screen.active')?.id;
-                if (activeScreenId === 'driver-screen') {
-                    loadDriverJobs();
-                } else if (activeScreenId === 'driver-selection-screen') {
+                if (document.querySelector('.screen.active')?.id === 'driver-selection-screen') {
                     populateDriverSelection();
+                }
+                if (document.querySelector('.screen.active')?.id === 'driver-screen') {
+                    updateDriverStatusButton();
                 }
             }).subscribe();
         }
