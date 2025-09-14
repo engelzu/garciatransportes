@@ -742,7 +742,10 @@
 
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
+                
+                // --- LÓGICA DE NOTIFICAÇÃO ---
                 if (state.currentDriverId) {
+                    // Toca o som se uma nova corrida for atribuída
                     if ((eventType === 'INSERT' || eventType === 'UPDATE')) {
                         const oldStatus = oldRecord ? oldRecord.status : null;
                         if (newRecord && newRecord.driverId === state.currentDriverId && newRecord.status === 'assigned' && oldStatus !== 'assigned') {
@@ -750,6 +753,8 @@
                         }
                     }
                 }
+
+                // --- ATUALIZAÇÃO DO ESTADO LOCAL ---
                 if (eventType === 'INSERT') {
                     if (!state.rides.some(ride => ride.id === newRecord.id)) state.rides.push(newRecord);
                 } else if (eventType === 'UPDATE') {
@@ -760,6 +765,18 @@
                         state.rides = state.rides.filter(r => r.id !== oldRecord.id);
                     }
                 }
+
+                // --- LÓGICA PARA PARAR O SOM ---
+                if (state.currentDriverId) {
+                    const hasAssignedJob = state.rides.some(ride => 
+                        ride.driverId === state.currentDriverId && ride.status === 'assigned'
+                    );
+                    if (!hasAssignedJob) {
+                        stopRinging();
+                    }
+                }
+                
+                // --- ATUALIZAÇÃO DA INTERFACE GRÁFICA ---
                 if (document.visibilityState === 'visible') {
                     const activeScreenId = document.querySelector('.screen.active')?.id;
                     if (activeScreenId === 'driver-screen') {
