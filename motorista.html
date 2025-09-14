@@ -198,48 +198,74 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_a95qQRM7LfINIPGhajJqvw_kZd51KJY'; // CHAVE SUPABASE_ANON_KEY ATUALIZADA AQUI!
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- LÓGICA DE ÁUDIO ---
+        // --- LÓGICA DE NOTIFICAÇÕES E ÁUDIO ---
         const ringtone = document.getElementById('ringtone');
+
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log('Permissão para notificações concedida.');
+                    }
+                });
+            }
+        }
+
+        function showNewRideNotification(ride) {
+            // Toca o som primeiro
+            startRinging();
+
+            // Se não houver permissão para notificações, o som já tocou, então paramos aqui.
+            if (!('Notification' in window) || Notification.permission !== 'granted') {
+                console.warn('As notificações Pop-up estão bloqueadas. Apenas o alerta sonoro será emitido.');
+                return;
+            }
+
+            const notificationTitle = 'Nova Solicitação de Corrida!';
+            const notificationOptions = {
+                body: `Destino: ${ride.destination}`,
+                icon: 'images/destino.png', // Ícone para a notificação
+                tag: `ride-${ride.id}` // Agrupa notificações da mesma corrida
+            };
+
+            const notification = new Notification(notificationTitle, notificationOptions);
+
+            // Adiciona um evento para focar na janela da aplicação ao clicar na notificação
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+            };
+        }
 
         // Função para desbloquear o áudio na primeira interação do utilizador, sem tocar som.
         function unlockAudio() {
             if (audioUnlocked) return;
-
-            // Silencia temporariamente para a reprodução de desbloqueio
             ringtone.muted = true;
-            
             const playPromise = ringtone.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    // Pausa imediatamente após o início da reprodução
                     ringtone.pause();
                     ringtone.currentTime = 0;
-                    // Reativa o som para futuras reproduções
                     ringtone.muted = false;
                     audioUnlocked = true;
                     console.log("Áudio desbloqueado pelo utilizador de forma silenciosa.");
-                    // Remove os listeners para que esta função não seja chamada novamente
                     document.body.removeEventListener('click', unlockAudio);
                     document.body.removeEventListener('touchstart', unlockAudio);
                 }).catch(error => {
-                    // Em caso de erro, garante que o som seja reativado
                     ringtone.muted = false;
-                    console.warn("Tentativa de desbloqueio de áudio falhou, aguardando nova interação.", error);
+                    console.warn("Tentativa de desbloqueio de áudio falhou.", error);
                 });
             } else {
-                 // Se o navegador não retornar uma promessa, apenas reativa o som
                  ringtone.muted = false;
             }
         }
 
-        // Adiciona listeners para a primeira interação em qualquer parte do ecrã
         document.body.addEventListener('click', unlockAudio);
         document.body.addEventListener('touchstart', unlockAudio);
 
         function playRingSound() {
-            // Só tenta tocar se o áudio tiver sido desbloqueado
             if (!audioUnlocked) {
-                console.warn("O áudio ainda está bloqueado. É necessária uma interação do utilizador.");
+                console.warn("O áudio ainda está bloqueado.");
                 return;
             }
             ringtone.currentTime = 0;
@@ -271,31 +297,26 @@
         }
 
         // --- LÓGICA PARA MANTER O ECRÃ ATIVO (WAKE LOCK) ---
-
-        // Função para tentar adquirir o wake lock.
         const requestWakeLock = async () => {
-            if (wakeLock) return; // Se já existir um lock, não faz nada.
+            if (wakeLock) return;
             try {
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock ativado com sucesso.');
-                    // Quando o lock é libertado pelo sistema (ex: minimizar app), limpamos a nossa variável.
+                    console.log('Wake Lock ativado.');
                     wakeLock.addEventListener('release', () => {
                         console.log('Wake Lock libertado pelo sistema.');
                         wakeLock = null;
                     });
                 } else {
                     document.getElementById('wake-lock-toggle').checked = false;
-                    showModal('A funcionalidade de manter a tela ativa não é suportada neste telemóvel/navegador.');
+                    showModal('A funcionalidade de manter a tela ativa não é suportada.');
                 }
             } catch (err) {
-                console.error(`Erro ao ativar o Wake Lock: ${err.name}, ${err.message}`);
+                console.error(`Erro ao ativar Wake Lock: ${err.name}, ${err.message}`);
                 document.getElementById('wake-lock-toggle').checked = false;
-                showModal('Não foi possível ativar a função de manter a tela ativa.');
             }
         };
 
-        // Função para libertar o wake lock.
         const releaseWakeLock = async () => {
             if (wakeLock) {
                 await wakeLock.release();
@@ -304,7 +325,6 @@
             }
         };
 
-        // Função chamada pelo clique no toggle.
         async function toggleWakeLock() {
             const isChecked = document.getElementById('wake-lock-toggle').checked;
             if (isChecked) {
@@ -314,7 +334,6 @@
             }
         }
 
-
         // --- LÓGICA DE MODAL ---
         function showModal(message, onConfirm, showCancel = false, content = {}) {
             document.getElementById('modal-message').textContent = message;
@@ -323,10 +342,10 @@
             const inputContainer = document.getElementById('modal-input-container');
             Array.from(inputContainer.children).forEach(child => child.style.display = 'none');
 
-            if (content.type === 'driver-password') { // Apenas este tipo de modal de input é mantido
+            if (content.type === 'driver-password') {
                 inputContainer.classList.remove('hidden');
                 document.getElementById('modal-input-driver-password').style.display = 'block';
-                document.getElementById('modal-input-driver-password').value = ''; // Limpa o campo
+                document.getElementById('modal-input-driver-password').value = '';
             } else {
                  inputContainer.classList.add('hidden');
             }
@@ -344,7 +363,6 @@
             const modal = document.getElementById('modal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-            // Limpa o campo de senha do motorista ao fechar o modal
             document.getElementById('modal-input-driver-password').value = '';
         }
 
@@ -353,23 +371,17 @@
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
             stopRinging();
-
-            // Lógica para adicionar/remover a classe de centralização dependendo da tela ativa
             const appContainer = document.getElementById('app-container');
             if (screenId === 'initial-screen') {
-                // Se for a tela inicial, aplica a centralização vertical
                 appContainer.classList.add('center-content-initial');
             } else {
-                // Para qualquer outra tela, remove a centralização vertical
                 appContainer.classList.remove('center-content-initial');
             }
-
-            // Lógicas específicas para cada tela após a exibição
             if (screenId === 'driver-selection-screen') populateDriverSelection();
             if (screenId === 'driver-screen') {
                 loadDriverJobs();
                 renderDriverRideHistory();
-                updateDriverStatusButton(); // Assegura que o status do toggle button seja atualizado
+                updateDriverStatusButton();
             }
         }
 
@@ -380,15 +392,11 @@
             list.innerHTML = '';
             const timestamp = new Date().toLocaleString('pt-BR');
             timestampEl.textContent = `Status atualizado em ${timestamp}`;
-
-            // Ordenar os motoristas por nome em ordem alfabética
             state.drivers.sort((a, b) => a.name.localeCompare(b.name));
-
             state.drivers.forEach(driver => {
-                // Modificado: Motorista está ocupado se tiver uma corrida com status diferente de 'completed' ou 'canceled'
                 const isDriverBusy = state.rides.some(ride => ride.driverId === driver.id && ride.status !== 'completed' && ride.status !== 'canceled');
                 const button = document.createElement('button');
-                button.className = 'w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg transform hover:scale-105 transition-transform flex justify-between items-center border border-white'; /* Adicionado contorno branco */
+                button.className = 'w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg transform hover:scale-105 transition-transform flex justify-between items-center border border-white';
                 button.onclick = () => selectDriver(driver.id);
                 button.innerHTML = `
                     <span class="text-white">${driver.name}</span>
@@ -409,47 +417,41 @@
             }
             const onConfirm = () => {
                 const passwordInput = document.getElementById('modal-input-driver-password');
-                // Adicionado .trim() para remover espaços em branco
                 if (passwordInput.value.trim() === driver.password.trim()) {
                     state.currentDriverId = driverId;
-                    localStorage.setItem('loggedInDriverId', driverId); // Armazena o ID do motorista logado
+                    localStorage.setItem('loggedInDriverId', driverId);
+                    requestNotificationPermission(); // Pede permissão para notificações após o login
                     document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
-                    updateDriverStatusButton(); // Chamada adicionada aqui!
+                    updateDriverStatusButton();
                     showScreen('driver-screen');
                     closeModal();
                 } else {
                     document.getElementById('modal-message').textContent = "Senha Incorreta!";
-                    passwordInput.value = ''; // Limpa a senha para nova tentativa
+                    passwordInput.value = '';
                 }
             };
             showModal(`Login para ${driver.name}`, onConfirm, true, { type: 'driver-password' });
         }
 
-        async function logoutDriver() { // Adicionada função de logout para o motorista
+        async function logoutDriver() {
             state.currentDriverId = null;
             localStorage.removeItem('loggedInDriverId');
             if (driverWatchId) {
                 navigator.geolocation.clearWatch(driverWatchId);
                 driverWatchId = null;
             }
-            
-            // Liberta o wake lock se estiver ativo e desmarca o toggle
             await releaseWakeLock();
             document.getElementById('wake-lock-toggle').checked = false;
-
-            // Ao sair, garantir que a classe de centralização seja removida
             document.getElementById('app-container').classList.remove('center-content-initial');
             showScreen('initial-screen');
         }
 
-        // Funções para gerenciar o status do motorista (ADICIONADAS)
         async function updateDriverStatusButton() {
             if (!state.currentDriverId) return;
             const driver = state.drivers.find(d => d.id === state.currentDriverId);
             if (driver) {
                 const statusLabel = document.getElementById('driver-status-label');
                 const statusToggle = document.getElementById('driver-status-toggle');
-
                 if (driver.status === 'active') {
                     statusLabel.textContent = 'Ativo';
                     statusToggle.checked = true;
@@ -464,36 +466,26 @@
             if (!state.currentDriverId) return;
             const statusToggle = document.getElementById('driver-status-toggle');
             const newStatus = statusToggle.checked ? 'active' : 'inactive';
-
-            // Pega o motorista atual do estado para garantir que temos o objeto mais recente
             const currentDriver = state.drivers.find(d => d.id === state.currentDriverId);
             if (!currentDriver) {
-                console.error("Motorista atual não encontrado no estado.");
-                statusToggle.checked = !statusToggle.checked; // Reverte o toggle na UI
+                console.error("Motorista atual não encontrado.");
+                statusToggle.checked = !statusToggle.checked;
                 return;
             }
-
-            // A lógica de ocupado/livre já é tratada na seleção de motorista.
-            // Aqui, estamos apenas alterando o status 'active'/'inactive'.
             const { error } = await supabaseClient
                 .from('drivers')
                 .update({ status: newStatus })
                 .eq('id', state.currentDriverId);
-
             if (error) {
-                console.error("Erro ao atualizar status do motorista:", error);
-                showModal("Não foi possível atualizar seu status. Tente novamente.");
-                // Reverte o toggle na UI se houver erro
+                console.error("Erro ao atualizar status:", error);
+                showModal("Não foi possível atualizar seu status.");
                 statusToggle.checked = !statusToggle.checked;
             } else {
-                // Atualiza o estado local para refletir a mudança imediatamente
                 const driverIndex = state.drivers.findIndex(d => d.id === state.currentDriverId);
                 if (driverIndex !== -1) {
                     state.drivers[driverIndex].status = newStatus;
                 }
-                updateDriverStatusButton(); // Atualiza o label para 'Ativo' ou 'Inativo'
-                // Opcional: recarregar a lista de corridas se o status ativo/inativo impactar a visibilidade
-                // loadDriverJobs();
+                updateDriverStatusButton();
             }
         }
 
@@ -518,8 +510,6 @@
                 return;
             }
 
-            let hasAssignedJob = myJobs.some(ride => ride.status === 'assigned');
-
             myJobs.sort((a, b) => {
                 const isA_Actionable = a.status !== 'canceled' && a.status !== 'canceled_by_driver';
                 const isB_Actionable = b.status !== 'canceled' && b.status !== 'canceled_by_driver';
@@ -532,13 +522,10 @@
                 const card = document.createElement('div');
                 card.className = 'card-gradient p-4 rounded-lg shadow-md border border-white';
                 
-                // CORREÇÃO FINAL: Compara com "scheduled" em minúsculas
                 const isScheduled = ride.request_type && ride.request_type.trim().toLowerCase() === 'scheduled';
-                
                 const typeText = isScheduled ? 'Agendada' : 'Imediata';
                 const typeColor = isScheduled ? 'text-orange-400' : 'text-blue-400';
                 
-                // LÓGICA CORRETA: Usa o campo certo para cada tipo de corrida
                 const displayDate = isScheduled && ride.scheduled_datetime ? new Date(ride.scheduled_datetime) : new Date(ride.requestTime);
                 const displayDateTime = displayDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 const dateLabel = isScheduled ? 'Agendado para:' : 'Solicitado em:';
@@ -605,60 +592,44 @@
                 card.innerHTML = content + rideSpecificContent + buttonsContent;
                 list.appendChild(card);
             });
-            if (hasAssignedJob) startRinging(); else stopRinging();
         }
 
         async function acceptRide(rideId) {
             stopRinging();
-
             if (!navigator.geolocation) {
-                showModal("Geolocalização não é suportada neste navegador.");
+                showModal("Geolocalização não é suportada.");
                 return;
             }
-
-            // 1. Obter a localização atual do motorista imediatamente
             navigator.geolocation.getCurrentPosition(async (position) => {
                 const driverLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
-
-                // 2. Atualizar o status da corrida para 'accepted' e incluir esta localização inicial
                 const { error } = await supabaseClient.from('rides').update({
                     status: 'accepted',
                     acceptTime: new Date().toISOString(),
-                    driverCurrentLocation: driverLocation // Inclui a localização inicial do motorista
+                    driverCurrentLocation: driverLocation
                 }).eq('id', rideId);
-
                 if (error) {
                     console.error("Erro ao aceitar corrida:", error);
                     showModal("Não foi possível aceitar a corrida.");
                     return;
                 }
-
-                // 3. Iniciar o rastreamento contínuo após a atualização inicial
                 startDriverTracking(rideId);
-
                 const ride = state.rides.find(r => r.id === rideId);
                 if (ride && ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) {
                     const { lat, lon } = ride.userLocation;
-                    // Abrir Google Maps para a localização do USUÁRIO (ponto de embarque)
                     window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank');
                 } else {
-                    showModal("Não foi possível obter a localização do usuário para navegação.");
+                    showModal("Não foi possível obter a localização do usuário.");
                 }
-
             }, (error) => {
-                console.error("Erro ao obter localização do motorista para aceitar corrida:", error);
-                showModal('Não foi possível obter sua localização para aceitar a corrida. Verifique as permissões.');
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            });
+                console.error("Erro ao obter localização:", error);
+                showModal('Não foi possível obter sua localização. Verifique as permissões.');
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
         }
 
         async function arriveAtPickup(rideId) {
             const { error } = await supabaseClient.from('rides').update({ status: 'arrived_pickup' }).eq('id', rideId);
             if (error) {
-                console.error("Erro ao atualizar status para 'chegou no local':", error);
+                console.error("Erro ao marcar chegada:", error);
                 showModal("Não foi possível marcar como 'chegou no local'.");
             }
         }
@@ -671,12 +642,10 @@
                     console.error("Erro ao iniciar viagem:", error);
                     showModal("Não foi possível iniciar a viagem.");
                 } else {
-                    // Parar o rastreamento do motorista ao iniciar a viagem (se a lógica for que o rastreamento só era para ir até o usuário)
                     if (driverWatchId) {
                         navigator.geolocation.clearWatch(driverWatchId);
                         driverWatchId = null;
                     }
-                    // Abrir Google Maps para o DESTINO FINAL do usuário
                     window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.destination)}`, '_blank');
                 }
             }
@@ -688,59 +657,34 @@
                 console.error("Erro ao completar corrida:", error);
                 showModal("Não foi possível finalizar a corrida.");
             } else {
-                // Parar o rastreamento do motorista
                 if (driverWatchId) {
                     navigator.geolocation.clearWatch(driverWatchId);
                     driverWatchId = null;
                 }
-
-                // Atualizar o estado local para a corrida concluída
-                const rideIndex = state.rides.findIndex(r => r.id === rideId);
-                if (rideIndex !== -1) {
-                    state.rides[rideIndex].status = 'completed';
-                }
-
-                // Recarregar as corridas e o histórico do motorista na tela atual
-                // Isso removerá a corrida concluída da lista de trabalhos ativos
                 loadDriverJobs();
                 renderDriverRideHistory();
-
-                // Garantir que todos os dados (especialmente para a tela de seleção de motorista) estejam atualizados
                 await fetchAllData();
-
-                // Redireciona para a tela de seleção de motorista com dados atualizados
                 showScreen('driver-selection-screen');
             }
         }
 
-        // --- NOVAS FUNÇÕES PARA CANCELAMENTO ---
         function promptCancelRide(rideId) {
-            const onConfirm = () => {
-                cancelRideByDriver(rideId);
-            };
-            showModal(
-                "Tem certeza que deseja cancelar a solicitação?",
-                onConfirm,
-                true // showCancel = true, para exibir SIM/NÃO
-            );
-            // Personaliza os botões do modal para SIM/NÃO
+            const onConfirm = () => cancelRideByDriver(rideId);
+            showModal("Tem certeza que deseja cancelar a solicitação?", onConfirm, true);
             document.getElementById('modal-confirm').textContent = 'SIM';
             document.getElementById('modal-cancel').textContent = 'NÃO';
         }
 
         async function cancelRideByDriver(rideId) {
-            closeModal(); // Fecha o modal de confirmação primeiro
+            closeModal();
             const { error } = await supabaseClient
                 .from('rides')
                 .update({ status: 'canceled_by_driver' })
                 .eq('id', rideId);
-            
             if (error) {
                 console.error("Erro ao cancelar corrida:", error);
-                showModal("Não foi possível cancelar a corrida. Tente novamente.");
+                showModal("Não foi possível cancelar a corrida.");
             } else {
-                // A subscrição em tempo real deve cuidar da atualização da UI.
-                // Para de apitar se esta era a última corrida designada.
                 const myJobs = state.rides.filter(r => r.driverId === state.currentDriverId && r.status === 'assigned');
                 if (myJobs.length === 0) {
                     stopRinging();
@@ -748,66 +692,42 @@
             }
         }
 
-        // --- RASTREAMENTO E CÁLCULO DE DISTÂNCIA ---
         function startDriverTracking(rideId) {
             if (!navigator.geolocation) {
-                console.error("Geolocalização não é suportada neste navegador.");
+                console.error("Geolocalização não é suportada.");
                 return;
             }
-
-            // Se já estiver rastreando, limpa o watch anterior para evitar múltiplos observadores
-            if (driverWatchId) {
-                navigator.geolocation.clearWatch(driverWatchId);
-            }
-
+            if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
             driverWatchId = navigator.geolocation.watchPosition(async (position) => {
                 const driverLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
-                // Apenas atualiza a localização se a corrida ainda estiver ativa
-                const currentRide = state.rides.find(r => r.id === rideId && r.status !== 'completed' && r.status !== 'canceled' && r.status !== 'in_progress'); // Adicionado 'in_progress' para parar de rastrear a localização do motorista *até* o usuário quando a viagem começa
+                const currentRide = state.rides.find(r => r.id === rideId && r.status !== 'completed' && r.status !== 'canceled' && r.status !== 'in_progress');
                 if (currentRide) {
-                    // Só atualiza a localização; o status já foi alterado em acceptRide
                     await supabaseClient.from('rides').update({ driverCurrentLocation: driverLocation }).eq('id', rideId);
                 } else {
-                    // Se a corrida não está mais ativa ou está em andamento para o destino final, parar de rastrear a localização do motorista para o usuário
                     navigator.geolocation.clearWatch(driverWatchId);
                     driverWatchId = null;
                 }
             }, (error) => {
-                // Mensagem de erro de rastreamento de localização do motorista foi removida conforme solicitação
-                console.error("Erro ao rastrear localização do motorista:", error);
-            }, {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0
-            });
+                console.error("Erro ao rastrear localização:", error);
+            }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
         }
 
         function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radius of Earth in kilometers
+            const R = 6371;
             const dLat = deg2rad(lat2 - lat1);
             const dLon = deg2rad(lon2 - lon1);
-            const a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const d = R * c; // Distance in km
-            return d;
+            return R * c;
         }
 
-        function deg2rad(deg) {
-            return deg * (Math.PI / 180);
-        }
+        function deg2rad(deg) { return deg * (Math.PI / 180); }
 
-        // --- INICIALIZAÇÃO DO APP E SUPABASE ---
         async function fetchAllData() {
             const { data: drivers, error: driversError } = await supabaseClient.from('drivers').select('*');
             if (driversError) console.error('Error fetching drivers:', driversError); else state.drivers = drivers;
-            
-            // Pedir as colunas explicitamente para garantir que as novas são incluídas
             const columns = 'id, destination, status, driverId, userName, userCompany, requestTime, userLocation, driverCurrentLocation, request_type, scheduled_datetime';
             const { data: rides, error: ridesError } = await supabaseClient.from('rides').select(columns);
-            
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
 
@@ -822,18 +742,14 @@
 
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
-                
-                // Primeiro, verifica se há uma nova corrida para o motorista atual para tocar o som
                 if (state.currentDriverId) {
                     if ((eventType === 'INSERT' || eventType === 'UPDATE')) {
                         const oldStatus = oldRecord ? oldRecord.status : null;
                         if (newRecord && newRecord.driverId === state.currentDriverId && newRecord.status === 'assigned' && oldStatus !== 'assigned') {
-                             startRinging();
+                             showNewRideNotification(newRecord);
                         }
                     }
                 }
-
-                // Depois, atualiza o estado local da aplicação
                 if (eventType === 'INSERT') {
                     if (!state.rides.some(ride => ride.id === newRecord.id)) state.rides.push(newRecord);
                 } else if (eventType === 'UPDATE') {
@@ -844,8 +760,6 @@
                         state.rides = state.rides.filter(r => r.id !== oldRecord.id);
                     }
                 }
-
-                // Finalmente, atualiza a interface gráfica se a página estiver visível
                 if (document.visibilityState === 'visible') {
                     const activeScreenId = document.querySelector('.screen.active')?.id;
                     if (activeScreenId === 'driver-screen') {
@@ -859,36 +773,27 @@
         }
 
         async function initApp() {
-            // Chamada para carregar o ícone na inicialização
             loadAppIcon();
-
             await fetchAllData();
             setupRealtimeSubscriptions();
-
-            // Adiciona um listener para quando a página volta a ficar visível
             document.addEventListener('visibilitychange', async () => {
-                // Re-adquire o lock se a preferência do utilizador for manter o ecrã ativo
-                if (document.visibilityState === 'visible' && document.getElementById('wake-lock-toggle').checked && !wakeLock) {
-                    await requestWakeLock();
-                }
-
                 if (document.visibilityState === 'visible') {
-                    console.log("App tornou-se visível. A re-sincronizar dados.");
-                    fetchAllData().then(() => {
-                        // Após buscar os dados frescos, atualiza a vista da tela ativa
-                        const activeScreen = document.querySelector('.screen.active');
-                        if (activeScreen) {
-                            if (activeScreen.id === 'driver-screen') {
-                                loadDriverJobs();
-                                renderDriverRideHistory();
-                            } else if (activeScreen.id === 'driver-selection-screen') {
-                                populateDriverSelection();
-                            }
+                    console.log("App visível. Sincronizando dados.");
+                    if (document.getElementById('wake-lock-toggle').checked && !wakeLock) {
+                        await requestWakeLock();
+                    }
+                    await fetchAllData();
+                    const activeScreen = document.querySelector('.screen.active');
+                    if (activeScreen) {
+                        if (activeScreen.id === 'driver-screen') {
+                            loadDriverJobs();
+                            renderDriverRideHistory();
+                        } else if (activeScreen.id === 'driver-selection-screen') {
+                            populateDriverSelection();
                         }
-                    });
+                    }
                 }
             });
-
             const loggedInDriverId = localStorage.getItem('loggedInDriverId');
             if (loggedInDriverId) {
                 state.currentDriverId = parseInt(loggedInDriverId);
@@ -905,7 +810,6 @@
             }
         }
 
-        // Função para carregar o ícone do aplicativo
         function loadAppIcon() {
             const iconContainer = document.getElementById('app-icon-container');
             iconContainer.innerHTML = '';
@@ -917,7 +821,6 @@
                 iconContainer.appendChild(img);
             }
         }
-
 
         function translateStatus(status) {
             switch (status) {
@@ -951,7 +854,6 @@
                     </tr>
                 </thead>`;
             const tbody = document.createElement('tbody');
-            // Ordenar por data da solicitação, mais recente primeiro
             driverRides.sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
             driverRides.forEach(ride => {
                 const row = document.createElement('tr');
@@ -970,15 +872,12 @@
         function exportDriverRidesToExcel() {
             const driverRides = state.rides.filter(r => r.driverId === state.currentDriverId && r.status === 'completed');
             if (driverRides.length === 0) { showModal("Nenhum histórico de corrida para exportar."); return; }
-
             const dataToExport = driverRides.map(ride => ({
                 'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                 'Usuário': ride.userName || 'N/A',
                 'Empresa': ride.userCompany || 'N/A',
                 'Destino': ride.destination,
             }));
-
-            // Usar a biblioteca XLSX para exportar
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Minhas Corridas Concluídas");
