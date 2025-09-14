@@ -142,7 +142,7 @@
                 </div>
             </div>
             <div class="flex items-center justify-between mb-4 card-gradient p-3 rounded-lg">
-                <span class="font-semibold text-lg text-white">Manter Ecrã Ativo</span>
+                <span class="font-semibold text-lg text-white">MANTER TELA ATIVA</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="wake-lock-toggle" onchange="toggleWakeLock()">
                     <span class="toggle-slider"></span>
@@ -271,38 +271,46 @@
         }
 
         // --- LÓGICA PARA MANTER O ECRÃ ATIVO (WAKE LOCK) ---
+
+        // Função para tentar adquirir o wake lock.
+        const requestWakeLock = async () => {
+            if (wakeLock) return; // Se já existir um lock, não faz nada.
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock ativado com sucesso.');
+                    // Quando o lock é libertado pelo sistema (ex: minimizar app), limpamos a nossa variável.
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock libertado pelo sistema.');
+                        wakeLock = null;
+                    });
+                } else {
+                    document.getElementById('wake-lock-toggle').checked = false;
+                    showModal('A funcionalidade de manter a tela ativa não é suportada neste telemóvel/navegador.');
+                }
+            } catch (err) {
+                console.error(`Erro ao ativar o Wake Lock: ${err.name}, ${err.message}`);
+                document.getElementById('wake-lock-toggle').checked = false;
+                showModal('Não foi possível ativar a função de manter a tela ativa.');
+            }
+        };
+
+        // Função para libertar o wake lock.
+        const releaseWakeLock = async () => {
+            if (wakeLock) {
+                await wakeLock.release();
+                wakeLock = null;
+                console.log('Wake Lock libertado.');
+            }
+        };
+
+        // Função chamada pelo clique no toggle.
         async function toggleWakeLock() {
-            const wakeLockToggle = document.getElementById('wake-lock-toggle');
-            if (wakeLockToggle.checked) {
-                try {
-                    // Verifica se a API Wake Lock é suportada pelo navegador
-                    if ('wakeLock' in navigator) {
-                        wakeLock = await navigator.wakeLock.request('screen');
-                        console.log('Wake Lock ativado com sucesso.');
-                        // Listener para quando o lock é libertado (ex: o utilizador minimiza a app)
-                        wakeLock.addEventListener('release', () => {
-                            console.log('Wake Lock libertado pelo sistema.');
-                            // Garante que o toggle reflete o estado real
-                            if(document.visibilityState !== 'visible') {
-                                wakeLockToggle.checked = false;
-                            }
-                        });
-                    } else {
-                        showModal('A funcionalidade de manter o ecrã ativo não é suportada neste telemóvel/navegador.');
-                        wakeLockToggle.checked = false;
-                    }
-                } catch (err) {
-                    console.error(`Erro ao ativar o Wake Lock: ${err.name}, ${err.message}`);
-                    showModal('Não foi possível ativar a função de manter o ecrã ativo.');
-                    wakeLockToggle.checked = false;
-                }
+            const isChecked = document.getElementById('wake-lock-toggle').checked;
+            if (isChecked) {
+                await requestWakeLock();
             } else {
-                // Se o toggle for desativado manualmente, liberta o lock
-                if (wakeLock !== null) {
-                    wakeLock.release();
-                    wakeLock = null;
-                    console.log('Wake Lock desativado pelo utilizador.');
-                }
+                await releaseWakeLock();
             }
         }
 
@@ -417,13 +425,18 @@
             showModal(`Login para ${driver.name}`, onConfirm, true, { type: 'driver-password' });
         }
 
-        function logoutDriver() { // Adicionada função de logout para o motorista
+        async function logoutDriver() { // Adicionada função de logout para o motorista
             state.currentDriverId = null;
             localStorage.removeItem('loggedInDriverId');
             if (driverWatchId) {
                 navigator.geolocation.clearWatch(driverWatchId);
                 driverWatchId = null;
             }
+            
+            // Liberta o wake lock se estiver ativo e desmarca o toggle
+            await releaseWakeLock();
+            document.getElementById('wake-lock-toggle').checked = false;
+
             // Ao sair, garantir que a classe de centralização seja removida
             document.getElementById('app-container').classList.remove('center-content-initial');
             showScreen('initial-screen');
@@ -853,7 +866,12 @@
             setupRealtimeSubscriptions();
 
             // Adiciona um listener para quando a página volta a ficar visível
-            document.addEventListener('visibilitychange', () => {
+            document.addEventListener('visibilitychange', async () => {
+                // Re-adquire o lock se a preferência do utilizador for manter o ecrã ativo
+                if (document.visibilityState === 'visible' && document.getElementById('wake-lock-toggle').checked && !wakeLock) {
+                    await requestWakeLock();
+                }
+
                 if (document.visibilityState === 'visible') {
                     console.log("App tornou-se visível. A re-sincronizar dados.");
                     fetchAllData().then(() => {
