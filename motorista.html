@@ -141,7 +141,7 @@
                     </label>
                 </div>
             </div>
-            <button id="silence-btn" onclick="stopBeeping()" class="hidden w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900 border border-white">Silenciar Alerta</button> <!-- Contorno branco e texto para contraste -->
+            <button id="silence-btn" onclick="stopRinging()" class="hidden w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900 border border-white">Silenciar Alerta</button> <!-- Contorno branco e texto para contraste -->
             <div id="driver-jobs-list" class="space-y-4"></div>
              <div class="card-gradient p-4 rounded-lg mt-6">
                 <div class="flex justify-between items-center mb-4">
@@ -167,13 +167,16 @@
             </div>
         </div>
     </div>
+    
+    <!-- Elemento de áudio para o toque -->
+    <audio id="ringtone" preload="auto" src="SOM/somchamada.mp3"></audio>
 
     <script>
         // --- CONFIGURAÇÃO INICIAL E DADOS MOCADOS ---
         let driverWatchId = null;
-        let audioCtx;
-        let beepInterval = null;
+        let ringInterval = null;
         let tempDriverId = null; // Para login do motorista
+        let audioUnlocked = false; // Flag para controlar o desbloqueio do áudio
 
         let state = {
             rides: [],
@@ -188,39 +191,77 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- LÓGICA DE ÁUDIO ---
-        function playBeep() {
-            if (!audioCtx) {
-                try {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                } catch (e) {
-                    console.error("Web Audio API is not supported in this browser");
-                    return;
-                }
+        const ringtone = document.getElementById('ringtone');
+
+        // Função para desbloquear o áudio na primeira interação do utilizador, sem tocar som.
+        function unlockAudio() {
+            if (audioUnlocked) return;
+
+            // Silencia temporariamente para a reprodução de desbloqueio
+            ringtone.muted = true;
+            
+            const playPromise = ringtone.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    // Pausa imediatamente após o início da reprodução
+                    ringtone.pause();
+                    ringtone.currentTime = 0;
+                    // Reativa o som para futuras reproduções
+                    ringtone.muted = false;
+                    audioUnlocked = true;
+                    console.log("Áudio desbloqueado pelo utilizador de forma silenciosa.");
+                    // Remove os listeners para que esta função não seja chamada novamente
+                    document.body.removeEventListener('click', unlockAudio);
+                    document.body.removeEventListener('touchstart', unlockAudio);
+                }).catch(error => {
+                    // Em caso de erro, garante que o som seja reativado
+                    ringtone.muted = false;
+                    console.warn("Tentativa de desbloqueio de áudio falhou, aguardando nova interação.", error);
+                });
+            } else {
+                 // Se o navegador não retornar uma promessa, apenas reativa o som
+                 ringtone.muted = false;
             }
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1);
         }
 
-        function startBeeping() {
-            stopBeeping();
-            beepInterval = setInterval(playBeep, 3000);
+        // Adiciona listeners para a primeira interação em qualquer parte do ecrã
+        document.body.addEventListener('click', unlockAudio);
+        document.body.addEventListener('touchstart', unlockAudio);
+
+        function playRingSound() {
+            // Só tenta tocar se o áudio tiver sido desbloqueado
+            if (!audioUnlocked) {
+                console.warn("O áudio ainda está bloqueado. É necessária uma interação do utilizador.");
+                return;
+            }
+            ringtone.currentTime = 0;
+            const playPromise = ringtone.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.error("Erro ao tocar o som:", error);
+                });
+            }
+        }
+
+        function startRinging() {
+            stopRinging(); 
+            playRingSound(); 
+            ringInterval = setInterval(playRingSound, 6000);
             document.getElementById('silence-btn').classList.remove('hidden');
         }
 
-        function stopBeeping() {
-            if (beepInterval) {
-                clearInterval(beepInterval);
-                beepInterval = null;
+        function stopRinging() {
+            if (ringInterval) {
+                clearInterval(ringInterval);
+                ringInterval = null;
+            }
+            if (ringtone) {
+                ringtone.pause();
+                ringtone.currentTime = 0;
             }
             document.getElementById('silence-btn').classList.add('hidden');
         }
+
 
         // --- LÓGICA DE MODAL ---
         function showModal(message, onConfirm, showCancel = false, content = {}) {
@@ -259,7 +300,7 @@
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
-            stopBeeping();
+            stopRinging();
 
             // Lógica para adicionar/remover a classe de centralização dependendo da tela ativa
             const appContainer = document.getElementById('app-container');
@@ -404,16 +445,15 @@
             if (!state.currentDriverId) return;
             const list = document.getElementById('driver-jobs-list');
             list.innerHTML = '';
-            const myJobs = state.rides.filter(r => r.driverId === state.currentDriverId && r.status !== 'completed' && r.status !== 'canceled');
+            const myJobs = state.rides.filter(r => r.driverId === state.currentDriverId && r.status !== 'completed');
             const statsDisplay = document.getElementById('driver-stats-display');
-            const jobCount = myJobs.length;
+            const actionableJobCount = myJobs.filter(j => j.status !== 'canceled' && j.status !== 'canceled_by_driver').length;
             const timestamp = new Date().toLocaleString('pt-BR');
-            statsDisplay.textContent = `${jobCount} solicitações carregadas em ${timestamp}`;
+            statsDisplay.textContent = `${actionableJobCount} solicitações ativas em ${timestamp}`;
 
             if (myJobs.length === 0) {
                 list.innerHTML = '<p class="text-center text-gray-400">Nenhuma corrida para você no momento.</p>';
-                stopBeeping();
-                // Parar o rastreamento do motorista se não houver corridas ativas
+                stopRinging();
                 if (driverWatchId) {
                     navigator.geolocation.clearWatch(driverWatchId);
                     driverWatchId = null;
@@ -421,49 +461,98 @@
                 return;
             }
 
-            let hasAssignedJob = false;
+            let hasAssignedJob = myJobs.some(ride => ride.status === 'assigned');
+
+            myJobs.sort((a, b) => {
+                const isA_Actionable = a.status !== 'canceled' && a.status !== 'canceled_by_driver';
+                const isB_Actionable = b.status !== 'canceled' && b.status !== 'canceled_by_driver';
+                if (isA_Actionable && !isB_Actionable) return -1;
+                if (!isA_Actionable && isB_Actionable) return 1;
+                return new Date(b.requestTime) - new Date(a.requestTime);
+            });
+
             myJobs.forEach(ride => {
                 const card = document.createElement('div');
-                card.className = 'card-gradient p-4 rounded-lg shadow-md border border-white'; /* Adicionado contorno branco */
-                const requestDateTime = new Date(ride.requestTime).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                card.className = 'card-gradient p-4 rounded-lg shadow-md border border-white';
+                
+                // CORREÇÃO FINAL: Compara com "scheduled" em minúsculas
+                const isScheduled = ride.request_type && ride.request_type.trim().toLowerCase() === 'scheduled';
+                
+                const typeText = isScheduled ? 'Agendada' : 'Imediata';
+                const typeColor = isScheduled ? 'text-orange-400' : 'text-blue-400';
+                
+                // LÓGICA CORRETA: Usa o campo certo para cada tipo de corrida
+                const displayDate = isScheduled && ride.scheduled_datetime ? new Date(ride.scheduled_datetime) : new Date(ride.requestTime);
+                const displayDateTime = displayDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const dateLabel = isScheduled ? 'Agendado para:' : 'Solicitado em:';
+                
+                let statusColor = 'text-yellow-300';
+                if (ride.status === 'canceled' || ride.status === 'canceled_by_driver') {
+                    statusColor = 'text-red-500';
+                }
+
                 let content = `
-                    <div class="flex justify-between items-start mb-1">
-                        <p class="font-semibold pr-2 text-white">Destino Final: <span class="font-normal text-gray-300">${ride.destination}</span></p>
-                        <p class="text-sm text-gray-300">Solicitado por: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
-                        <p class="text-xs text-gray-400 whitespace-nowrap">${requestDateTime}</p>
+                    <div class="mb-2">
+                        <p class="text-xs text-gray-400">${dateLabel}</p>
+                        <p class="font-semibold text-white">${displayDateTime}</p>
                     </div>
-                    <p class="text-sm text-gray-300 mb-4">Status: <span class="font-semibold text-yellow-300">${translateStatus(ride.status)}</span></p>
+                    <div class="mb-3">
+                        <p class="text-xs text-gray-400">Destino:</p>
+                        <p class="font-normal text-gray-300 break-words">${ride.destination}</p>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-3">Solicitado por: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
+                    
+                    <div class="mt-3 pt-3 border-t border-gray-600 flex justify-around items-center text-center">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-1">TIPO</p>
+                            <p class="text-sm font-semibold ${typeColor}">${typeText}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 mb-1">STATUS</p>
+                            <p class="text-sm font-semibold ${statusColor}">${translateStatus(ride.status)}</p>
+                        </div>
+                    </div>
                 `;
-                if (ride.status === 'assigned') {
-                    hasAssignedJob = true;
-                    content += `<button onclick="acceptRide(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR CORRIDA</button>`;
-                } else if (ride.status === 'accepted') {
-                    // Adiciona a distância aqui imediatamente
-                    let distanceMessage = '';
+                
+                let rideSpecificContent = '';
+                if (ride.status === 'accepted') {
                     if (ride.driverCurrentLocation && ride.userLocation) {
                         const distance = getDistanceFromLatLonInKm(
                             ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon,
                             ride.userLocation.lat, ride.userLocation.lon
                         );
-                        distanceMessage = `<p class="text-sm text-blue-300 mt-2">Distância até o usuário: ${distance.toFixed(2)} km</p>`;
+                        rideSpecificContent = `<p class="text-sm text-blue-300 mt-2 text-center">Distância até o usuário: ${distance.toFixed(2)} km</p>`;
                     } else {
-                        distanceMessage = `<p class="text-sm text-gray-400 mt-2">Localização do motorista ou usuário não disponível para cálculo de distância.</p>`;
+                        rideSpecificContent = `<p class="text-sm text-gray-400 mt-2 text-center">Calculando distância...</p>`;
                     }
-                    content += distanceMessage;
-                    content += `<button onclick="arriveAtPickup(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
-                } else if (ride.status === 'arrived_pickup') {
-                    content += `<button onclick="startTrip(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM PARA O DESTINO</button>`;
-                } else if (ride.status === 'in_progress') {
-                    content += `<button onclick="completeRide(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">FINALIZAR CORRIDA</button>`;
                 }
-                card.innerHTML = content;
+
+                let buttonsContent = '';
+                if (ride.status === 'assigned' || ride.status === 'accepted' || ride.status === 'arrived_pickup') {
+                    buttonsContent = '<div class="mt-4 space-y-2">';
+                    if (ride.status === 'assigned') {
+                        buttonsContent += `<button onclick="acceptRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR CORRIDA</button>`;
+                    }
+                    if (ride.status === 'accepted') {
+                        buttonsContent += `<button onclick="arriveAtPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
+                    }
+                    if (ride.status === 'arrived_pickup') {
+                        buttonsContent += `<button onclick="startTrip(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM PARA O DESTINO</button>`;
+                    }
+                    buttonsContent += `<button onclick="promptCancelRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 border border-white">CANCELAR</button>`;
+                    buttonsContent += '</div>';
+                } else if (ride.status === 'in_progress') {
+                    buttonsContent = `<button onclick="completeRide(${ride.id})" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">FINALIZAR CORRIDA</button>`;
+                }
+                
+                card.innerHTML = content + rideSpecificContent + buttonsContent;
                 list.appendChild(card);
             });
-            if (hasAssignedJob) startBeeping(); else stopBeeping();
+            if (hasAssignedJob) startRinging(); else stopRinging();
         }
 
         async function acceptRide(rideId) {
-            stopBeeping();
+            stopRinging();
 
             if (!navigator.geolocation) {
                 showModal("Geolocalização não é suportada neste navegador.");
@@ -567,6 +656,41 @@
             }
         }
 
+        // --- NOVAS FUNÇÕES PARA CANCELAMENTO ---
+        function promptCancelRide(rideId) {
+            const onConfirm = () => {
+                cancelRideByDriver(rideId);
+            };
+            showModal(
+                "Tem certeza que deseja cancelar a solicitação?",
+                onConfirm,
+                true // showCancel = true, para exibir SIM/NÃO
+            );
+            // Personaliza os botões do modal para SIM/NÃO
+            document.getElementById('modal-confirm').textContent = 'SIM';
+            document.getElementById('modal-cancel').textContent = 'NÃO';
+        }
+
+        async function cancelRideByDriver(rideId) {
+            closeModal(); // Fecha o modal de confirmação primeiro
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ status: 'canceled_by_driver' })
+                .eq('id', rideId);
+            
+            if (error) {
+                console.error("Erro ao cancelar corrida:", error);
+                showModal("Não foi possível cancelar a corrida. Tente novamente.");
+            } else {
+                // A subscrição em tempo real deve cuidar da atualização da UI.
+                // Para de apitar se esta era a última corrida designada.
+                const myJobs = state.rides.filter(r => r.driverId === state.currentDriverId && r.status === 'assigned');
+                if (myJobs.length === 0) {
+                    stopRinging();
+                }
+            }
+        }
+
         // --- RASTREAMENTO E CÁLCULO DE DISTÂNCIA ---
         function startDriverTracking(rideId) {
             if (!navigator.geolocation) {
@@ -622,7 +746,11 @@
         async function fetchAllData() {
             const { data: drivers, error: driversError } = await supabaseClient.from('drivers').select('*');
             if (driversError) console.error('Error fetching drivers:', driversError); else state.drivers = drivers;
-            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*');
+            
+            // Pedir as colunas explicitamente para garantir que as novas são incluídas
+            const columns = 'id, destination, status, driverId, userName, userCompany, requestTime, userLocation, driverCurrentLocation, request_type, scheduled_datetime';
+            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select(columns);
+            
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
 
@@ -708,6 +836,7 @@
                 case 'in_progress': return 'EM ANDAMENTO';
                 case 'completed': return 'FINALIZADA';
                 case 'canceled': return 'CANCELADA';
+                case 'canceled_by_driver': return 'CANCELADO PELO MOTORISTA';
                 default: return status.toUpperCase();
             }
         }
@@ -769,3 +898,4 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
 </body>
 </html>
+
