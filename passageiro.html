@@ -103,7 +103,7 @@
         .text-yellow-300 { color: #ffffff !important; }
         .text-cyan-400 { color: #00ffff !important; }
 
-        h1, h2, h3, p, button, label, input::placeholder {
+        h1, h2, h3, p, button, label, input::placeholder, textarea::placeholder {
             color: #ffffff !important;
         }
 
@@ -291,10 +291,24 @@
 
             <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6 content-wrapper">
                  <h3 class="text-center font-semibold mb-4 text-xl">Solicitar uma Viagem</h3>
+                
                 <div class="mb-4 input-and-button-container">
-                    <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
-                    <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço completo">
+                    <label for="passenger-count" class="block mb-2 text-sm font-medium">Quantidade de Passageiros?</label>
+                    <select id="passenger-count" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
+                        <option value="1">1 Passageiro</option>
+                        <option value="2">2 Passageiros</option>
+                        <option value="3">3 Passageiros</option>
+                        <option value="4">4 Passageiros</option>
+                    </select>
                 </div>
+
+                <div id="destinations-container" class="w-full"></div>
+                
+                <div class="mb-4 input-and-button-container">
+                    <label for="observation" class="block mb-2 text-sm font-medium">Observação (opcional)</label>
+                    <textarea id="observation" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Ex: Ponto de referência, necessidade especial..." maxlength="300" rows="3"></textarea>
+                </div>
+                
                 <div class="input-and-button-container">
                     <button id="request-ride-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
                         SOLICITAR TAXI
@@ -374,10 +388,11 @@
         };
 
         // Variáveis para gerenciar o estado da solicitação de corrida
-        let selectedDestination = ''; 
-        let selectedRequestType = ''; // 'immediate' ou 'scheduled'
+        let selectedDestinations = []; 
+        let selectedObservation = '';
+        let selectedRequestType = ''; 
         let scheduledDateTime = null;
-        let isProcessingRequest = false; // <<< MUDANÇA 1: Variável de controle (bloqueio)
+        let isProcessingRequest = false; 
 
         // --- CONFIGURAÇÃO DO SUPABASE ---
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
@@ -488,7 +503,8 @@
                 document.getElementById('user-id').value = '';
                 document.getElementById('user-password').value = '';
                 
-                selectedDestination = '';
+                selectedDestinations = [];
+                selectedObservation = '';
                 selectedRequestType = '';
                 scheduledDateTime = null;
 
@@ -509,7 +525,8 @@
             
             document.getElementById('user-welcome-message').textContent = '';
 
-            selectedDestination = '';
+            selectedDestinations = [];
+            selectedObservation = '';
             selectedRequestType = '';
             scheduledDateTime = null;
 
@@ -543,7 +560,6 @@
         
         function selectRequestType(type) {
             selectedRequestType = type;
-            selectedDestination = document.getElementById('destination').value.trim();
 
             if (type === 'immediate') {
                 requestRide();
@@ -582,21 +598,20 @@
             requestRide();
         }
 
-        // <<< MUDANÇA 2: Função modificada para respeitar o bloqueio >>>
         function resetRequestButton() {
-            if (isProcessingRequest) return; // Não faz nada se uma solicitação estiver em andamento
+            if (isProcessingRequest) return; 
             const requestRideBtn = document.getElementById('request-ride-btn');
             requestRideBtn.disabled = false;
             requestRideBtn.textContent = 'SOLICITAR TAXI';
         }
 
-        // <<< MUDANÇA 3: Função completamente reescrita para melhor controle >>>
         async function requestRide() {
-            const destination = selectedDestination;
+            const destinations = selectedDestinations;
+            const observation = selectedObservation;
             const requestRideBtn = document.getElementById('request-ride-btn');
 
-            if (!destination) {
-                showModal('modal', 'Por favor, insira um destino.');
+            if (!destinations || destinations.length === 0 || !destinations[0]) {
+                showModal('modal', 'Por favor, insira o destino do primeiro passageiro.');
                 return;
             }
 
@@ -605,7 +620,6 @@
                 return;
             }
 
-            // Ativa o bloqueio e muda o botão para "Processando"
             isProcessingRequest = true;
             requestRideBtn.disabled = true;
             requestRideBtn.textContent = 'Processando...';
@@ -615,7 +629,6 @@
                     throw new Error('Geolocalização não é suportada pelo seu navegador.');
                 }
 
-                // Transforma a chamada de geolocalização em uma Promise para usar com async/await
                 const position = await new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: true,
@@ -632,7 +645,8 @@
                 }
 
                 let newRideData = {
-                    destination: destination,
+                    destination: JSON.stringify(destinations),
+                    observation: observation,
                     status: 'requested',
                     userId: currentUser.id,
                     userName: currentUser.name,
@@ -656,8 +670,11 @@
                 state.currentUserRideId = data.id;
                 localStorage.setItem('currentUserRideId', data.id);
 
-                document.getElementById('destination').value = '';
-                selectedDestination = '';
+                document.getElementById('passenger-count').value = 1;
+                updateDestinationFields(1);
+                document.getElementById('observation').value = '';
+                selectedDestinations = [];
+                selectedObservation = '';
                 selectedRequestType = '';
                 scheduledDateTime = null;
 
@@ -665,9 +682,7 @@
                 console.error("Erro no processo de solicitação:", error);
                 showModal('modal', error.message || 'Ocorreu um erro inesperado.');
             } finally {
-                // Ao final de tudo (sucesso ou falha), desativa o bloqueio
                 isProcessingRequest = false;
-                // E atualiza a tela para refletir o estado final
                 checkUserRideStatus();
             }
         }
@@ -761,6 +776,34 @@
             }
 
             let message = '';
+            let scheduleInfo = '';
+            let displayDestination = '';
+            
+            try {
+                const destinations = JSON.parse(ride.destination);
+                if (Array.isArray(destinations) && destinations.length > 0) {
+                    const primaryDestination = destinations.find(d => d) || 'N/A';
+                    displayDestination = primaryDestination;
+                    const otherDestinationsCount = destinations.filter(d => d).length - 1;
+                    if (otherDestinationsCount > 0) {
+                        displayDestination += ` (+${otherDestinationsCount} outros)`;
+                    }
+                }
+            } catch (e) {
+                displayDestination = ride.destination;
+            }
+
+            if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
+                const scheduledDate = new Date(ride.scheduled_datetime);
+                const formattedScheduledDateTime = scheduledDate.toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                scheduleInfo = `<div class="mt-4 text-xl font-bold text-cyan-400">Agendado para:<br>${formattedScheduledDateTime}</div>`;
+            }
 
             switch(ride.status) {
                 case 'requested':
@@ -772,14 +815,19 @@
                     searchingIconContainer.classList.remove('hidden');
                     break;
                 case 'accepted':
-                    message = `Motorista ${ride.driverName || 'designado'} está a caminho!`;
-                    if (ride.driverCurrentLocation && ride.userLocation) {
-                        const distance = getDistanceFromLatLonInKm(
-                            ride.userLocation.lat, ride.userLocation.lon,
-                            ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon
-                        );
-                        message += ` Distância: ${distance.toFixed(2)} km`;
+                    if (ride.request_type === 'scheduled') {
+                        message = `Motorista ${ride.driverName || 'designado'} foi designado para sua corrida.`;
+                    } else {
+                        message = `Motorista ${ride.driverName || 'designado'} está a caminho!`;
+                        if (ride.driverCurrentLocation && ride.userLocation) {
+                            const distance = getDistanceFromLatLonInKm(
+                                ride.userLocation.lat, ride.userLocation.lon,
+                                ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon
+                            );
+                            message += ` Distância: ${distance.toFixed(2)} km`;
+                        }
                     }
+                    
                     const acceptedImg = document.createElement('img');
                     acceptedImg.src = 'images/aceitou.png'; 
                     acceptedImg.alt = 'Motorista Aceitou';
@@ -791,7 +839,7 @@
                     message = `Seu motorista, ${ride.driverName || 'designado'}, chegou no local de embarque.`;
                     break;
                 case 'in_progress':
-                     message = `Viagem para ${ride.destination} em andamento.`;
+                     message = `Viagem para ${displayDestination} em andamento.`;
                      const inProgressImg = document.createElement('img');
                      inProgressImg.src = 'images/destino.png'; 
                      inProgressImg.alt = 'Viagem Iniciada';
@@ -800,15 +848,7 @@
                      inProgressIconContainer.classList.remove('hidden');
                      break;
                  case 'scheduled':
-                    const scheduledDate = new Date(ride.scheduled_datetime);
-                    const formattedScheduledDateTime = scheduledDate.toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                    message = `Sua corrida está agendada para ${formattedScheduledDateTime}. Aguardando um motorista aceitar próximo ao horário.`;
+                    message = `Sua corrida está agendada.<br>Aguardando um motorista.`;
                     searchingIconContainer.classList.remove('hidden');
                     break;
                  case 'completed':
@@ -823,8 +863,9 @@
                     message = `Status desconhecido: ${ride.status}`;
                     break;
             }
-            document.getElementById('user-status-message').textContent = message;
+            document.getElementById('user-status-message').innerHTML = message + scheduleInfo;
         }
+
 
         async function cancelRide() {
             if (state.currentUserRideId) {
@@ -880,11 +921,18 @@
         }
 
         async function initApp() {
-            initAutocomplete(); 
             loadAppIcon();      
             
             await fetchAllData(); 
             setupRealtimeSubscriptions(); 
+
+            const passengerSelect = document.getElementById('passenger-count');
+            if (passengerSelect) {
+                passengerSelect.addEventListener('change', (e) => {
+                    updateDestinationFields(e.target.value);
+                });
+                updateDestinationFields(1);
+            }
 
             const loggedInUserId = localStorage.getItem('loggedInUserId');
             if (loggedInUserId) {
@@ -916,18 +964,50 @@
             }
         }
         
-        function initAutocomplete() {
-            const destinationInput = document.getElementById('destination');
-            if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                new google.maps.places.Autocomplete(destinationInput, { 
+        function initAutocomplete(inputElement) {
+            if (inputElement && typeof google !== 'undefined' && google.maps && google.maps.places) {
+                new google.maps.places.Autocomplete(inputElement, { 
                     types: ['address'], 
                     componentRestrictions: { 'country': 'br' } 
                 });
             } else {
-                console.warn('Google Maps Places API não carregada ou campo de destino não encontrado.');
+                console.warn('Google Maps Places API não carregada ou o elemento de input não foi encontrado.');
             }
         }
         
+        function updateDestinationFields(passengerCount) {
+            const container = document.getElementById('destinations-container');
+            container.innerHTML = ''; 
+
+            for (let i = 1; i <= passengerCount; i++) {
+                const inputContainer = document.createElement('div');
+                inputContainer.className = 'mb-4 input-and-button-container';
+
+                const label = document.createElement('label');
+                label.htmlFor = `destination-${i}`;
+                label.className = 'block mb-2 text-sm font-medium';
+                label.textContent = `Destino Passageiro ${i}`;
+                if (i === 1) {
+                    label.textContent += ' (Obrigatório)';
+                }
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `destination-${i}`;
+                input.className = 'w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none';
+                input.placeholder = 'Digite o endereço completo';
+                if (i === 1) {
+                    input.required = true;
+                }
+
+                inputContainer.appendChild(label);
+                inputContainer.appendChild(input);
+                container.appendChild(inputContainer);
+
+                initAutocomplete(input);
+            }
+        }
+
         function translateStatus(status) {
             switch (status) {
                 case 'requested': return 'SOLICITADO'; 
@@ -985,9 +1065,24 @@
                     year: 'numeric', month: 'numeric', day: 'numeric',
                     hour: '2-digit', minute: '2-digit', second: '2-digit'
                 });
+
+                let historyDestination = '';
+                try {
+                    const destinations = JSON.parse(ride.destination);
+                    if (Array.isArray(destinations) && destinations.length > 0) {
+                        historyDestination = destinations.find(d => d) || 'N/A';
+                        const otherDestinationsCount = destinations.filter(d => d).length - 1;
+                        if (otherDestinationsCount > 0) {
+                            historyDestination += ` (+${otherDestinationsCount} outros)`;
+                        }
+                    }
+                } catch (e) {
+                    historyDestination = ride.destination;
+                }
+
                 row.innerHTML = `
                     <td class="px-4 py-3">${dateTimeString}</td> 
-                    <td class="px-4 py-3">${ride.destination}</td>
+                    <td class="px-4 py-3">${historyDestination}</td>
                     <td class="px-4 py-3">${translateStatus(ride.status)}</td>
                 `;
                 tbody.appendChild(row);
@@ -1010,14 +1105,26 @@
                 return; 
             }
 
-            const dataToExport = userRides.map(ride => ({
-                'Data e Hora da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
-                'Destino': ride.destination,
-                'Motorista': ride.driverName || 'N/A',
-                'Status': translateStatus(ride.status),
-                'Tipo de Solicitação': ride.request_type === 'immediate' ? 'Imediato' : 'Agendado',
-                'Data/Hora Agendada': ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : 'N/A'
-            }));
+            const dataToExport = userRides.map(ride => {
+                let excelDestination = '';
+                try {
+                    const destinations = JSON.parse(ride.destination);
+                    if (Array.isArray(destinations) && destinations.length > 0) {
+                        excelDestination = destinations.filter(d => d).join('; ');
+                    }
+                } catch (e) {
+                    excelDestination = ride.destination;
+                }
+
+                return {
+                    'Data e Hora da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
+                    'Destino(s)': excelDestination,
+                    'Motorista': ride.driverName || 'N/A',
+                    'Status': translateStatus(ride.status),
+                    'Tipo de Solicitação': ride.request_type === 'immediate' ? 'Imediato' : 'Agendado',
+                    'Data/Hora Agendada': ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : 'N/A'
+                }
+            });
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
@@ -1027,12 +1134,26 @@
         }
 
         document.getElementById('request-ride-btn').onclick = function() {
-            const destination = document.getElementById('destination').value.trim();
-            if (!destination) {
-                showModal('modal', 'Por favor, insira um destino.');
+            const passengerCount = document.getElementById('passenger-count').value;
+            const destinations = [];
+            let firstDestination = '';
+
+            for (let i = 1; i <= passengerCount; i++) {
+                const input = document.getElementById(`destination-${i}`);
+                const destinationValue = input ? input.value.trim() : '';
+                destinations.push(destinationValue);
+                if (i === 1) {
+                    firstDestination = destinationValue;
+                }
+            }
+
+            if (!firstDestination) {
+                showModal('modal', 'Por favor, insira o destino do primeiro passageiro.');
                 return;
             }
-            selectedDestination = destination; 
+            
+            selectedDestinations = destinations; 
+            selectedObservation = document.getElementById('observation').value.trim();
             showScreen('request-type-screen'); 
         };
         
@@ -1040,3 +1161,4 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places&callback=initAppWhenMapsLoaded" async defer></script>
 </body>
 </html>
+
