@@ -759,31 +759,44 @@
                 fetchAllData().then(() => {
                     const activeScreen = document.querySelector('.screen.active')?.id;
                     if (activeScreen === 'driver-selection-screen') populateDriverSelection();
-                    if (activeScreen === 'driver-screen') updateDriverStatusButton(); // Atualiza o botão de status na tela do motorista
+                    if (activeScreen === 'driver-screen') updateDriverStatusButton();
                 });
             }).subscribe();
 
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
+                
+                // Primeiro, verifica se há uma nova corrida para o motorista atual para tocar o som
+                if (state.currentDriverId) {
+                    if ((eventType === 'INSERT' || eventType === 'UPDATE')) {
+                        const oldStatus = oldRecord ? oldRecord.status : null;
+                        if (newRecord && newRecord.driverId === state.currentDriverId && newRecord.status === 'assigned' && oldStatus !== 'assigned') {
+                             startRinging();
+                        }
+                    }
+                }
 
-                // Atualizar o estado local das corridas
+                // Depois, atualiza o estado local da aplicação
                 if (eventType === 'INSERT') {
                     if (!state.rides.some(ride => ride.id === newRecord.id)) state.rides.push(newRecord);
                 } else if (eventType === 'UPDATE') {
                     const rideIndex = state.rides.findIndex(r => r.id === newRecord.id);
                     if (rideIndex !== -1) state.rides[rideIndex] = newRecord;
                 } else if (eventType === 'DELETE') {
-                    state.rides = state.rides.filter(r => r.id !== oldRecord.id);
+                    if(oldRecord && oldRecord.id) {
+                        state.rides = state.rides.filter(r => r.id !== oldRecord.id);
+                    }
                 }
 
-                const activeScreenId = document.querySelector('.screen.active')?.id;
-
-                // Atualizar o que é visível na tela dependendo do contexto do motorista
-                if (activeScreenId === 'driver-screen') {
-                    loadDriverJobs();
-                    renderDriverRideHistory();
-                } else if (activeScreenId === 'driver-selection-screen') {
-                    populateDriverSelection(); // Atualiza status de ocupado/livre dos motoristas
+                // Finalmente, atualiza a interface gráfica se a página estiver visível
+                if (document.visibilityState === 'visible') {
+                    const activeScreenId = document.querySelector('.screen.active')?.id;
+                    if (activeScreenId === 'driver-screen') {
+                        loadDriverJobs();
+                        renderDriverRideHistory();
+                    } else if (activeScreenId === 'driver-selection-screen') {
+                        populateDriverSelection();
+                    }
                 }
             }).subscribe();
         }
@@ -795,21 +808,37 @@
             await fetchAllData();
             setupRealtimeSubscriptions();
 
-            const loggedInDriverId = localStorage.getItem('loggedInDriverId'); // Verificando motorista logado
+            // Adiciona um listener para quando a página volta a ficar visível
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    console.log("App tornou-se visível. A re-sincronizar dados.");
+                    fetchAllData().then(() => {
+                        // Após buscar os dados frescos, atualiza a vista da tela ativa
+                        const activeScreen = document.querySelector('.screen.active');
+                        if (activeScreen) {
+                            if (activeScreen.id === 'driver-screen') {
+                                loadDriverJobs();
+                                renderDriverRideHistory();
+                            } else if (activeScreen.id === 'driver-selection-screen') {
+                                populateDriverSelection();
+                            }
+                        }
+                    });
+                }
+            });
+
+            const loggedInDriverId = localStorage.getItem('loggedInDriverId');
             if (loggedInDriverId) {
                 state.currentDriverId = parseInt(loggedInDriverId);
                 const driver = state.drivers.find(d => d.id === state.currentDriverId);
                 if (driver) {
                     document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
-                    // Ao carregar, se já estiver logado, já muda para a tela do motorista
                     showScreen('driver-screen');
                 } else {
-                    // Se o driver logado não for encontrado, limpa o localStorage e volta para a tela inicial
                     localStorage.removeItem('loggedInDriverId');
                     showScreen('initial-screen');
                 }
             } else {
-                // Se não houver login, mostra a tela inicial
                 showScreen('initial-screen');
             }
         }
