@@ -589,7 +589,6 @@
         function openScheduleModal() {
             const modal = document.getElementById('schedule-modal');
             const today = new Date();
-            today.setHours(today.getHours() + 1);
             document.getElementById('schedule-date').min = new Date().toISOString().split('T')[0];
             document.getElementById('schedule-date').value = today.toISOString().split('T')[0];
             document.getElementById('schedule-time').value = today.toTimeString().slice(0, 5);
@@ -1206,4 +1205,3 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places" async defer></script>
 </body>
 </html>
-
