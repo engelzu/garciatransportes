@@ -209,6 +209,8 @@
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
 
+    <audio id="arrival-sound" src="som/somchamada.mp3" preload="auto"></audio>
+
     <div id="video-container">
         <video id="intro-video" autoplay muted playsinline>
             <source src="images/video1.mp4" type="video/mp4">
@@ -297,6 +299,7 @@
                 <div id="status-icon-in-progress" class="hidden mx-auto mb-2"></div>
                 
                 <p id="user-status-message" class="mt-4 text-lg"></p>
+                <button id="silence-alert-btn" onclick="silenceAlert()" class="hidden mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700">SILENCIAR ALERTA</button>
                 <button id="edit-schedule-btn" onclick="openEditScheduleModal(state.currentUserRideId)" class="hidden mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-yellow-500 hover:bg-yellow-600">ALTERAR AGENDAMENTO</button>
                 <button id="cancel-ride-btn" onclick="cancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700">CANCELAR SOLICITAÇÃO</button>
             </div>
@@ -809,6 +812,18 @@
             }, 10000); 
         }
         
+        function silenceAlert() {
+            const arrivalSound = document.getElementById('arrival-sound');
+            const silenceBtn = document.getElementById('silence-alert-btn');
+            if (arrivalSound) {
+                arrivalSound.pause();
+                arrivalSound.currentTime = 0;
+            }
+            if (silenceBtn) {
+                silenceBtn.classList.add('hidden');
+            }
+        }
+
         function updateUserStatusMessage(ride) {
             const statusMessageEl = document.getElementById('user-status-message');
             const chegueiImage = document.getElementById('cheguei-image');
@@ -817,6 +832,15 @@
 
             const cancelRideBtn = document.getElementById('cancel-ride-btn');
             const editScheduleBtn = document.getElementById('edit-schedule-btn');
+            const silenceBtn = document.getElementById('silence-alert-btn');
+            const arrivalSound = document.getElementById('arrival-sound');
+
+            // Reseta o estado do alerta sonoro
+            silenceBtn.classList.add('hidden');
+            if (arrivalSound && !arrivalSound.paused) {
+                arrivalSound.pause();
+                arrivalSound.currentTime = 0;
+            }
 
             let message = '';
             let scheduleInfo = '';
@@ -848,6 +872,10 @@
                 case 'arrived_pickup':
                     message = `Seu motorista, ${ride.driverName || 'designado'}, chegou!`;
                     chegueiImage.classList.remove('hidden');
+                    if (arrivalSound) {
+                        arrivalSound.play().catch(e => console.warn("A reprodução automática de áudio foi bloqueada pelo navegador.", e));
+                    }
+                    silenceBtn.classList.remove('hidden');
                     break;
                 case 'in_progress':
                     chegueiImage.classList.add('hidden');
@@ -1205,3 +1233,4 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places" async defer></script>
 </body>
 </html>
+
