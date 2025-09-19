@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GARCIA TRANSPORTES</title>
+    <title>GARCIA TRANSPORTES - Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -84,19 +84,6 @@
             color: #f3f4f6;
         }
 
-        #mobile-menu {
-            transform: translateX(100%);
-            transition: transform 0.3s ease-in-out, visibility 0.3s;
-            visibility: hidden;
-        }
-        #mobile-menu.active {
-            transform: translateX(0);
-            visibility: visible;
-        }
-        .menu-backdrop {
-            background-color: rgba(0, 0, 0, 0.7);
-        }
-
         .text-black { color: #ffffff !important; }
         .text-gray-800 { color: #ffffff !important; }
         .text-gray-400 { color: #ffffff !important; }
@@ -116,79 +103,9 @@
             background-color: #374151 !important;
             border-color: #4b5563 !important;
         }
-
-        .logout-button-green {
-            background-color: #16a34a;
-            border: 2px solid #16a34a;
-            color: #ffffff !important;
-        }
-        .logout-button-green:hover {
-            background-color: #15803d;
-            border-color: #15803d;
-        }
-
-
-        #menu-toggle-btn svg path {
-            stroke: #ffffff !important;
-        }
         
-        #user-login-screen button:first-child, #admin-login-screen button:first-child {
+        #admin-login-screen button:first-child {
             color: #ffffff !important;
-        }
-
-        .content-wrapper {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            width: 100%;
-        }
-
-        .input-and-button-container {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        #destination {
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        #request-ride-btn {
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .title-and-button-alignment {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .title-and-button-alignment h2 {
-            width: 100%;
-            text-align: center;
-        }
-
-        #intro-video {
-            width: 100%;
-            height: 100vh; 
-            object-fit: cover; 
-        }
-
-        #video-container {
-            position: fixed; 
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 9999; 
-            background-color: black; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
         .icon-img {
@@ -198,28 +115,19 @@
             margin-bottom: 0.5rem;
         }
         
-        #user-id, #user-password, #admin-id, #admin-password {
+        #admin-id, #admin-password {
             font-size: 14px;
             text-align: center;
         }
-        #user-id::placeholder, #user-password::placeholder, #admin-id::placeholder, #admin-password::placeholder {
+        #admin-id::placeholder, #admin-password::placeholder {
             text-align: center;
         }
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
 
-    <!-- REMOVIDO PARA SIMPLICIDADE, PODE SER REATIVADO -->
-    <!-- <div id="video-container">
-        <video id="intro-video" autoplay muted playsinline>
-            <source src="images/video1.mp4" type="video/mp4">
-            Seu navegador não suporta o elemento de vídeo.
-        </video>
-    </div> -->
-
     <div id="app-container" class="w-full max-w-md mx-auto relative"> 
 
-        <!-- TELA INICIAL COM OPÇÃO DE ADMIN -->
         <div id="initial-screen" class="screen active text-center">
             <div class="flex flex-col items-center justify-center mb-4">
                 <div id="app-icon-container" class="h-28 w-28 mb-2"></div>
@@ -236,12 +144,9 @@
             </div>
         </div>
         
-        <!-- TELA DE LOGIN DO ADMINISTRADOR -->
         <div id="admin-login-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
-            
             <img src="images/admin.png" alt="Ícone do Administrador" class="mx-auto icon-img" style="width: 80px; height: 80px;">
-
             <h2 class="text-3xl font-bold mb-6 text-center">Login do Administrador</h2>
             <div class="mb-4">
                 <label for="admin-id" class="block mb-2 text-sm font-medium">Matrícula</label>
@@ -255,7 +160,6 @@
             <p id="admin-login-error" class="text-red-500 text-center mt-4 hidden">Matrícula, senha ou permissão de admin inválida!</p>
         </div>
         
-        <!-- TELA PRINCIPAL DO ADMINISTRADOR -->
         <div id="admin-screen" class="screen">
              <div class="flex justify-between items-center mb-6">
                 <div></div>
@@ -264,23 +168,23 @@
             </div>
             <p id="admin-welcome-message" class="text-center text-lg text-gray-300 mb-6"></p>
 
-            <div id="admin-ride-status" class="hidden mt-8 text-center card-gradient p-4 rounded-lg mb-6">
-                 <div id="admin-status-loader" class="loader mx-auto mb-2"></div>
-                 <p id="admin-status-message" class="mt-4 text-lg"></p>
-                 <p id="admin-status-collaborator" class="text-sm text-gray-400"></p>
-                 <button id="admin-cancel-ride-btn" onclick="adminCancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700">CANCELAR SOLICITAÇÃO</button>
+            <!-- Lista de Corridas Ativas -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-center border-b-2 border-gray-700 pb-2">Corridas em Andamento</h3>
+                <div id="admin-active-rides-container" class="space-y-4 max-h-64 overflow-y-auto p-2 rounded-lg bg-gray-900/50">
+                    <!-- As corridas ativas serão inseridas aqui -->
+                </div>
             </div>
 
+            <!-- Formulário para Nova Solicitação -->
             <div id="admin-request-form" class="card-gradient p-6 rounded-lg">
-                <h3 class="text-xl font-semibold mb-6 text-center">Solicitar Viagem para Colaborador</h3>
-
+                <h3 class="text-xl font-semibold mb-6 text-center">Nova Solicitação</h3>
                 <div class="mb-4">
                     <label for="company-select" class="block mb-2 text-sm font-medium">1. Selecione a Empresa</label>
                     <select id="company-select" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
                         <option value="">-- Carregando empresas... --</option>
                     </select>
                 </div>
-
                  <div class="mb-6">
                     <label for="collaborator-select" class="block mb-2 text-sm font-medium">2. Selecione o Colaborador</label>
                     <select id="collaborator-select" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" disabled>
@@ -291,8 +195,7 @@
                  <div id="admin-ride-details" class="hidden">
                      <hr class="border-gray-600 my-6">
                      <h3 class="text-lg font-semibold mb-4 text-center">3. Detalhes da Viagem</h3>
-                     
-                    <div class="mb-4 input-and-button-container">
+                    <div class="mb-4">
                         <label for="admin-passenger-count" class="block mb-2 text-sm font-medium">Quantidade de Passageiros?</label>
                         <select id="admin-passenger-count" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
                             <option value="1">1 Passageiro</option>
@@ -301,15 +204,12 @@
                             <option value="4">4 Passageiros</option>
                         </select>
                     </div>
-
                     <div id="admin-destinations-container" class="w-full"></div>
-                    
-                    <div class="mb-4 input-and-button-container">
+                    <div class="mb-4">
                         <label for="admin-observation" class="block mb-2 text-sm font-medium">Observação (opcional)</label>
                         <textarea id="admin-observation" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Ex: Ponto de referência..." maxlength="300" rows="3"></textarea>
                     </div>
-                    
-                    <div class="input-and-button-container mt-6">
+                    <div class="mt-6">
                         <button id="admin-request-ride-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
                             SOLICITAR TAXI
                         </button>
@@ -331,32 +231,25 @@
     </div>
 
     <script>
-        // --- CHAVE DE API DO GOOGLE MAPS ---
         const GOOGLE_MAPS_API_KEY = 'AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg';
 
-        // --- CONFIGURAÇÃO INICIAL E ESTADO DA APLICAÇÃO ---
         let state = {
             appIcon: 'images/admin.png', 
-            currentUser: null, // Guarda o admin logado
-            allUsers: [], // Guarda todos os usuários para os selects
-            lastAdminRequestedRideId: null, // Guarda o ID da última corrida solicitada pelo admin
-            adminStatusInterval: null
+            currentUser: null,
+            allUsers: [],
+            adminActiveRides: [],
+            supabaseSubscription: null
         };
 
-        // --- CONFIGURAÇÃO DO SUPABASE ---
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_a95qQRM7LfINIPGhajJqvw_kZd51KJY'; 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- LÓGICA DE MODAL (Reutilizada) ---
         function showModal(modalId, htmlContent, onConfirmCallback, showCancelButton = false) {
             const modal = document.getElementById(modalId);
             if (!modal) return;
-            
             const messageEl = modal.querySelector('#modal-message');
-            if(messageEl && typeof htmlContent === 'string') {
-                messageEl.textContent = htmlContent;
-            }
+            if(messageEl && typeof htmlContent === 'string') messageEl.textContent = htmlContent;
             
             const confirmBtn = modal.querySelector('#modal-confirm');
             const cancelBtn = modal.querySelector('#modal-cancel');
@@ -367,61 +260,39 @@
                     closeModal(modalId); 
                 };
             }
-
             if (cancelBtn) {
                 cancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
-                if(showCancelButton) {
-                    cancelBtn.onclick = () => closeModal(modalId);
-                }
+                if(showCancelButton) cancelBtn.onclick = () => closeModal(modalId);
             }
-            
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
 
         function closeModal(modalId = 'modal') {
-            const modal = document.getElementById(modalId);
-            if (!modal) return; 
-
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            document.getElementById(modalId)?.classList.add('hidden');
         }
 
-        // --- FUNÇÃO DE AUTOCOMPLETE DO GOOGLE PLACES ---
         function initAutocomplete(inputElement) {
-            // Verifica se a API do Google foi carregada
             if (inputElement && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                new google.maps.places.Autocomplete(inputElement, { 
-                    types: ['address'], 
-                    componentRestrictions: { 'country': 'br' } 
-                });
+                new google.maps.places.Autocomplete(inputElement, { types: ['address'], componentRestrictions: { 'country': 'br' } });
             }
         }
         
-        // --- INICIALIZAÇÃO DO GOOGLE MAPS ---
         function initializeGoogleMaps() {
-            // Evita adicionar o script múltiplas vezes
             if (document.getElementById('google-maps-script-tag')) return;
-            
             const script = document.createElement('script');
             script.id = 'google-maps-script-tag';
             script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
             script.async = true;
-            script.defer = true;
             document.head.appendChild(script);
         }
 
-        // --- NAVEGAÇÃO ENTRE TELAS ---
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-            const activeScreen = document.getElementById(screenId);
-            if (activeScreen) {
-                activeScreen.classList.add('active');
-            }
+            document.getElementById(screenId)?.classList.add('active');
             localStorage.setItem('lastAdminScreen', screenId);
         }
 
-        // --- LÓGICA DE LOGIN/LOGOUT DO ADMIN ---
         async function loginAdmin() {
             const matricula = document.getElementById('admin-id').value.trim();
             const password = document.getElementById('admin-password').value.trim();
@@ -433,76 +304,50 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient
-                .from('users')
-                .select('*')
-                .eq('matricula', matricula)
-                .eq('password', password)
-                .eq('is_admin', true);
+            const { data, error } = await supabaseClient.from('users').select('*').eq('matricula', matricula).eq('password', password).eq('is_admin', true).single();
             
-            if (error) { 
-                console.error('Erro no Supabase durante o login:', error);
-                errorEl.textContent = 'Ocorreu um erro no servidor. Tente novamente.';
-                errorEl.classList.remove('hidden');
-                return; 
-            }
-
-            if (data && data.length === 1) {
-                const user = data[0];
-                state.currentUser = user;
-                localStorage.setItem('loggedInAdmin', JSON.stringify(user));
-                document.getElementById('admin-welcome-message').textContent = `Olá, ${user.name}!`;
-                
-                errorEl.classList.add('hidden');
-                document.getElementById('admin-id').value = '';
-                document.getElementById('admin-password').value = '';
-                
-                await setupAdminScreen();
-                showScreen('admin-screen');
-            } else {
-                console.log('Tentativa de login falhou. Nenhum admin encontrado com essas credenciais.');
+            if (error || !data) {
                 errorEl.textContent = 'Matrícula, senha ou permissão de admin inválida!';
                 errorEl.classList.remove('hidden');
+                return;
             }
+
+            state.currentUser = data;
+            localStorage.setItem('loggedInAdmin', JSON.stringify(data));
+            document.getElementById('admin-welcome-message').textContent = `Olá, ${data.name}!`;
+            errorEl.classList.add('hidden');
+            document.getElementById('admin-id').value = '';
+            document.getElementById('admin-password').value = '';
+            
+            await setupAdminScreen();
+            showScreen('admin-screen');
         }
         
         function logoutAdmin() {
+            if (state.supabaseSubscription) {
+                supabaseClient.removeChannel(state.supabaseSubscription);
+                state.supabaseSubscription = null;
+            }
             state.currentUser = null;
             state.allUsers = [];
-            state.lastAdminRequestedRideId = null;
+            state.adminActiveRides = [];
             localStorage.removeItem('loggedInAdmin');
-            localStorage.removeItem('lastAdminRequestedRideId');
-            
-            if (state.adminStatusInterval) {
-                clearInterval(state.adminStatusInterval);
-                state.adminStatusInterval = null;
-            }
-            
-            document.getElementById('admin-request-form').classList.remove('hidden');
-            document.getElementById('admin-ride-status').classList.add('hidden');
-            
             showScreen('initial-screen');
         }
-
-        // --- LÓGICA DA TELA DO ADMINISTRADOR ---
 
         async function setupAdminScreen() {
             const { data, error } = await supabaseClient.from('users').select('id, name, company, address');
             if (error) {
                 showModal('modal', 'Erro ao carregar lista de colaboradores.');
-                console.error('Erro ao buscar usuários:', error);
                 return;
             }
             state.allUsers = data;
 
-            const companies = [...new Set(data.map(user => user.company).filter(Boolean))];
+            const companies = [...new Set(data.map(user => user.company).filter(Boolean))].sort();
             const companySelect = document.getElementById('company-select');
             companySelect.innerHTML = '<option value="">-- Selecione uma empresa --</option>';
-            companies.sort().forEach(company => {
-                const option = document.createElement('option');
-                option.value = company;
-                option.textContent = company;
-                companySelect.appendChild(option);
+            companies.forEach(company => {
+                companySelect.innerHTML += `<option value="${company}">${company}</option>`;
             });
             
             companySelect.addEventListener('change', handleCompanyChange);
@@ -510,10 +355,8 @@
             document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
             document.getElementById('admin-request-ride-btn').onclick = adminRequestRide;
             
-            state.lastAdminRequestedRideId = localStorage.getItem('lastAdminRequestedRideId');
-            if (state.lastAdminRequestedRideId) {
-                adminCheckRideStatus();
-            }
+            await fetchAllAdminRides();
+            setupRealtimeSubscription();
         }
 
         function handleCompanyChange(event) {
@@ -547,14 +390,12 @@
              if (event.target.value) {
                  rideDetails.classList.remove('hidden');
                  adminUpdateDestinationFields(document.getElementById('admin-passenger-count').value);
-                 
                  const selectedOption = event.target.options[event.target.selectedIndex];
                  const address = selectedOption.dataset.address;
                  if (address) {
                     const firstDestinationInput = document.getElementById('admin-destination-1');
                     if(firstDestinationInput) firstDestinationInput.value = address;
                  }
-
              } else {
                  rideDetails.classList.add('hidden');
              }
@@ -563,30 +404,16 @@
         function adminUpdateDestinationFields(passengerCount) {
             const container = document.getElementById('admin-destinations-container');
             container.innerHTML = ''; 
-
             for (let i = 1; i <= passengerCount; i++) {
-                const inputContainer = document.createElement('div');
-                inputContainer.className = 'mb-4 input-and-button-container';
-
-                const label = document.createElement('label');
-                label.htmlFor = `admin-destination-${i}`;
-                label.className = 'block mb-2 text-sm font-medium';
-                label.textContent = `Destino Passageiro ${i}`;
-                if (i === 1) {
-                    label.innerHTML += ' <span class="text-red-400">(Obrigatório)</span>';
-                }
-
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.id = `admin-destination-${i}`;
-                input.className = 'w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none';
-                input.placeholder = 'Digite o endereço completo';
-                
-                inputContainer.appendChild(label);
-                inputContainer.appendChild(input);
-                container.appendChild(inputContainer);
-
-                initAutocomplete(input);
+                const labelText = i === 1 ? 'Destino Passageiro 1 <span class="text-red-400">(Obrigatório)</span>' : `Destino Passageiro ${i}`;
+                container.innerHTML += `
+                    <div class="mb-4">
+                        <label for="admin-destination-${i}" class="block mb-2 text-sm font-medium">${labelText}</label>
+                        <input type="text" id="admin-destination-${i}" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço completo">
+                    </div>`;
+            }
+            for (let i = 1; i <= passengerCount; i++) {
+                initAutocomplete(document.getElementById(`admin-destination-${i}`));
             }
         }
         
@@ -595,22 +422,12 @@
             const collaboratorId = document.getElementById('collaborator-select').value;
             const collaborator = state.allUsers.find(u => u.id == collaboratorId);
 
-            if (!collaborator) {
-                showModal('modal', 'Por favor, selecione um colaborador válido.');
-                return;
-            }
+            if (!collaborator) return showModal('modal', 'Por favor, selecione um colaborador válido.');
 
             const passengerCount = document.getElementById('admin-passenger-count').value;
-            const destinations = [];
-            for (let i = 1; i <= passengerCount; i++) {
-                const input = document.getElementById(`admin-destination-${i}`);
-                destinations.push(input ? input.value.trim() : '');
-            }
+            const destinations = Array.from({ length: passengerCount }, (_, i) => document.getElementById(`admin-destination-${i+1}`)?.value.trim() || '');
 
-            if (!destinations[0]) {
-                showModal('modal', 'O destino do primeiro passageiro é obrigatório.');
-                return;
-            }
+            if (!destinations[0]) return showModal('modal', 'O destino do primeiro passageiro é obrigatório.');
             
             requestBtn.disabled = true;
             requestBtn.textContent = 'Processando...';
@@ -619,131 +436,122 @@
                 const newRideData = {
                     destination: JSON.stringify(destinations),
                     observation: document.getElementById('admin-observation').value.trim(),
-                    passenger_count: parseInt(passengerCount),
                     status: 'requested',
-                    userId: collaborator.id, // ID do colaborador
-                    userName: collaborator.name, // Nome do colaborador
-                    userCompany: collaborator.company, // Empresa do colaborador
+                    userId: collaborator.id,
+                    userName: collaborator.name,
+                    userCompany: collaborator.company,
                     requestTime: new Date().toISOString(),
-                    request_type: 'immediate', // Admin sempre solicita imediato por padrão
-                    requested_by_admin_id: state.currentUser.id, // ID do admin que solicitou
-                    requested_by_admin_name: state.currentUser.name
+                    request_type: 'immediate',
+                    requested_by_admin_id: state.currentUser.id,
+                    requested_by_admin_name: state.currentUser.name,
+                    passenger_count: parseInt(passengerCount)
                 };
 
-                const { data, error } = await supabaseClient.from('rides').insert([newRideData]).select().single();
-
-                if (error) throw new Error('Não foi possível solicitar a corrida: ' + error.message);
+                const { data, error } = await supabaseClient.from('rides').insert(newRideData).select().single();
+                if (error) throw error;
                 
-                state.lastAdminRequestedRideId = data.id;
-                localStorage.setItem('lastAdminRequestedRideId', data.id);
-                
+                // Limpa o formulário
                 document.getElementById('company-select').value = '';
                 handleCompanyChange({target: {value: ''}});
-                
-                adminCheckRideStatus();
+                document.getElementById('admin-observation').value = '';
 
+                showModal('modal', `Corrida para ${data.userName} solicitada com sucesso!`);
             } catch(error) {
-                showModal('modal', error.message || 'Ocorreu um erro inesperado.');
+                showModal('modal', `Não foi possível solicitar a corrida: ${error.message}`);
             } finally {
                 requestBtn.disabled = false;
                 requestBtn.textContent = 'SOLICITAR TAXI';
             }
         }
         
-        // --- LÓGICA DE STATUS DA CORRIDA (VISÃO ADMIN) ---
-        
-        async function adminCheckRideStatus() {
-             if (!state.lastAdminRequestedRideId) return;
-
-             const requestForm = document.getElementById('admin-request-form');
-             const statusDiv = document.getElementById('admin-ride-status');
-             
-             const { data: ride, error } = await supabaseClient
+        async function fetchAllAdminRides() {
+            if (!state.currentUser) return;
+            const { data, error } = await supabaseClient
                 .from('rides')
                 .select('*')
-                .eq('id', state.lastAdminRequestedRideId)
-                .single();
+                .eq('requested_by_admin_id', state.currentUser.id)
+                .in('status', ['requested', 'assigned', 'accepted', 'arrived_pickup', 'in_progress', 'scheduled']);
             
-             if (ride && !['completed', 'canceled'].includes(ride.status)) {
-                 requestForm.classList.add('hidden');
-                 statusDiv.classList.remove('hidden');
-                 adminUpdateStatusMessage(ride);
-                 
-                 if (!state.adminStatusInterval) {
-                     state.adminStatusInterval = setInterval(adminCheckRideStatus, 10000);
-                 }
-             } else {
-                 localStorage.removeItem('lastAdminRequestedRideId');
-                 state.lastAdminRequestedRideId = null;
-                 if(state.adminStatusInterval) clearInterval(state.adminStatusInterval);
-                 state.adminStatusInterval = null;
+            if (error) {
+                console.error("Erro ao buscar corridas ativas:", error);
+                return;
+            }
+            state.adminActiveRides = data || [];
+            renderAdminRideList();
+        }
 
-                 statusDiv.classList.add('hidden');
-                 requestForm.classList.remove('hidden');
-                 if(ride) {
-                    showModal('modal', `A corrida para ${ride.userName} foi ${translateStatus(ride.status)}.`);
-                 }
-             }
-        }
-        
-        function adminUpdateStatusMessage(ride) {
-            document.getElementById('admin-status-message').textContent = `Status: ${translateStatus(ride.status)}`;
-            document.getElementById('admin-status-collaborator').textContent = `Corrida para: ${ride.userName}`;
+        function renderAdminRideList() {
+            const container = document.getElementById('admin-active-rides-container');
+            if (!container) return;
             
-            const cancelBtn = document.getElementById('admin-cancel-ride-btn');
-            if (['requested', 'assigned', 'accepted'].includes(ride.status)) {
-                cancelBtn.classList.remove('hidden');
-            } else {
-                cancelBtn.classList.add('hidden');
+            if (state.adminActiveRides.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 p-4">Nenhuma solicitação ativa no momento.</p>';
+                return;
             }
+
+            container.innerHTML = state.adminActiveRides
+                .sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime))
+                .map(ride => {
+                    const canCancel = ['requested', 'assigned', 'accepted', 'scheduled'].includes(ride.status);
+                    const cancelButton = canCancel ? `<button onclick="adminCancelRide(${ride.id})" class="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancelar</button>` : '';
+                    return `
+                        <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold">${ride.userName}</p>
+                                <p class="text-sm text-cyan-400">${translateStatus(ride.status)}</p>
+                            </div>
+                            ${cancelButton}
+                        </div>
+                    `;
+            }).join('');
         }
-        
-        async function adminCancelRide() {
-            if (state.lastAdminRequestedRideId) {
-                showModal('modal', 'Tem certeza que deseja cancelar esta solicitação?', async () => {
-                    const { error } = await supabaseClient.from('rides').update({ status: 'canceled' }).eq('id', state.lastAdminRequestedRideId);
-                    if (error) {
-                        showModal('modal', 'Não foi possível cancelar a corrida.');
-                    } else {
-                        showModal('modal', 'A corrida foi cancelada.', adminCheckRideStatus);
-                    }
-                }, true); 
-            }
+
+        async function adminCancelRide(rideId) {
+            showModal('modal', 'Tem certeza que deseja cancelar esta solicitação?', async () => {
+                const { error } = await supabaseClient.from('rides').update({ status: 'canceled' }).eq('id', rideId);
+                if (error) {
+                    showModal('modal', 'Não foi possível cancelar a corrida.');
+                } else {
+                    showModal('modal', 'A corrida foi cancelada com sucesso.');
+                }
+            }, true); 
+        }
+
+        function setupRealtimeSubscription() {
+            if (state.supabaseSubscription) return;
+            state.supabaseSubscription = supabaseClient.channel('public:rides')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (payload) => {
+                    // Atualiza a lista de corridas quando algo muda
+                    fetchAllAdminRides();
+                })
+                .subscribe();
         }
         
         function translateStatus(status) {
-            const translations = {
-                'requested': 'SOLICITADO', 
-                'assigned': 'DESIGNADO', 
-                'accepted': 'ACEITO',
-                'arrived_pickup': 'NO LOCAL', 
-                'in_progress': 'EM ANDAMENTO',
-                'scheduled': 'AGENDADO',
-                'completed': 'FINALIZADA', 
-                'canceled': 'CANCELADA',
-            };
+            const translations = {'requested':'SOLICITADO','assigned':'DESIGNADO','accepted':'ACEITO','arrived_pickup':'NO LOCAL','in_progress':'EM ANDAMENTO','scheduled':'AGENDADO','completed':'FINALIZADA','canceled':'CANCELADA'};
             return translations[status] || status.toUpperCase();
         }
 
-        // --- INICIALIZAÇÃO DA APLICAÇÃO ---
         function initApp() {
             document.getElementById('app-icon-container').innerHTML = `<img src="${state.appIcon}" class="h-full w-full object-contain">`;
-            
             initializeGoogleMaps();
-
             const loggedInAdmin = localStorage.getItem('loggedInAdmin');
             if (loggedInAdmin) {
-                 state.currentUser = JSON.parse(loggedInAdmin);
-                 document.getElementById('admin-welcome-message').textContent = `Olá, ${state.currentUser.name}!`;
-                 setupAdminScreen();
-                 showScreen('admin-screen');
+                 try {
+                     state.currentUser = JSON.parse(loggedInAdmin);
+                     document.getElementById('admin-welcome-message').textContent = `Olá, ${state.currentUser.name}!`;
+                     setupAdminScreen();
+                     showScreen('admin-screen');
+                 } catch (e) {
+                     localStorage.removeItem('loggedInAdmin');
+                     showScreen('initial-screen');
+                 }
             } else {
-                 showScreen(localStorage.getItem('lastAdminScreen') || 'initial-screen');
+                 showScreen('initial-screen');
             }
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
-
     </script>
 </body>
 </html>
