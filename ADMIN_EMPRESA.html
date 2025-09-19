@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARCIA TRANSPORTES</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            background-color: #000;
+        }
+        .main-gradient {
+            background: linear-gradient(135deg, #000000, #000000);
+        }
+        .button-gradient {
+            background: linear-gradient(to right, #000000, #000000);
+            border: 2px solid white;
+            position: relative;
+            overflow: hidden;
+        }
+        .button-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0.3), rgba(255,255,255,0));
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+        .button-gradient:hover::before {
+            transform: translateX(0);
+        }
+
+        .button-gradient:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .card-gradient {
+             background: linear-gradient(135deg, #000000, #000000);
+        }
+        .screen {
+            display: none;
+            background-color: #000;
+        }
+        .screen.active {
+            display: block;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #6d28d9;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .pac-container {
+            background-color: #374151;
+            border-radius: 8px;
+            border: 1px solid #4b5563;
+        }
+        .pac-item {
+            padding: 10px;
+            font-size: 14px;
+            color: #d1d5db;
+            cursor: pointer;
+        }
+        .pac-item:hover {
+            background-color: #4b5563;
+        }
+        .pac-item-query {
+            font-weight: 600;
+            color: #f3f4f6;
+        }
+
+        #mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out, visibility 0.3s;
+            visibility: hidden;
+        }
+        #mobile-menu.active {
+            transform: translateX(0);
+            visibility: visible;
+        }
+        .menu-backdrop {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .text-black { color: #ffffff !important; }
+        .text-gray-800 { color: #ffffff !important; }
+        .text-gray-400 { color: #ffffff !important; }
+        .text-gray-300 { color: #ffffff !important; }
+        .text-gray-600 { color: #ffffff !important; }
+        .text-gray-700 { color: #ffffff !important; }
+        .text-gray-500 { color: #ffffff !important; }
+        .text-green-300 { color: #ffffff !important; }
+        .text-yellow-300 { color: #ffffff !important; }
+        .text-cyan-400 { color: #00ffff !important; }
+
+        h1, h2, h3, p, button, label, input::placeholder, textarea::placeholder, select, option {
+            color: #ffffff !important;
+        }
+       
+        input, select, textarea {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+        }
+
+        .logout-button-green {
+            background-color: #16a34a;
+            border: 2px solid #16a34a;
+            color: #ffffff !important;
+        }
+        .logout-button-green:hover {
+            background-color: #15803d;
+            border-color: #15803d;
+        }
+
+
+        #menu-toggle-btn svg path {
+            stroke: #ffffff !important;
+        }
+        
+        #user-login-screen button:first-child, #admin-login-screen button:first-child {
+            color: #ffffff !important;
+        }
+
+        .content-wrapper {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+        }
+
+        .input-and-button-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        #destination {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #request-ride-btn {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .title-and-button-alignment {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .title-and-button-alignment h2 {
+            width: 100%;
+            text-align: center;
+        }
+
+        #intro-video {
+            width: 100%;
+            height: 100vh; 
+            object-fit: cover; 
+        }
+
+        #video-container {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999; 
+            background-color: black; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .icon-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 0.5rem;
+        }
+        
+        #user-id, #user-password, #admin-id, #admin-password {
+            font-size: 14px;
+            text-align: center;
+        }
+        #user-id::placeholder, #user-password::placeholder, #admin-id::placeholder, #admin-password::placeholder {
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
+
+    <!-- REMOVIDO PARA SIMPLICIDADE, PODE SER REATIVADO -->
+    <!-- <div id="video-container">
+        <video id="intro-video" autoplay muted playsinline>
+            <source src="images/video1.mp4" type="video/mp4">
+            Seu navegador não suporta o elemento de vídeo.
+        </video>
+    </div> -->
+
+    <div id="app-container" class="w-full max-w-md mx-auto relative"> 
+
+        <!-- TELA INICIAL COM OPÇÃO DE ADMIN -->
+        <div id="initial-screen" class="screen active text-center">
+            <div class="flex flex-col items-center justify-center mb-4">
+                <div id="app-icon-container" class="h-28 w-28 mb-2"></div>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-bold text-black mb-2">GARCIA TRANSPORTES</h1>
+            <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
+            <div class="space-y-4">
+                 <button onclick="window.location.href='./passageiro.html'" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-sky-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    PASSAGEIRO
+                </button>
+                 <button onclick="showScreen('admin-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    ADMINISTRADOR
+                </button>
+            </div>
+        </div>
+        
+        <!-- TELA DE LOGIN DO ADMINISTRADOR -->
+        <div id="admin-login-screen" class="screen">
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
+            
+            <img src="images/admin_icon.png" alt="Ícone do Administrador" class="mx-auto icon-img" style="width: 80px; height: 80px;">
+
+            <h2 class="text-3xl font-bold mb-6 text-center">Login do Administrador</h2>
+            <div class="mb-4">
+                <label for="admin-id" class="block mb-2 text-sm font-medium">Matrícula</label>
+                <input type="text" id="admin-id" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite sua matrícula de admin">
+            </div>
+            <div class="mb-4">
+                <label for="admin-password" class="block mb-2 text-sm font-medium">Senha</label>
+                <input type="password" id="admin-password" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite sua senha">
+            </div>
+            <button onclick="loginAdmin()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
+            <p id="admin-login-error" class="text-red-500 text-center mt-4 hidden">Matrícula, senha ou permissão de admin inválida!</p>
+        </div>
+        
+        <!-- TELA PRINCIPAL DO ADMINISTRADOR -->
+        <div id="admin-screen" class="screen">
+             <div class="flex justify-between items-center mb-6">
+                <div></div>
+                <h2 class="text-2xl font-bold">Área do Administrador</h2>
+                <button onclick="logoutAdmin()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
+            </div>
+            <p id="admin-welcome-message" class="text-center text-lg text-gray-300 mb-6"></p>
+
+            <div id="admin-ride-status" class="hidden mt-8 text-center card-gradient p-4 rounded-lg mb-6">
+                 <div id="admin-status-loader" class="loader mx-auto mb-2"></div>
+                 <p id="admin-status-message" class="mt-4 text-lg"></p>
+                 <p id="admin-status-collaborator" class="text-sm text-gray-400"></p>
+                 <button id="admin-cancel-ride-btn" onclick="adminCancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700">CANCELAR SOLICITAÇÃO</button>
+            </div>
+
+            <div id="admin-request-form" class="card-gradient p-6 rounded-lg">
+                <h3 class="text-xl font-semibold mb-6 text-center">Solicitar Viagem para Colaborador</h3>
+
+                <div class="mb-4">
+                    <label for="company-select" class="block mb-2 text-sm font-medium">1. Selecione a Empresa</label>
+                    <select id="company-select" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
+                        <option value="">-- Carregando empresas... --</option>
+                    </select>
+                </div>
+
+                 <div class="mb-6">
+                    <label for="collaborator-select" class="block mb-2 text-sm font-medium">2. Selecione o Colaborador</label>
+                    <select id="collaborator-select" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" disabled>
+                        <option value="">-- Selecione uma empresa primeiro --</option>
+                    </select>
+                </div>
+                
+                 <div id="admin-ride-details" class="hidden">
+                     <hr class="border-gray-600 my-6">
+                     <h3 class="text-lg font-semibold mb-4 text-center">3. Detalhes da Viagem</h3>
+                     
+                    <div class="mb-4 input-and-button-container">
+                        <label for="admin-passenger-count" class="block mb-2 text-sm font-medium">Quantidade de Passageiros?</label>
+                        <select id="admin-passenger-count" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
+                            <option value="1">1 Passageiro</option>
+                            <option value="2">2 Passageiros</option>
+                            <option value="3">3 Passageiros</option>
+                            <option value="4">4 Passageiros</option>
+                        </select>
+                    </div>
+
+                    <div id="admin-destinations-container" class="w-full"></div>
+                    
+                    <div class="mb-4 input-and-button-container">
+                        <label for="admin-observation" class="block mb-2 text-sm font-medium">Observação (opcional)</label>
+                        <textarea id="admin-observation" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Ex: Ponto de referência..." maxlength="300" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="input-and-button-container mt-6">
+                        <button id="admin-request-ride-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
+                            SOLICITAR TAXI
+                        </button>
+                    </div>
+                 </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
+            <p id="modal-message" class="mb-4 text-lg"></p>
+            <div id="modal-buttons" class="flex justify-center gap-4">
+                 <button id="modal-cancel" onclick="closeModal('modal')" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
+                 <button id="modal-confirm" onclick="closeModal('modal')" class="py-2 px-8 font-semibold rounded-lg button-gradient">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CHAVE DE API DO GOOGLE MAPS ---
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg';
+
+        // --- CONFIGURAÇÃO INICIAL E ESTADO DA APLICAÇÃO ---
+        let state = {
+            appIcon: 'images/user.png', 
+            currentUser: null, // Guarda o admin logado
+            allUsers: [], // Guarda todos os usuários para os selects
+            lastAdminRequestedRideId: null, // Guarda o ID da última corrida solicitada pelo admin
+            adminStatusInterval: null
+        };
+
+        // --- CONFIGURAÇÃO DO SUPABASE ---
+        const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_a95qQRM7LfINIPGhajJqvw_kZd51KJY'; 
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- LÓGICA DE MODAL (Reutilizada) ---
+        function showModal(modalId, htmlContent, onConfirmCallback, showCancelButton = false) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            
+            const messageEl = modal.querySelector('#modal-message');
+            if(messageEl && typeof htmlContent === 'string') {
+                messageEl.textContent = htmlContent;
+            }
+            
+            const confirmBtn = modal.querySelector('#modal-confirm');
+            const cancelBtn = modal.querySelector('#modal-cancel');
+
+            if (confirmBtn) {
+                confirmBtn.onclick = () => { 
+                    if (onConfirmCallback) onConfirmCallback(); 
+                    closeModal(modalId); 
+                };
+            }
+
+            if (cancelBtn) {
+                cancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
+                if(showCancelButton) {
+                    cancelBtn.onclick = () => closeModal(modalId);
+                }
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(modalId = 'modal') {
+            const modal = document.getElementById(modalId);
+            if (!modal) return; 
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // --- FUNÇÃO DE AUTOCOMPLETE DO GOOGLE PLACES ---
+        function initAutocomplete(inputElement) {
+            // Verifica se a API do Google foi carregada
+            if (inputElement && typeof google !== 'undefined' && google.maps && google.maps.places) {
+                new google.maps.places.Autocomplete(inputElement, { 
+                    types: ['address'], 
+                    componentRestrictions: { 'country': 'br' } 
+                });
+            }
+        }
+        
+        // --- INICIALIZAÇÃO DO GOOGLE MAPS ---
+        function initializeGoogleMaps() {
+            // Evita adicionar o script múltiplas vezes
+            if (document.getElementById('google-maps-script-tag')) return;
+            
+            const script = document.createElement('script');
+            script.id = 'google-maps-script-tag';
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+
+        // --- NAVEGAÇÃO ENTRE TELAS ---
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            const activeScreen = document.getElementById(screenId);
+            if (activeScreen) {
+                activeScreen.classList.add('active');
+            }
+            localStorage.setItem('lastAdminScreen', screenId);
+        }
+
+        // --- LÓGICA DE LOGIN/LOGOUT DO ADMIN ---
+        async function loginAdmin() {
+            const matricula = document.getElementById('admin-id').value.trim();
+            const password = document.getElementById('admin-password').value.trim();
+            const errorEl = document.getElementById('admin-login-error');
+
+            if (!matricula || !password) {
+                errorEl.textContent = 'Por favor, preencha todos os campos.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('matricula', matricula)
+                .eq('password', password)
+                .eq('is_admin', true);
+            
+            if (error) { 
+                console.error('Erro no Supabase durante o login:', error);
+                errorEl.textContent = 'Ocorreu um erro no servidor. Tente novamente.';
+                errorEl.classList.remove('hidden');
+                return; 
+            }
+
+            if (data && data.length === 1) {
+                const user = data[0];
+                state.currentUser = user;
+                localStorage.setItem('loggedInAdmin', JSON.stringify(user));
+                document.getElementById('admin-welcome-message').textContent = `Olá, ${user.name}!`;
+                
+                errorEl.classList.add('hidden');
+                document.getElementById('admin-id').value = '';
+                document.getElementById('admin-password').value = '';
+                
+                await setupAdminScreen();
+                showScreen('admin-screen');
+            } else {
+                console.log('Tentativa de login falhou. Nenhum admin encontrado com essas credenciais.');
+                errorEl.textContent = 'Matrícula, senha ou permissão de admin inválida!';
+                errorEl.classList.remove('hidden');
+            }
+        }
+        
+        function logoutAdmin() {
+            state.currentUser = null;
+            state.allUsers = [];
+            state.lastAdminRequestedRideId = null;
+            localStorage.removeItem('loggedInAdmin');
+            localStorage.removeItem('lastAdminRequestedRideId');
+            
+            if (state.adminStatusInterval) {
+                clearInterval(state.adminStatusInterval);
+                state.adminStatusInterval = null;
+            }
+            
+            document.getElementById('admin-request-form').classList.remove('hidden');
+            document.getElementById('admin-ride-status').classList.add('hidden');
+            
+            showScreen('initial-screen');
+        }
+
+        // --- LÓGICA DA TELA DO ADMINISTRADOR ---
+
+        async function setupAdminScreen() {
+            const { data, error } = await supabaseClient.from('users').select('id, name, company, address');
+            if (error) {
+                showModal('modal', 'Erro ao carregar lista de colaboradores.');
+                console.error('Erro ao buscar usuários:', error);
+                return;
+            }
+            state.allUsers = data;
+
+            const companies = [...new Set(data.map(user => user.company).filter(Boolean))];
+            const companySelect = document.getElementById('company-select');
+            companySelect.innerHTML = '<option value="">-- Selecione uma empresa --</option>';
+            companies.sort().forEach(company => {
+                const option = document.createElement('option');
+                option.value = company;
+                option.textContent = company;
+                companySelect.appendChild(option);
+            });
+            
+            companySelect.addEventListener('change', handleCompanyChange);
+            document.getElementById('collaborator-select').addEventListener('change', handleCollaboratorChange);
+            document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
+            document.getElementById('admin-request-ride-btn').onclick = adminRequestRide;
+            
+            state.lastAdminRequestedRideId = localStorage.getItem('lastAdminRequestedRideId');
+            if (state.lastAdminRequestedRideId) {
+                adminCheckRideStatus();
+            }
+        }
+
+        function handleCompanyChange(event) {
+            const selectedCompany = event.target.value;
+            const collaboratorSelect = document.getElementById('collaborator-select');
+            const rideDetails = document.getElementById('admin-ride-details');
+            
+            collaboratorSelect.innerHTML = '';
+            rideDetails.classList.add('hidden');
+            
+            if (!selectedCompany) {
+                collaboratorSelect.innerHTML = '<option value="">-- Selecione uma empresa primeiro --</option>';
+                collaboratorSelect.disabled = true;
+                return;
+            }
+
+            const collaborators = state.allUsers.filter(user => user.company === selectedCompany);
+            collaboratorSelect.innerHTML = '<option value="">-- Selecione um colaborador --</option>';
+            collaborators.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = user.name;
+                option.dataset.address = user.address || '';
+                collaboratorSelect.appendChild(option);
+            });
+            collaboratorSelect.disabled = false;
+        }
+        
+        function handleCollaboratorChange(event) {
+             const rideDetails = document.getElementById('admin-ride-details');
+             if (event.target.value) {
+                 rideDetails.classList.remove('hidden');
+                 adminUpdateDestinationFields(document.getElementById('admin-passenger-count').value);
+                 
+                 const selectedOption = event.target.options[event.target.selectedIndex];
+                 const address = selectedOption.dataset.address;
+                 if (address) {
+                    const firstDestinationInput = document.getElementById('admin-destination-1');
+                    if(firstDestinationInput) firstDestinationInput.value = address;
+                 }
+
+             } else {
+                 rideDetails.classList.add('hidden');
+             }
+        }
+        
+        function adminUpdateDestinationFields(passengerCount) {
+            const container = document.getElementById('admin-destinations-container');
+            container.innerHTML = ''; 
+
+            for (let i = 1; i <= passengerCount; i++) {
+                const inputContainer = document.createElement('div');
+                inputContainer.className = 'mb-4 input-and-button-container';
+
+                const label = document.createElement('label');
+                label.htmlFor = `admin-destination-${i}`;
+                label.className = 'block mb-2 text-sm font-medium';
+                label.textContent = `Destino Passageiro ${i}`;
+                if (i === 1) {
+                    label.innerHTML += ' <span class="text-red-400">(Obrigatório)</span>';
+                }
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `admin-destination-${i}`;
+                input.className = 'w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none';
+                input.placeholder = 'Digite o endereço completo';
+                
+                inputContainer.appendChild(label);
+                inputContainer.appendChild(input);
+                container.appendChild(inputContainer);
+
+                initAutocomplete(input);
+            }
+        }
+        
+        async function adminRequestRide() {
+            const requestBtn = document.getElementById('admin-request-ride-btn');
+            const collaboratorId = document.getElementById('collaborator-select').value;
+            const collaborator = state.allUsers.find(u => u.id == collaboratorId);
+
+            if (!collaborator) {
+                showModal('modal', 'Por favor, selecione um colaborador válido.');
+                return;
+            }
+
+            const passengerCount = document.getElementById('admin-passenger-count').value;
+            const destinations = [];
+            for (let i = 1; i <= passengerCount; i++) {
+                const input = document.getElementById(`admin-destination-${i}`);
+                destinations.push(input ? input.value.trim() : '');
+            }
+
+            if (!destinations[0]) {
+                showModal('modal', 'O destino do primeiro passageiro é obrigatório.');
+                return;
+            }
+            
+            requestBtn.disabled = true;
+            requestBtn.textContent = 'Processando...';
+            
+            try {
+                const newRideData = {
+                    destination: JSON.stringify(destinations),
+                    observation: document.getElementById('admin-observation').value.trim(),
+                    passenger_count: parseInt(passengerCount),
+                    status: 'requested',
+                    userId: collaborator.id, // ID do colaborador
+                    userName: collaborator.name, // Nome do colaborador
+                    userCompany: collaborator.company, // Empresa do colaborador
+                    requestTime: new Date().toISOString(),
+                    request_type: 'immediate', // Admin sempre solicita imediato por padrão
+                    requested_by_admin_id: state.currentUser.id, // ID do admin que solicitou
+                    requested_by_admin_name: state.currentUser.name
+                };
+
+                const { data, error } = await supabaseClient.from('rides').insert([newRideData]).select().single();
+
+                if (error) throw new Error('Não foi possível solicitar a corrida: ' + error.message);
+                
+                state.lastAdminRequestedRideId = data.id;
+                localStorage.setItem('lastAdminRequestedRideId', data.id);
+                
+                document.getElementById('company-select').value = '';
+                handleCompanyChange({target: {value: ''}});
+                
+                adminCheckRideStatus();
+
+            } catch(error) {
+                showModal('modal', error.message || 'Ocorreu um erro inesperado.');
+            } finally {
+                requestBtn.disabled = false;
+                requestBtn.textContent = 'SOLICITAR TAXI';
+            }
+        }
+        
+        // --- LÓGICA DE STATUS DA CORRIDA (VISÃO ADMIN) ---
+        
+        async function adminCheckRideStatus() {
+             if (!state.lastAdminRequestedRideId) return;
+
+             const requestForm = document.getElementById('admin-request-form');
+             const statusDiv = document.getElementById('admin-ride-status');
+             
+             const { data: ride, error } = await supabaseClient
+                .from('rides')
+                .select('*')
+                .eq('id', state.lastAdminRequestedRideId)
+                .single();
+            
+             if (ride && !['completed', 'canceled'].includes(ride.status)) {
+                 requestForm.classList.add('hidden');
+                 statusDiv.classList.remove('hidden');
+                 adminUpdateStatusMessage(ride);
+                 
+                 if (!state.adminStatusInterval) {
+                     state.adminStatusInterval = setInterval(adminCheckRideStatus, 10000);
+                 }
+             } else {
+                 localStorage.removeItem('lastAdminRequestedRideId');
+                 state.lastAdminRequestedRideId = null;
+                 if(state.adminStatusInterval) clearInterval(state.adminStatusInterval);
+                 state.adminStatusInterval = null;
+
+                 statusDiv.classList.add('hidden');
+                 requestForm.classList.remove('hidden');
+                 if(ride) {
+                    showModal('modal', `A corrida para ${ride.userName} foi ${translateStatus(ride.status)}.`);
+                 }
+             }
+        }
+        
+        function adminUpdateStatusMessage(ride) {
+            document.getElementById('admin-status-message').textContent = `Status: ${translateStatus(ride.status)}`;
+            document.getElementById('admin-status-collaborator').textContent = `Corrida para: ${ride.userName}`;
+            
+            const cancelBtn = document.getElementById('admin-cancel-ride-btn');
+            if (['requested', 'assigned', 'accepted'].includes(ride.status)) {
+                cancelBtn.classList.remove('hidden');
+            } else {
+                cancelBtn.classList.add('hidden');
+            }
+        }
+        
+        async function adminCancelRide() {
+            if (state.lastAdminRequestedRideId) {
+                showModal('modal', 'Tem certeza que deseja cancelar esta solicitação?', async () => {
+                    const { error } = await supabaseClient.from('rides').update({ status: 'canceled' }).eq('id', state.lastAdminRequestedRideId);
+                    if (error) {
+                        showModal('modal', 'Não foi possível cancelar a corrida.');
+                    } else {
+                        showModal('modal', 'A corrida foi cancelada.', adminCheckRideStatus);
+                    }
+                }, true); 
+            }
+        }
+        
+        function translateStatus(status) {
+            const translations = {
+                'requested': 'SOLICITADO', 
+                'assigned': 'DESIGNADO', 
+                'accepted': 'ACEITO',
+                'arrived_pickup': 'NO LOCAL', 
+                'in_progress': 'EM ANDAMENTO',
+                'scheduled': 'AGENDADO',
+                'completed': 'FINALIZADA', 
+                'canceled': 'CANCELADA',
+            };
+            return translations[status] || status.toUpperCase();
+        }
+
+        // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+        function initApp() {
+            document.getElementById('app-icon-container').innerHTML = `<img src="${state.appIcon}" class="h-full w-full object-contain">`;
+            
+            initializeGoogleMaps();
+
+            const loggedInAdmin = localStorage.getItem('loggedInAdmin');
+            if (loggedInAdmin) {
+                 state.currentUser = JSON.parse(loggedInAdmin);
+                 document.getElementById('admin-welcome-message').textContent = `Olá, ${state.currentUser.name}!`;
+                 setupAdminScreen();
+                 showScreen('admin-screen');
+            } else {
+                 showScreen(localStorage.getItem('lastAdminScreen') || 'initial-screen');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
+
