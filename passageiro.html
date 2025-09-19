@@ -11,6 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        body, html {
+            background-color: #000;
+        }
         .main-gradient {
             background: linear-gradient(135deg, #000000, #000000);
         }
@@ -81,12 +84,14 @@
             color: #f3f4f6;
         }
 
-        .menu-overlay {
+        #mobile-menu {
             transform: translateX(100%);
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.3s ease-in-out, visibility 0.3s;
+            visibility: hidden;
         }
-        .menu-overlay.active {
+        #mobile-menu.active {
             transform: translateX(0);
+            visibility: visible;
         }
         .menu-backdrop {
             background-color: rgba(0, 0, 0, 0.7);
@@ -103,18 +108,22 @@
         .text-yellow-300 { color: #ffffff !important; }
         .text-cyan-400 { color: #00ffff !important; }
 
-        h1, h2, h3, p, button, label, input::placeholder, textarea::placeholder {
+        h1, h2, h3, p, button, label, input::placeholder, textarea::placeholder, select {
             color: #ffffff !important;
         }
+       
+        input, select, textarea {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+        }
 
-        /* Estilo para o novo botão Sair verde */
         .logout-button-green {
-            background-color: #16a34a; /* Cor verde (Tailwind green-600) */
+            background-color: #16a34a;
             border: 2px solid #16a34a;
             color: #ffffff !important;
         }
         .logout-button-green:hover {
-            background-color: #15803d; /* Cor verde mais escura no hover (Tailwind green-700) */
+            background-color: #15803d;
             border-color: #15803d;
         }
 
@@ -182,7 +191,6 @@
             align-items: center;
         }
 
-        /* Estilo para o ícone do passageiro na user-screen */
         #passenger-icon {
             width: 60px;
             height: 60px;
@@ -190,7 +198,6 @@
             margin-bottom: 0.5rem;
         }
         
-        /* Novos estilos para a tela de login */
         #user-id, #user-password {
             font-size: 14px;
             text-align: center;
@@ -210,7 +217,7 @@
     </div>
 
     <div id="menu-backdrop" class="fixed inset-0 z-40 hidden menu-backdrop" onclick="toggleMenu()"></div>
-    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 card-gradient p-6 z-50 menu-overlay">
+    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 card-gradient p-6 z-50">
         <div class="flex justify-end mb-8">
             <button onclick="toggleMenu()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
         </div>
@@ -267,19 +274,21 @@
                 <img id="cheguei-image" src="images/final.png" alt="Motorista Chegou" class="h-28 w-28 object-contain mb-4 hidden">
             </div>
 
-            <div class="title-and-button-alignment mb-2">
-                <img id="passenger-icon" src="images/icone_passageiro.png" alt="Ícone do Passageiro" class="mx-auto">
-                <div class="relative w-full flex justify-center items-center">
-                    <h2 class="text-2xl font-bold">Área do Passageiro</h2>
-                    <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none absolute right-0">
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                    </button>
-                </div>
+            <div class="flex justify-between items-center mb-2 title-and-button-alignment">
+                <img id="passenger-icon" src="images/icone_passageiro.png" alt="Ícone do Passageiro" class="mx-auto"> 
+                <h2 class="text-2xl font-bold">Área do Passageiro</h2>
+                <button id="menu-toggle-btn" onclick="toggleMenu()" class="lg:hidden p-2 text-gray-300 hover:text-white focus:outline-none absolute top-0 right-0">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
             </div>
 
             <p id="user-welcome-message" class="text-center text-xl text-gray-300 mb-4"></p>
-
-            <div id="user-status" class="hidden mt-8 text-center card-gradient p-4 rounded-lg mb-6">
+            
+            <div id="permission-denied-message" class="hidden card-gradient p-4 rounded-lg mb-6 text-center text-yellow-300 border-2 border-yellow-400">
+                <p class="font-semibold text-lg">Permissão para solicitar corridas desabilitada.</p>
+                <p class="text-sm">Apenas um administrador pode solicitar uma viagem para você. Acompanhe o status aqui.</p>
+            </div>
+                        <div id="user-status" class="hidden mt-8 text-center card-gradient p-4 rounded-lg mb-6">
                 <div id="status-icon-searching" class="hidden mx-auto mb-2">
                     <div class="loader mx-auto"></div>
                 </div>
@@ -288,6 +297,7 @@
                 <div id="status-icon-in-progress" class="hidden mx-auto mb-2"></div>
                 
                 <p id="user-status-message" class="mt-4 text-lg"></p>
+                <button id="edit-schedule-btn" onclick="openEditScheduleModal(state.currentUserRideId)" class="hidden mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-yellow-500 hover:bg-yellow-600">ALTERAR AGENDAMENTO</button>
                 <button id="cancel-ride-btn" onclick="cancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700">CANCELAR SOLICITAÇÃO</button>
             </div>
 
@@ -354,10 +364,11 @@
             <h3 class="text-2xl font-bold mb-4 text-center">Histórico de Corridas</h3>
             <div id="user-ride-history-modal" class="overflow-y-auto mb-6"></div> 
             <div class="flex justify-center">
-                <button onclick="closeModal('history-modal'); toggleMenu()" class="py-2 px-6 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">Fechar</button>
+                <button onclick="closeModal('history-modal');" class="py-2 px-6 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">Fechar</button>
             </div>
         </div>
     </div>
+
 
     <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
@@ -379,17 +390,16 @@
 
 
     <script>
-        // --- CONFIGURAÇÃO INICIAL E DADOS MOCADOS ---
+        // --- CONFIGURAÇÃO INICIAL E ESTADO DA APLICAÇÃO ---
         let state = {
             rides: [],
             users: [],
             appIcon: 'images/user.png', 
             currentUserRideId: null, 
-            currentUserId: null,
+            currentUser: null,
             userStatusInterval: null 
         };
 
-        // Variáveis para gerenciar o estado da solicitação de corrida
         let selectedDestinations = []; 
         let selectedObservation = '';
         let selectedRequestType = ''; 
@@ -398,41 +408,34 @@
 
         // --- CONFIGURAÇÃO DO SUPABASE ---
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'sb_publishable_a95qQRM7LfINIPGhajJqvw_kZd51KJY'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- LÓGICA DE MODAL ---
-        function showModal(modalId, htmlContent, onConfirmCallback, showCancelButton) {
+        function showModal(modalId, htmlContent, onConfirmCallback, showCancelButton = false) {
             const modal = document.getElementById(modalId);
-            const modalContentContainer = modal.querySelector('#modal-message') || modal.querySelector('.modal-content'); 
-            const confirmBtn = modal.querySelector('#modal-confirm');
-            const cancelBtn = modal.querySelector('#modal-cancel');
-            const modalButtonsDiv = modal.querySelector('#modal-buttons') || modal.querySelector('.modal-buttons');
-
-            if (modalContentContainer && htmlContent) {
-                modalContentContainer.innerHTML = htmlContent;
+            if (!modal) return;
+            
+            const messageEl = modal.querySelector('#modal-message');
+            if(messageEl && typeof htmlContent === 'string') {
+                messageEl.textContent = htmlContent;
             }
             
-            if (confirmBtn) confirmBtn.onclick = null;
-            if (cancelBtn) cancelBtn.onclick = null;
+            const confirmBtn = modal.querySelector('#modal-confirm');
+            const cancelBtn = modal.querySelector('#modal-cancel');
 
-            if (showCancelButton && confirmBtn && cancelBtn && modalButtonsDiv) {
-                cancelBtn.style.display = 'inline-block';
-                confirmBtn.textContent = 'Confirmar';
+            if (confirmBtn) {
                 confirmBtn.onclick = () => { 
                     if (onConfirmCallback) onConfirmCallback(); 
                     closeModal(modalId); 
                 };
-                cancelBtn.onclick = () => { closeModal(modalId); };
-                modalButtonsDiv.innerHTML = ''; 
-                modalButtonsDiv.appendChild(cancelBtn); 
-                modalButtonsDiv.appendChild(confirmBtn); 
-            } else if (confirmBtn && modalButtonsDiv) {
-                cancelBtn.style.display = 'none';
-                confirmBtn.textContent = 'OK';
-                confirmBtn.onclick = () => { closeModal(modalId); };
-                modalButtonsDiv.innerHTML = ''; 
-                modalButtonsDiv.appendChild(confirmBtn); 
+            }
+
+            if (cancelBtn) {
+                cancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
+                if(showCancelButton) {
+                    cancelBtn.onclick = () => closeModal(modalId);
+                }
             }
             
             modal.classList.remove('hidden');
@@ -446,19 +449,10 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
 
-            if (modalId === 'modal') {
-                const modalMessageEl = modal.querySelector('#modal-message');
-                if (modalMessageEl) modalMessageEl.textContent = '';
-                const confirmBtn = modal.querySelector('#modal-confirm');
-                if (confirmBtn) confirmBtn.onclick = null;
-                const cancelBtn = modal.querySelector('#modal-cancel');
-                if (cancelBtn) cancelBtn.onclick = null;
-            } else if (modalId === 'history-modal') {
-                const historyContainer = document.getElementById('user-ride-history-modal');
-                if (historyContainer) historyContainer.innerHTML = '';
-            } else if (modalId === 'schedule-modal') {
-                document.getElementById('schedule-date').value = '';
-                document.getElementById('schedule-time').value = '';
+            if (modalId === 'schedule-modal') {
+                const confirmBtn = modal.querySelector('button.button-gradient');
+                confirmBtn.textContent = 'AGENDAR';
+                confirmBtn.onclick = confirmSchedule;
             }
         }
         
@@ -473,7 +467,7 @@
         // --- LÓGICA DE LOGIN ---
         async function loginUser() {
             const matricula = document.getElementById('user-id').value.trim();
-            const password = document.getElementById('user-password').value;
+            const password = document.getElementById('user-password').value.trim();
             const errorEl = document.getElementById('user-login-error');
 
             if (!matricula || !password) {
@@ -497,8 +491,8 @@
             }
 
             if (user) {
-                state.currentUserId = user.id;
-                localStorage.setItem('loggedInUserId', user.id);
+                state.currentUser = user; 
+                localStorage.setItem('loggedInUser', JSON.stringify(user));
                 document.getElementById('user-welcome-message').textContent = `Olá, ${user.name}!`;
                 
                 errorEl.classList.add('hidden');
@@ -509,6 +503,7 @@
                 selectedObservation = '';
                 selectedRequestType = '';
                 scheduledDateTime = null;
+                isProcessingRequest = false;
 
                 checkUserRideStatus(); 
                 showScreen('user-screen');
@@ -519,23 +514,41 @@
         }
 
         function logoutUser() {
-            state.currentUserId = null;
-            localStorage.removeItem('loggedInUserId');
+            state.currentUser = null;
+            state.currentUserRideId = null;
+            localStorage.removeItem('loggedInUser');
             localStorage.removeItem('currentUserRideId'); 
             localStorage.removeItem('lastScreen'); 
-            if (state.userStatusInterval) clearInterval(state.userStatusInterval); 
+            if (state.userStatusInterval) {
+                clearInterval(state.userStatusInterval);
+                state.userStatusInterval = null;
+            }
             
             document.getElementById('user-welcome-message').textContent = '';
-
-            selectedDestinations = [];
-            selectedObservation = '';
-            selectedRequestType = '';
-            scheduledDateTime = null;
+            document.getElementById('user-request-form').classList.remove('hidden');
+            document.getElementById('user-status').classList.add('hidden');
 
             showScreen('initial-screen');
         }
 
         // --- NAVEGAÇÃO ENTRE TELAS ---
+        function updateUserScreenView() {
+            const requestForm = document.getElementById('user-request-form');
+            const permissionMessage = document.getElementById('permission-denied-message');
+            const userStatusDiv = document.getElementById('user-status');
+            const hasActiveRide = userStatusDiv && !userStatusDiv.classList.contains('hidden');
+
+            if (state.currentUser && state.currentUser.can_request_ride === false) {
+                requestForm.classList.add('hidden');
+                permissionMessage.classList.remove('hidden');
+            } else {
+                permissionMessage.classList.add('hidden');
+                if (!hasActiveRide) {
+                    requestForm.classList.remove('hidden');
+                }
+            }
+        }
+
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             const activeScreen = document.getElementById(screenId);
@@ -543,14 +556,16 @@
                 activeScreen.classList.add('active');
             }
             
-            if (screenId === 'initial-screen' || screenId === 'user-login-screen' || screenId === 'user-screen') {
+            if (['initial-screen', 'user-login-screen', 'user-screen'].includes(screenId)) {
                 localStorage.setItem('lastScreen', screenId);
             }
 
-            if (screenId === 'user-screen' && state.currentUserId) {
+            if (screenId === 'user-screen' && state.currentUser) {
+                updateUserScreenView(); 
                 checkUserRideStatus();
-            } else {
-                if (state.userStatusInterval) clearInterval(state.userStatusInterval);
+            } else if (state.userStatusInterval) {
+                clearInterval(state.userStatusInterval);
+                state.userStatusInterval = null;
             }
 
             if (document.getElementById('mobile-menu').classList.contains('active')) {
@@ -568,17 +583,16 @@
             } else if (type === 'scheduled') {
                 openScheduleModal();
             }
-            
             showScreen('user-screen');
         }
 
         function openScheduleModal() {
             const modal = document.getElementById('schedule-modal');
             const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1); 
-            document.getElementById('schedule-date').value = tomorrow.toISOString().split('T')[0];
-            document.getElementById('schedule-time').value = '09:00';
+            today.setHours(today.getHours() + 1);
+            document.getElementById('schedule-date').min = new Date().toISOString().split('T')[0];
+            document.getElementById('schedule-date').value = today.toISOString().split('T')[0];
+            document.getElementById('schedule-time').value = today.toTimeString().slice(0, 5);
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -592,24 +606,31 @@
                 showModal('modal', 'Por favor, selecione uma data e hora para agendamento.');
                 return;
             }
+            
+            const scheduledDate = new Date(`${dateInput.value}T${timeInput.value}`);
+            if (scheduledDate < new Date()) {
+                showModal('modal', 'A data e hora do agendamento não podem ser no passado.');
+                return;
+            }
 
-            const dateTimeString = `${dateInput.value}T${timeInput.value}:00`;
-            scheduledDateTime = new Date(dateTimeString).toISOString();
+            scheduledDateTime = scheduledDate.toISOString();
             
             closeModal('schedule-modal');
             requestRide();
         }
 
         function resetRequestButton() {
-            if (isProcessingRequest) return; 
             const requestRideBtn = document.getElementById('request-ride-btn');
             requestRideBtn.disabled = false;
             requestRideBtn.textContent = 'SOLICITAR TAXI';
         }
 
         async function requestRide() {
+            if (isProcessingRequest) return;
+
             const destinations = selectedDestinations;
             const observation = selectedObservation;
+            const passengerCount = document.getElementById('passenger-count').value;
             const requestRideBtn = document.getElementById('request-ride-btn');
 
             if (!destinations || destinations.length === 0 || !destinations[0]) {
@@ -640,7 +661,7 @@
                 });
 
                 const userLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
-                const currentUser = state.users.find(u => u.id === state.currentUserId);
+                const currentUser = state.currentUser;
 
                 if (!currentUser) {
                     throw new Error('Usuário não encontrado. Por favor, faça login novamente.');
@@ -649,6 +670,7 @@
                 let newRideData = {
                     destination: JSON.stringify(destinations),
                     observation: observation,
+                    passenger_count: parseInt(passengerCount),
                     status: 'requested',
                     userId: currentUser.id,
                     userName: currentUser.name,
@@ -658,7 +680,7 @@
                     request_type: selectedRequestType
                 };
 
-                if (selectedRequestType === 'scheduled') {
+                if (selectedRequestType === 'scheduled' && scheduledDateTime) {
                     newRideData.scheduled_datetime = scheduledDateTime;
                     newRideData.status = 'scheduled';
                 }
@@ -680,27 +702,51 @@
                 selectedRequestType = '';
                 scheduledDateTime = null;
 
+                checkUserRideStatus(); 
+
             } catch (error) {
-                console.error("Erro no processo de solicitação:", error);
-                showModal('modal', error.message || 'Ocorreu um erro inesperado.');
+                console.error("Erro detalhado no processo de solicitação:", error);
+                let userMessage = 'Ocorreu um erro inesperado ao processar sua solicitação.';
+
+                if (error && typeof error.code !== 'undefined') {
+                    switch (error.code) {
+                        case 1: // PERMISSION_DENIED
+                            userMessage = "Você negou a permissão para acessar sua localização. Por favor, habilite nas configurações do seu navegador.";
+                            break;
+                        case 2: // POSITION_UNAVAILABLE
+                            userMessage = "As informações de localização não estão disponíveis no momento. Verifique seu GPS.";
+                            break;
+                        case 3: // TIMEOUT
+                            userMessage = "A solicitação para obter a localização expirou. Tente novamente.";
+                            break;
+                        default:
+                            userMessage = error.message || "Ocorreu um erro desconhecido ao obter a localização.";
+                            break;
+                    }
+                } else if (error instanceof Error) {
+                    userMessage = error.message;
+                } else if (typeof error === 'object' && error !== null && error.message) {
+                    userMessage = error.message;
+                }
+                
+                showModal('modal', userMessage);
+                resetRequestButton();
             } finally {
                 isProcessingRequest = false;
-                checkUserRideStatus();
             }
         }
-
         
         async function checkUserRideStatus() {
+            if (!state.currentUser) return;
+
             const requestForm = document.getElementById('user-request-form');
             const userStatusDiv = document.getElementById('user-status');
-            const guegueiImage = document.getElementById('cheguei-image'); 
-
-            if (state.userStatusInterval) clearInterval(state.userStatusInterval);
+            const chegueiImage = document.getElementById('cheguei-image'); 
             
             const { data: activeRide, error } = await supabaseClient
                 .from('rides')
                 .select('*')
-                .eq('userId', state.currentUserId)
+                .eq('userId', state.currentUser.id)
                 .in('status', ['requested', 'assigned', 'accepted', 'arrived_pickup', 'in_progress', 'scheduled'])
                 .order('created_at', { ascending: false })
                 .limit(1)
@@ -713,25 +759,31 @@
                 requestForm.classList.add('hidden');
                 userStatusDiv.classList.remove('hidden');
                 updateUserStatusMessage(activeRide);
-                startUserStatusCheck();
                 
                 if (activeRide.status === 'arrived_pickup') {
-                    guegueiImage.classList.remove('hidden');
+                    chegueiImage.classList.remove('hidden');
                 } else {
-                    guegueiImage.classList.add('hidden');
+                    chegueiImage.classList.add('hidden');
                 }
+
+                startUserStatusCheck(); 
             } else {
                 state.currentUserRideId = null;
                 localStorage.removeItem('currentUserRideId');
                 
-                requestForm.classList.remove('hidden');
                 userStatusDiv.classList.add('hidden');
+                updateUserScreenView();
                 resetRequestButton();
                 document.getElementById('user-status-message').textContent = '';
-                guegueiImage.classList.add('hidden');
+                chegueiImage.classList.add('hidden');
+                
+                if (state.userStatusInterval) { 
+                    clearInterval(state.userStatusInterval);
+                    state.userStatusInterval = null;
+                }
             }
-            renderUserRideHistory();
         }
+
 
         function startUserStatusCheck() {
             if (state.userStatusInterval) clearInterval(state.userStatusInterval);
@@ -739,6 +791,7 @@
             state.userStatusInterval = setInterval(async () => {
                 if (!state.currentUserRideId) {
                     clearInterval(state.userStatusInterval); 
+                    state.userStatusInterval = null;
                     checkUserRideStatus(); 
                     return;
                 }
@@ -749,123 +802,82 @@
                    updateUserStatusMessage(myRide); 
                 } else {
                     clearInterval(state.userStatusInterval);
+                    state.userStatusInterval = null;
                     state.currentUserRideId = null; 
                     localStorage.removeItem('currentUserRideId'); 
-                    checkUserRideStatus(); 
+                    showModal('modal', myRide ? `Sua corrida foi ${translateStatus(myRide.status)}.` : 'Sua corrida foi finalizada.', checkUserRideStatus);
                 }
             }, 10000); 
         }
         
         function updateUserStatusMessage(ride) {
-            const searchingIconContainer = document.getElementById('status-icon-searching');
-            const enRouteIconContainer = document.getElementById('status-icon-en-route');
-            const arrivedPickupIconContainer = document.getElementById('status-icon-arrived-pickup');
-            const inProgressIconContainer = document.getElementById('status-icon-in-progress');
+            const statusMessageEl = document.getElementById('user-status-message');
+            const chegueiImage = document.getElementById('cheguei-image');
+            const allIcons = document.querySelectorAll('#user-status [id^="status-icon-"]');
+            allIcons.forEach(icon => icon.classList.add('hidden'));
+
             const cancelRideBtn = document.getElementById('cancel-ride-btn');
+            const editScheduleBtn = document.getElementById('edit-schedule-btn');
 
-            searchingIconContainer.classList.add('hidden');
-            enRouteIconContainer.classList.add('hidden');
-            arrivedPickupIconContainer.classList.add('hidden');
-            inProgressIconContainer.classList.add('hidden');
-            enRouteIconContainer.innerHTML = ''; 
-            arrivedPickupIconContainer.innerHTML = '';
-            inProgressIconContainer.innerHTML = '';
+            let message = '';
+            let scheduleInfo = '';
+            
+            if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
+                const scheduledDate = new Date(ride.scheduled_datetime);
+                const formattedScheduledDateTime = scheduledDate.toLocaleString('pt-BR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                scheduleInfo = `<div class="mt-2 text-xl font-bold text-cyan-400">Agendado para:<br>${formattedScheduledDateTime}</div>`;
+            }
 
-            if (['requested', 'assigned', 'accepted', 'arrived_pickup', 'scheduled'].includes(ride.status)) {
+            const getIcon = (id) => document.getElementById(`status-icon-${id}`);
+
+            switch(ride.status) {
+                case 'requested':
+                    message = 'Procurando o melhor motorista para você...';
+                    getIcon('searching').classList.remove('hidden');
+                    break;
+                case 'assigned':
+                    message = `Motorista ${ride.driverName || 'designado'} foi notificado. Aguardando aceite...`;
+                    getIcon('searching').classList.remove('hidden');
+                    break;
+                case 'accepted':
+                    message = `Motorista ${ride.driverName || 'designado'} está a caminho!`;
+                    getIcon('en-route').innerHTML = `<img src="images/aceitou.png" alt="Motorista Aceitou" class="h-20 w-20 mx-auto">`;
+                    getIcon('en-route').classList.remove('hidden');
+                    break;
+                case 'arrived_pickup':
+                    message = `Seu motorista, ${ride.driverName || 'designado'}, chegou!`;
+                    chegueiImage.classList.remove('hidden');
+                    break;
+                case 'in_progress':
+                    chegueiImage.classList.add('hidden');
+                    message = `Viagem em andamento. Boa viagem!`;
+                    getIcon('in-progress').innerHTML = `<img src="images/destino.png" alt="Viagem Iniciada" class="h-20 w-20 mx-auto animate-bounce">`;
+                    getIcon('in-progress').classList.remove('hidden');
+                    break;
+                 case 'scheduled':
+                    message = `Sua corrida está agendada.`;
+                    getIcon('searching').classList.remove('hidden');
+                    break;
+                default:
+                    message = `Status: ${translateStatus(ride.status)}`;
+                    break;
+            }
+
+            statusMessageEl.innerHTML = message + scheduleInfo;
+            
+            if (ride.request_type === 'scheduled' && ['scheduled', 'assigned', 'accepted'].includes(ride.status)) {
+                editScheduleBtn.classList.remove('hidden');
+            } else {
+                editScheduleBtn.classList.add('hidden');
+            }
+
+            if (['requested', 'scheduled', 'assigned', 'accepted'].includes(ride.status)) {
                 cancelRideBtn.classList.remove('hidden');
             } else {
                 cancelRideBtn.classList.add('hidden');
             }
-
-            let message = '';
-            let scheduleInfo = '';
-            let displayDestination = '';
-            
-            try {
-                const destinations = JSON.parse(ride.destination);
-                if (Array.isArray(destinations) && destinations.length > 0) {
-                    const primaryDestination = destinations.find(d => d) || 'N/A';
-                    displayDestination = primaryDestination;
-                    const otherDestinationsCount = destinations.filter(d => d).length - 1;
-                    if (otherDestinationsCount > 0) {
-                        displayDestination += ` (+${otherDestinationsCount} outros)`;
-                    }
-                }
-            } catch (e) {
-                displayDestination = ride.destination;
-            }
-
-            if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
-                const scheduledDate = new Date(ride.scheduled_datetime);
-                const formattedScheduledDateTime = scheduledDate.toLocaleString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                scheduleInfo = `<div class="mt-4 text-xl font-bold text-cyan-400">Agendado para:<br>${formattedScheduledDateTime}</div>`;
-            }
-
-            switch(ride.status) {
-                case 'requested':
-                    message = 'Sua Solicitação está salva, pode SAIR quando achar necessário. Volte quando precisar!';
-                    searchingIconContainer.classList.remove('hidden');
-                    break;
-                case 'assigned':
-                    message = `Motorista ${ride.driverName || 'designado'} foi designado. Aguardando aceite...`;
-                    searchingIconContainer.classList.remove('hidden');
-                    break;
-                case 'accepted':
-                    if (ride.request_type === 'scheduled') {
-                        message = `Motorista ${ride.driverName || 'designado'} foi designado para sua corrida.`;
-                    } else {
-                        message = `Motorista ${ride.driverName || 'designado'} está a caminho!`;
-                        if (ride.driverCurrentLocation && ride.userLocation) {
-                            const distance = getDistanceFromLatLonInKm(
-                                ride.userLocation.lat, ride.userLocation.lon,
-                                ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon
-                            );
-                            message += ` Distância: ${distance.toFixed(2)} km`;
-                        }
-                    }
-                    
-                    const acceptedImg = document.createElement('img');
-                    acceptedImg.src = 'images/aceitou.png'; 
-                    acceptedImg.alt = 'Motorista Aceitou';
-                    acceptedImg.className = 'h-20 w-20 mx-auto'; 
-                    enRouteIconContainer.appendChild(acceptedImg);
-                    enRouteIconContainer.classList.remove('hidden');
-                    break;
-                case 'arrived_pickup':
-                    message = `Seu motorista, ${ride.driverName || 'designado'}, chegou no local de embarque.`;
-                    break;
-                case 'in_progress':
-                     message = `Viagem para ${displayDestination} em andamento.`;
-                     const inProgressImg = document.createElement('img');
-                     inProgressImg.src = 'images/destino.png'; 
-                     inProgressImg.alt = 'Viagem Iniciada';
-                     inProgressImg.className = 'h-20 w-20 mx-auto animate-bounce'; 
-                     inProgressIconContainer.appendChild(inProgressImg);
-                     inProgressIconContainer.classList.remove('hidden');
-                     break;
-                 case 'scheduled':
-                    message = `Sua corrida está agendada.<br>Aguardando um motorista.`;
-                    searchingIconContainer.classList.remove('hidden');
-                    break;
-                 case 'completed':
-                    message = `Viagem finalizada! Obrigado por escolher a GARCIA TRANSPORTES.`;
-                    setTimeout(() => checkUserRideStatus(), 5000); 
-                    break;
-                case 'canceled':
-                    message = `Sua viagem foi cancelada.`;
-                    setTimeout(() => checkUserRideStatus(), 3000); 
-                    break;
-                default:
-                    message = `Status desconhecido: ${ride.status}`;
-                    break;
-            }
-            document.getElementById('user-status-message').innerHTML = message + scheduleInfo;
         }
 
 
@@ -877,27 +889,10 @@
                         showModal('modal', 'Não foi possível cancelar a corrida.');
                         console.error('Erro ao cancelar corrida:', error);
                     } else {
-                        checkUserRideStatus(); 
+                        showModal('modal', 'Sua corrida foi cancelada.', checkUserRideStatus);
                     }
                 }, true); 
             }
-        }
-
-        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-            const R = 6371; 
-            const dLat = deg2rad(lat2 - lat1);
-            const dLon = deg2rad(lon2 - lon1);
-            const a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const d = R * c; 
-            return d;
-        }
-
-        function deg2rad(deg) { 
-            return deg * (Math.PI / 180); 
         }
 
         async function fetchAllData() {
@@ -909,71 +904,73 @@
         }
 
         function setupRealtimeSubscriptions() {
-            supabaseClient.channel('public:users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, payload => {
-                 fetchAllData(); 
-            }).subscribe();
-            
-            supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
-                fetchAllData().then(() => {
-                    if (state.currentUserId) {
+            supabaseClient.channel('public:rides').on(
+                'postgres_changes', 
+                { event: '*', schema: 'public', table: 'rides' }, 
+                payload => {
+                    const relevantRide = payload.new.userId === state.currentUser?.id || payload.old?.userId === state.currentUser?.id;
+                    if (state.currentUser && relevantRide) {
                        checkUserRideStatus();
                     }
-                });
-            }).subscribe();
+                }
+            ).subscribe();
         }
 
         async function initApp() {
             loadAppIcon();      
             
-            await fetchAllData(); 
-            setupRealtimeSubscriptions(); 
-
+            await fetchAllData();
+            
             const passengerSelect = document.getElementById('passenger-count');
             if (passengerSelect) {
-                passengerSelect.addEventListener('change', (e) => {
-                    updateDestinationFields(e.target.value);
-                });
+                passengerSelect.addEventListener('change', (e) => updateDestinationFields(e.target.value));
                 updateDestinationFields(1);
             }
-
-            const loggedInUserId = localStorage.getItem('loggedInUserId');
-            if (loggedInUserId) {
-                state.currentUserId = parseInt(loggedInUserId);
-                const user = state.users.find(u => u.id === state.currentUserId);
-                if (user) {
-                    document.getElementById('user-welcome-message').textContent = `Olá, ${user.name}!`;
+            
+            const loggedInUserJSON = localStorage.getItem('loggedInUser');
+            if (loggedInUserJSON) {
+                state.currentUser = JSON.parse(loggedInUserJSON);
+                if (state.currentUser) {
+                    document.getElementById('user-welcome-message').textContent = `Olá, ${state.currentUser.name}!`;
+                    setupRealtimeSubscriptions();
                     showScreen('user-screen');
                 } else {
-                    logoutUser(); 
+                    logoutUser();
                 }
             } else {
-                const lastScreen = localStorage.getItem('lastScreen'); 
-                showScreen(lastScreen || 'initial-screen');
-            }
-        }
-
-        document.getElementById('intro-video').addEventListener('ended', () => {
-            document.getElementById('video-container').style.display = 'none'; 
-            document.getElementById('app-container').classList.remove('hidden'); 
-            initApp(); 
-        });
-
-        function initAppWhenMapsLoaded() {
-            if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-                initApp(); 
-            } else {
-                setTimeout(initAppWhenMapsLoaded, 100); 
+                showScreen(localStorage.getItem('lastScreen') || 'initial-screen');
             }
         }
         
+        function handleVideoEnd() {
+            if (document.body.dataset.videoEnded) return;
+            document.body.dataset.videoEnded = "true";
+
+            const videoContainer = document.getElementById('video-container');
+            const appContainer = document.getElementById('app-container');
+
+            if (videoContainer) videoContainer.style.display = 'none';
+            if (appContainer) appContainer.classList.remove('hidden');
+            
+            initApp();
+        }
+
+        const video = document.getElementById('intro-video');
+        if (video) {
+            video.addEventListener('ended', handleVideoEnd);
+            video.addEventListener('error', handleVideoEnd);
+            setTimeout(handleVideoEnd, 10000);
+        } else {
+            handleVideoEnd();
+        }
+
+        // --- FUNCIONALIDADE DO GOOGLE MAPS RESTAURADA ---
         function initAutocomplete(inputElement) {
-            if (inputElement && typeof google !== 'undefined' && google.maps && google.maps.places) {
+            if (typeof google !== 'undefined' && google.maps && google.maps.places) {
                 new google.maps.places.Autocomplete(inputElement, { 
                     types: ['address'], 
                     componentRestrictions: { 'country': 'br' } 
                 });
-            } else {
-                console.warn('Google Maps Places API não carregada ou o elemento de input não foi encontrado.');
             }
         }
         
@@ -990,7 +987,7 @@
                 label.className = 'block mb-2 text-sm font-medium';
                 label.textContent = `Destino Passageiro ${i}`;
                 if (i === 1) {
-                    label.textContent += ' (Obrigatório)';
+                    label.innerHTML += ' <span class="text-red-400">(Obrigatório)</span>';
                 }
 
                 const input = document.createElement('input');
@@ -998,10 +995,7 @@
                 input.id = `destination-${i}`;
                 input.className = 'w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none';
                 input.placeholder = 'Digite o endereço completo';
-                if (i === 1) {
-                    input.required = true;
-                }
-
+                
                 inputContainer.appendChild(label);
                 inputContainer.appendChild(input);
                 container.appendChild(inputContainer);
@@ -1011,36 +1005,31 @@
         }
 
         function translateStatus(status) {
-            switch (status) {
-                case 'requested': return 'SOLICITADO'; 
-                case 'assigned': return 'DESIGNADO'; 
-                case 'accepted': return 'ACEITO';
-                case 'arrived_pickup': return 'CHEGOU NO EMBARQUE'; 
-                case 'in_progress': return 'EM ANDAMENTO';
-                case 'scheduled': return 'AGENDADO';
-                case 'completed': return 'FINALIZADA'; 
-                case 'canceled': return 'CANCELADA';
-                default: return status.toUpperCase();
-            }
+            const translations = {
+                'requested': 'SOLICITADO', 
+                'assigned': 'DESIGNADO', 
+                'accepted': 'ACEITO',
+                'arrived_pickup': 'NO LOCAL', 
+                'in_progress': 'EM ANDAMENTO',
+                'scheduled': 'AGENDADO',
+                'completed': 'FINALIZADA', 
+                'canceled': 'CANCELADA',
+            };
+            return translations[status] || status.toUpperCase();
         }
 
         function loadAppIcon() {
             const iconContainer = document.getElementById('app-icon-container');
-            iconContainer.innerHTML = ''; 
-            if (state.appIcon) {
-                const img = document.createElement('img');
-                img.src = state.appIcon;
-                img.className = 'h-full w-full object-contain'; 
-                iconContainer.appendChild(img);
-            }
+            iconContainer.innerHTML = `<img src="${state.appIcon}" class="h-full w-full object-contain">`;
         }
-
-        function renderUserRideHistory() {
+        
+        async function renderUserRideHistory() {
+            await fetchAllData(); 
             const historyContainer = document.getElementById("user-ride-history-modal");
-            if (!historyContainer || !state.currentUserId) return;
+            if (!historyContainer || !state.currentUser) return;
 
             historyContainer.innerHTML = ''; 
-            const userRides = state.rides.filter(r => r.userId === state.currentUserId);
+            const userRides = state.rides.filter(r => r.userId === state.currentUser.id).sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
             
             if (userRides.length === 0) {
                 historyContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum histórico de corrida.</p>';
@@ -1058,30 +1047,20 @@
                     </tr>
                 </thead>`;
             const tbody = document.createElement('tbody');
-            userRides.sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
             
             userRides.forEach(ride => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-700';
-                const dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', {
-                    year: 'numeric', month: 'numeric', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
+                const dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR');
 
-                let historyDestination = '';
+                let historyDestination = ride.destination;
                 try {
                     const destinations = JSON.parse(ride.destination);
                     if (Array.isArray(destinations) && destinations.length > 0) {
                         historyDestination = destinations.find(d => d) || 'N/A';
-                        const otherDestinationsCount = destinations.filter(d => d).length - 1;
-                        if (otherDestinationsCount > 0) {
-                            historyDestination += ` (+${otherDestinationsCount} outros)`;
-                        }
                     }
-                } catch (e) {
-                    historyDestination = ride.destination;
-                }
-
+                } catch (e) { /* Mantém o destino como string se não for JSON */ }
+                
                 row.innerHTML = `
                     <td class="px-4 py-3">${dateTimeString}</td> 
                     <td class="px-4 py-3">${historyDestination}</td>
@@ -1094,37 +1073,101 @@
         }
 
         function showHistoryModal() {
-            fetchAllData().then(() => {
-                renderUserRideHistory(); 
-                showModal("history-modal", "", null, false); 
+            renderUserRideHistory().then(() => {
+                const modal = document.getElementById('history-modal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
             });
         }
         
+        async function openEditScheduleModal(rideId) {
+            const currentRideId = rideId || state.currentUserRideId;
+            if (!currentRideId) {
+                 showModal('modal', 'Não foi possível identificar a corrida para edição.');
+                 return;
+            }
+            
+            // GARANTE QUE OS DADOS ESTÃO ATUALIZADOS
+            await fetchAllData();
+            
+            const rideToEdit = state.rides.find(r => r.id === currentRideId);
+            if (!rideToEdit) {
+                showModal('modal', 'Corrida não encontrada para edição.');
+                return;
+            }
+
+            const modal = document.getElementById('schedule-modal');
+            const dateInput = document.getElementById('schedule-date');
+            const timeInput = document.getElementById('schedule-time');
+            const confirmBtn = modal.querySelector('button.button-gradient');
+
+            const existingDate = new Date(rideToEdit.scheduled_datetime);
+            dateInput.value = existingDate.toISOString().split('T')[0];
+            timeInput.value = existingDate.toTimeString().slice(0, 5);
+            dateInput.min = new Date().toISOString().split('T')[0];
+
+            confirmBtn.textContent = 'SALVAR ALTERAÇÕES';
+            confirmBtn.onclick = () => confirmScheduleEdit(currentRideId);
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        async function confirmScheduleEdit(rideId) {
+            const dateInput = document.getElementById('schedule-date');
+            const timeInput = document.getElementById('schedule-time');
+
+            if (!dateInput.value || !timeInput.value) {
+                showModal('modal', 'Por favor, selecione uma data e hora válidas.');
+                return;
+            }
+
+            const newScheduledDateTime = new Date(`${dateInput.value}T${timeInput.value}`);
+            if (newScheduledDateTime < new Date()) {
+                showModal('modal', 'A data e hora do agendamento não podem ser no passado.');
+                return;
+            }
+
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ scheduled_datetime: newScheduledDateTime.toISOString() })
+                .eq('id', rideId);
+
+            if (error) {
+                showModal('modal', 'Erro ao atualizar o agendamento. Tente novamente.');
+                console.error('Erro ao editar agendamento:', error);
+            } else {
+                closeModal('schedule-modal');
+                showModal('modal', 'Agendamento atualizado com sucesso!');
+                checkUserRideStatus(); // Atualiza a tela de status principal
+            }
+        }
+        
         function exportUserRidesToExcel() {
-            const userRides = state.rides.filter(r => r.userId === state.currentUserId);
+            const userRides = state.rides.filter(r => r.userId === state.currentUser.id);
             if (userRides.length === 0) { 
                 showModal("modal", "Nenhum histórico de corrida para exportar."); 
                 return; 
             }
 
             const dataToExport = userRides.map(ride => {
-                let excelDestination = '';
+                let excelDestination = ride.destination;
                 try {
                     const destinations = JSON.parse(ride.destination);
                     if (Array.isArray(destinations) && destinations.length > 0) {
                         excelDestination = destinations.filter(d => d).join('; ');
                     }
-                } catch (e) {
-                    excelDestination = ride.destination;
-                }
+                } catch (e) { /* Mantém a string original */ }
 
                 return {
-                    'Data e Hora da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
+                    'Data Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                     'Destino(s)': excelDestination,
                     'Motorista': ride.driverName || 'N/A',
                     'Status': translateStatus(ride.status),
-                    'Tipo de Solicitação': ride.request_type === 'immediate' ? 'Imediato' : 'Agendado',
-                    'Data/Hora Agendada': ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : 'N/A'
+                    'Tipo': ride.request_type === 'immediate' ? 'Imediato' : 'Agendado',
+                    'Data Agendada': ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : 'N/A'
                 }
             });
 
@@ -1158,9 +1201,9 @@
             selectedObservation = document.getElementById('observation').value.trim();
             showScreen('request-type-screen'); 
         };
-        
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places&callback=initAppWhenMapsLoaded" async defer></script>
+    <!-- SCRIPT DO GOOGLE MAPS CORRIGIDO -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places" async defer></script>
 </body>
 </html>
 
