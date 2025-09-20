@@ -275,15 +275,7 @@
             <div class="flex justify-between items-center mb-4">
                 <button onclick="promptToGoBack()" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
-                <div class="w-32"></div> 
-            </div>
-
-            <!-- Botão para silenciar o alerta sonoro -->
-            <div class="flex justify-center mb-4">
-                <button id="silence-alert-btn" onclick="stopAlertSound()" class="hidden py-2 px-6 font-semibold rounded-lg bg-yellow-500 hover:bg-yellow-600 text-gray-900">
-                    SILENCIAR ALERTA
-                </button>
-            </div>
+                <div class="w-32"></div> </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                  <div class="card-gradient p-4 rounded-lg w-full">
@@ -513,9 +505,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Elemento de áudio para o alerta sonoro -->
-    <audio id="alerta-sonoro" src="SOM/somchamada.mp3" loop></audio>
 
     <script>
         // --- FUNÇÕES AUXILIARES IMPORTANTES ---
@@ -641,44 +630,6 @@
             }
             document.getElementById('silence-btn').classList.add('hidden');
         }
-        
-        // --- NOVAS FUNÇÕES DE ALERTA SONORO ---
-        function playAlertSound() {
-            const audio = document.getElementById('alerta-sonoro');
-            const silenceBtn = document.getElementById('silence-alert-btn');
-            if (audio) {
-                const promise = audio.play();
-                if (promise !== undefined) {
-                    promise.then(_ => {
-                        if(silenceBtn) silenceBtn.classList.remove('hidden');
-                    }).catch(error => {
-                        console.warn("Alerta sonoro bloqueado pelo navegador. Interaja com a página para habilitar o som.");
-                    });
-                }
-            }
-        }
-
-        function stopAlertSound() {
-            const audio = document.getElementById('alerta-sonoro');
-            const silenceBtn = document.getElementById('silence-alert-btn');
-            if (audio) {
-                audio.pause();
-                audio.currentTime = 0;
-            }
-            if (silenceBtn) {
-                silenceBtn.classList.add('hidden');
-            }
-        }
-
-        function checkAndPlayAlert() {
-            const needsAttention = state.rides.some(r => r.status === 'requested' || (!r.driverId && !['completed', 'canceled'].includes(r.status)));
-            if (needsAttention) {
-                playAlertSound();
-            } else {
-                stopAlertSound();
-            }
-        }
-
 
         // --- LÓGICA DE MODAL ---
         function showModal(message, onConfirm, showCancel = false, content = {}) {
@@ -812,7 +763,6 @@
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
             stopBeeping(); 
-            stopAlertSound(); // Para o som de alerta ao trocar de tela
             
             if(clockInterval) clearInterval(clockInterval);
 
@@ -829,7 +779,6 @@
                 loadAdminRequests();
                 renderOngoingRidesTable();
                 startDigitalClock('digital-clock');
-                checkAndPlayAlert(); // Verifica se precisa tocar o som ao entrar na tela
             }
             if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
             if (screenId === 'admin-user-crud-screen') renderUserCrudList();
@@ -1108,36 +1057,6 @@
                 }
             }
         }
-        
-        async function cancelRideAdmin(rideId) {
-            if (rideId) {
-                const { error } = await supabaseClient
-                    .from('rides')
-                    .update({ status: 'canceled' })
-                    .eq('id', rideId);
-                
-                if (error) {
-                    console.error("Erro ao cancelar a corrida pelo admin:", error);
-                    showModal('Não foi possível cancelar a corrida.');
-                } else {
-                    closeModal(); // Success, close the confirmation modal
-                }
-            }
-        }
-
-        function promptCancelRideAdmin(rideId) {
-            const onConfirm = () => {
-                cancelRideAdmin(rideId);
-            };
-
-            const confirmBtn = document.getElementById('modal-confirm');
-            const cancelBtn = document.getElementById('modal-cancel');
-            
-            confirmBtn.textContent = 'Sim';
-            cancelBtn.textContent = 'Não';
-            
-            showModal('Tem certeza que deseja cancelar esta solicitação?', onConfirm, true);
-        }
 
         // --- LÓGICA DO ADMIN ---
         function loadAdminRequests() {
@@ -1161,8 +1080,6 @@
             if (requestedRides.length === 0) {
                 list.innerHTML = '<p class="text-center text-gray-400">Nenhuma nova solicitação.</p>';
             } else {
-                 requestedRides.sort((a, b) => new Date(a.requestTime) - new Date(b.requestTime));
-
                  requestedRides.forEach(ride => {
                     const activeDrivers = state.drivers.filter(d => d.status === 'active');
                     let driverOptions = activeDrivers.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
@@ -1186,10 +1103,7 @@
                             ${rideTypeInfo}
                         </div>
                         <p class="font-semibold">Destino: <span class="font-normal">${ride.destination}</span></p>
-                        <p class="text-sm text-gray-400 flex items-center">
-                            <span class="h-3 w-3 bg-red-500 rounded-full mr-2 flex-shrink-0"></span>
-                            <span>De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</span>
-                        </p>
+                        <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
                         <p class="text-sm text-gray-300">Solicitado em: ${new Date(ride.requestTime).toLocaleTimeString()}</p>
                         <div class="mt-4 flex gap-2">
                             <select id="driver-select-${ride.id}" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none">
@@ -1197,7 +1111,6 @@
                                 ${driverOptions}
                             </select>
                             <button onclick="assignDriver(${ride.id})" class="py-2 px-4 font-semibold rounded-lg button-gradient whitespace-nowrap">Marcar</button>
-                            <button onclick="promptCancelRideAdmin(${ride.id})" class="py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 whitespace-nowrap">Cancelar</button>
                         </div>
                     `;
 
@@ -1233,16 +1146,7 @@
                     <tbody>
             `;
         
-            ongoingRides.sort((a, b) => {
-                const aHasDriver = !!a.driverId;
-                const bHasDriver = !!b.driverId;
-
-                if (aHasDriver === bHasDriver) {
-                    return new Date(a.requestTime) - new Date(b.requestTime);
-                }
-                
-                return aHasDriver ? 1 : -1; 
-            });
+            ongoingRides.sort((a, b) => new Date(a.requestTime) - new Date(b.requestTime));
         
             ongoingRides.forEach(ride => {
                 const statusInfo = translateStatus(ride.status); 
@@ -1279,18 +1183,10 @@
                     actionsCellHTML = `<button onclick="updateRideDriver(${ride.id})" class="py-2 px-4 font-semibold rounded-lg button-gradient whitespace-nowrap">Salvar</button>`;
                 }
 
-                actionsCellHTML += `<button onclick="promptCancelRideAdmin(${ride.id})" class="py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 whitespace-nowrap">Cancelar</button>`;
-
-                const userCellHTML = `
-                    <div class="flex items-center">
-                        ${!ride.driverId ? '<span class="h-3 w-3 bg-red-500 rounded-full mr-2 flex-shrink-0 animate-pulse"></span>' : ''}
-                        <span>${ride.userName}</span>
-                    </div>
-                `;
 
                 tableHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20">
-                        <td class="px-4 py-3 font-medium">${userCellHTML}</td>
+                        <td class="px-4 py-3 font-medium">${ride.userName}</td>
                         <td class="px-4 py-3">${ride.destination}</td>
                         <td class="px-4 py-3">${driverCellHTML}</td>
                         <td class="px-4 py-3">
@@ -1298,7 +1194,7 @@
                         </td>
                         <td class="px-4 py-3">${rideTypeInfo}</td>
                         <td class="px-4 py-3">${dateTimeString}</td>
-                        <td class="px-4 py-3"><div class="flex gap-2">${actionsCellHTML}</div></td>
+                        <td class="px-4 py-3">${actionsCellHTML}</td>
                     </tr>
                 `;
             });
@@ -1452,29 +1348,9 @@
         }
 
         // --- ADMIN CRUD USUÁRIOS ---
-        async function toggleUserRidePermission(userId) {
-            const user = state.users.find(u => u.id === userId);
-            if (user) {
-                const newPermission = !user.can_request_ride; // Inverte a permissão atual
-                const { error } = await supabaseClient
-                    .from('users')
-                    .update({ can_request_ride: newPermission })
-                    .eq('id', userId);
-                if (error) {
-                    console.error("Erro ao atualizar a permissão do usuário:", error);
-                    showModal('Não foi possível alterar a permissão do usuário.');
-                }
-                // A interface será atualizada automaticamente pelo Supabase Realtime
-            }
-        }
-
         function downloadUserTemplate() {
-            const headers = [["matricula", "nome", "senha", "empresa", "endereco", "telefone", "can_request_ride"]];
+            const headers = [["matricula", "nome", "senha", "empresa", "endereco", "telefone"]];
             const ws = XLSX.utils.aoa_to_sheet(headers);
-            // Adiciona uma linha de exemplo para mostrar o preenchimento padrão
-            XLSX.utils.sheet_add_aoa(ws, [
-                ["12345", "Nome Exemplo", "senha123", "Empresa Exemplo", "Rua Exemplo, 123", "51999998888", "TRUE"]
-            ], { origin: "A2" });
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
             XLSX.writeFile(wb, "template_usuarios.xlsx");
@@ -1482,110 +1358,56 @@
 
         function importUsersFromExcel() {
             const fileInput = document.getElementById('excel-file-input');
-            if (!fileInput.files[0]) {
-                return showModal("Por favor, selecione um arquivo Excel.");
-            }
+            const file = fileInput.files[0];
+            if (!file) { showModal("Por favor, selecione um arquivo Excel."); return; }
+
             const reader = new FileReader();
-            reader.onload = async function(event) {
+            reader.onload = function(event) {
                 try {
-                    const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const dataAsArray = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+                    const usersJson = XLSX.utils.sheet_to_json(worksheet);
 
-                    if (dataAsArray.length < 2) {
-                        return showModal("O arquivo está vazio ou contém apenas o cabeçalho.");
-                    }
-
-                    // Pega as linhas de dados e filtra qualquer linha que seja completamente vazia ou apenas com espaços
-                    const dataRows = dataAsArray.slice(1).filter(row => row.length > 0 && row.some(cell => cell !== null && String(cell).trim() !== ''));
-
-                    if (dataRows.length === 0) {
-                        return showModal("Nenhuma linha com dados válidos foi encontrada no arquivo.");
-                    }
-
-                    // Mapeia os dados pela posição da coluna
-                    const usersFromFile = dataRows.map(row => ({
-                        matricula: row[0],
-                        name: row[1],
-                        password: row[2],
-                        company: row[3],
-                        address: row[4],
-                        phone: row[5],
-                        can_request_ride: row[6]
-                    }));
-
-                    const matriculasFromFile = usersFromFile
-                        .map(user => user.matricula ? String(user.matricula).trim() : null)
-                        .filter(m => m);
-
-                    if (matriculasFromFile.length === 0) {
-                        return showModal("Nenhuma matrícula válida foi encontrada nos dados do arquivo.");
-                    }
-
-                    const { data: existingUsers, error: checkError } = await supabaseClient
-                        .from('users')
-                        .select('matricula')
-                        .in('matricula', matriculasFromFile);
-
-                    if (checkError) throw checkError;
-
-                    const existingMatriculas = new Set(existingUsers.map(u => u.matricula));
-                    const usersToInsert = [];
-                    const skippedUsers = [];
-
-                    for (const user of usersFromFile) {
-                        // Validação final de cada linha antes de processar
-                        if (user.matricula && user.name && user.password && user.phone) {
-                            const matricula = String(user.matricula).trim();
-                            if (existingMatriculas.has(matricula)) {
-                                skippedUsers.push(matricula);
-                            } else {
-                                let canRequest = true;
-                                if (user.hasOwnProperty('can_request_ride') && String(user.can_request_ride).trim().toLowerCase() === 'false') {
-                                    canRequest = false;
-                                }
-                                usersToInsert.push({
-                                    matricula,
-                                    name: String(user.name).trim(),
-                                    password: String(user.password).trim(),
-                                    company: String(user.company || '').trim(),
-                                    address: String(user.address || '').trim(),
-                                    phone: String(user.phone).trim(),
-                                    can_request_ride: canRequest
-                                });
-                                existingMatriculas.add(matricula); // Evita duplicatas do mesmo arquivo
-                            }
-                        }
-                    }
+                    if (usersJson.length === 0) { showModal("O arquivo Excel está vazio."); return; }
                     
-                    if (usersToInsert.length > 0) {
-                        const { error: insertError } = await supabaseClient.from('users').insert(usersToInsert);
-                        if (insertError) throw insertError;
+                    const header = Object.keys(usersJson[0]);
+                    const expectedHeader = ['matricula', 'nome', 'senha', 'empresa', 'endereco', 'telefone'];
+                    if (JSON.stringify(header.sort()) !== JSON.stringify(expectedHeader.sort())) {
+                        showModal(`Cabeçalho inválido. O esperado é: ${expectedHeader.join(',')}`);
+                        return;
                     }
 
-                    let summaryMessage = "";
-                    if (usersToInsert.length > 0) {
-                        summaryMessage += `${usersToInsert.length} usuários importados com sucesso.`;
-                    }
-                    if (skippedUsers.length > 0) {
-                        summaryMessage += `\n\n${skippedUsers.length} usuários ignorados pois a matrícula já existe: ${skippedUsers.join(', ')}.`;
-                    }
-                    if (!summaryMessage) {
-                        summaryMessage = "Nenhum usuário novo para importar (todos já existiam ou as linhas do arquivo estavam inválidas/incompletas).";
-                    }
-                    showModal(summaryMessage);
+                    let importedCount = 0;
+                    usersJson.forEach(user => {
+                        if (user.matricula && user.nome && user.senha && user.telefone) {
+                            state.users.push({
+                                id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, 
+                                matricula: String(user.matricula).trim(),
+                                name: String(user.nome).trim(),
+                                password: String(user.senha).trim(),
+                                company: String(user.empresa || '').trim(),
+                                address: String(user.endereco || '').trim(),
+                                phone: String(user.phone || '').trim()
+                            });
+                            importedCount++;
+                        }
+                    });
 
+                    if (importedCount > 0) {
+                        renderUserCrudList();
+                        showModal(`${importedCount} usuários foram importados com sucesso!`);
+                    } else {
+                        showModal("Nenhum usuário válido encontrado no arquivo para importar.");
+                    }
+                    fileInput.value = '';
                 } catch (error) {
-                    console.error("Erro ao processar o arquivo:", error);
-                    showModal("Ocorreu um erro crítico ao processar o arquivo. Verifique o console para mais detalhes.");
-                } finally {
-                    fileInput.value = ''; // Limpa o input do arquivo
+                    showModal("Ocorreu um erro ao processar o arquivo. Verifique se o formato está correto.");
                 }
             };
-            reader.onerror = () => showModal("Ocorreu um erro ao ler o arquivo.");
-            reader.readAsArrayBuffer(fileInput.files[0]);
+            reader.onerror = function() { showModal("Ocorreu um erro ao ler o arquivo."); };
+            reader.readAsArrayBuffer(file);
         }
-
 
         function renderUserCrudList() {
             const listContainer = document.getElementById('user-crud-list');
@@ -1608,7 +1430,6 @@
                     <tr>
                         <th scope="col" class="px-4 py-3">Nome</th>
                         <th scope="col" class="px-4 py-3">Telefone</th>
-                        <th scope="col" class="px-4 py-3 text-center">Permissão para Chamar</th>
                         <th scope="col" class="px-4 py-3 text-right">Ações</th>
                     </tr>
                 </thead>`;
@@ -1619,20 +1440,9 @@
                 row.innerHTML = `
                     <td class="px-4 py-3 font-medium">
                         <div>${user.name}</div>
-                        <div class="text-xs text-gray-400">Matrícula: ${user.matricula}</div>
+                        <div class="text-xs text-gray-400">${user.company || ''}</div>
                     </td>
                     <td class="px-4 py-3">${user.phone}</td>
-                    <td class="px-4 py-3 text-center">
-                        <div class="flex flex-col items-center justify-center">
-                            <label class="toggle-switch">
-                                <input type="checkbox" onchange="toggleUserRidePermission(${user.id})" ${user.can_request_ride ? 'checked' : ''}>
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <span class="text-xs mt-1 ${user.can_request_ride ? 'text-green-400' : 'text-red-400'}">
-                                ${user.can_request_ride ? 'Habilitado' : 'Bloqueado'}
-                            </span>
-                        </div>
-                    </td>
                     <td class="px-4 py-3 text-right">
                         <button onclick="editUser(${user.id})" class="font-medium text-yellow-400 hover:underline mr-3">Editar</button>
                         <button onclick="deleteUser(${user.id})" class="font-medium text-red-500 hover:underline">Excluir</button>
@@ -1645,69 +1455,16 @@
         }
 
         async function addUser() {
-            const idInput = document.getElementById('new-user-id');
-            const nameInput = document.getElementById('new-user-name');
-            const passwordInput = document.getElementById('new-user-password');
-            const companyInput = document.getElementById('new-user-company');
-            const addressInput = document.getElementById('new-user-address');
-            const phoneInput = document.getElementById('new-user-phone');
-
-            const matricula = idInput.value.trim();
-            const name = nameInput.value.trim();
-            const password = passwordInput.value.trim();
-            const company = companyInput.value.trim();
-            const address = addressInput.value.trim();
-            const phone = phoneInput.value.trim();
-
-            if (!matricula || !name || !password || !phone) {
-                showModal('Matrícula, Nome, Senha e Telefone são obrigatórios.');
-                return;
-            }
-
-            const {
-                data: existingUser,
-                error: checkError
-            } = await supabaseClient
-                .from('users')
-                .select('matricula')
-                .eq('matricula', matricula)
-                .maybeSingle();
-
-            if (checkError) {
-                console.error('Erro ao verificar matrícula:', checkError);
-                showModal('Ocorreu um erro ao verificar a matrícula. Tente novamente.');
-                return;
-            }
-
-            if (existingUser) {
-                showModal('Esta matrícula já está cadastrada. Por favor, utilize outra.');
-                return;
-            }
-
-            const {
-                error
-            } = await supabaseClient.from('users').insert([{
-                matricula,
-                name,
-                password,
-                company,
-                address,
-                phone,
-                can_request_ride: true // Campo adicionado com valor padrão TRUE
-            }]);
-
-            if (error) {
-                console.error('Error adding user:', error);
-                showModal('Erro ao adicionar usuário.');
-            } else {
-                idInput.value = '';
-                nameInput.value = '';
-                passwordInput.value = '';
-                companyInput.value = '';
-                addressInput.value = '';
-                phoneInput.value = '';
-                showModal('Usuário adicionado com sucesso!');
-            }
+            const idInput = document.getElementById('new-user-id'); const nameInput = document.getElementById('new-user-name');
+            const passwordInput = document.getElementById('new-user-password'); const companyInput = document.getElementById('new-user-company');
+            const addressInput = document.getElementById('new-user-address'); const phoneInput = document.getElementById('new-user-phone');
+            const matricula = idInput.value.trim(); const name = nameInput.value.trim();
+            const password = passwordInput.value.trim(); const company = companyInput.value.trim();
+            const address = addressInput.value.trim(); const phone = phoneInput.value.trim();
+            if (!matricula || !name || !password || !phone) { showModal('Matrícula, Nome, Senha e Telefone são obrigatórios.'); return; }
+            const { error } = await supabaseClient.from('users').insert([{ matricula, name, password, company, address, phone }]);
+            if (error) { console.error('Error adding user:', error); showModal('Erro ao adicionar usuário.'); } 
+            else { idInput.value = nameInput.value = passwordInput.value = companyInput.value = addressInput.value = phoneInput.value = ''; showModal('Usuário adicionado com sucesso!'); }
         }
 
         function editUser(userId) {
@@ -1955,63 +1712,21 @@
         }
 
         function setupRealtimeSubscriptions() {
-            // --- AJUSTE REALIZADO AQUI ---
-            // Inscrição para a tabela de motoristas (drivers)
             supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, payload => {
-                const { eventType, new: newRecord, old: oldRecord } = payload;
-        
-                // Atualiza o estado local 'state.drivers' de forma inteligente
-                if (eventType === 'INSERT') {
-                    if (!state.drivers.some(d => d.id === newRecord.id)) {
-                        state.drivers.push(newRecord);
-                    }
-                } else if (eventType === 'UPDATE') {
-                    const index = state.drivers.findIndex(d => d.id === newRecord.id);
-                    if (index !== -1) state.drivers[index] = newRecord;
-                } else if (eventType === 'DELETE') {
-                    state.drivers = state.drivers.filter(d => d.id !== oldRecord.id);
-                }
-        
-                // Verifica qual tela está ativa e a atualiza
-                const activeScreen = document.querySelector('.screen.active')?.id;
-                if (activeScreen === 'admin-driver-crud-screen') {
-                    renderDriverCrudList();
-                }
-                if (activeScreen === 'driver-selection-screen') {
-                    populateDriverSelection();
-                }
-                if (activeScreen === 'user-screen') {
-                    updateAvailableDriversCount();
-                }
-                if (activeScreen === 'admin-requests-screen') {
-                    loadAdminRequests(); // Atualiza painel de corridas que mostra status dos motoristas
-                }
+                fetchAllData().then(() => { 
+                    const activeScreen = document.querySelector('.screen.active')?.id;
+                    if (activeScreen === 'admin-driver-crud-screen') renderDriverCrudList();
+                    else if (activeScreen === 'driver-selection-screen') populateDriverSelection();
+                    if (activeScreen === 'user-screen') updateAvailableDriversCount();
+                });
             }).subscribe();
-        
-            // --- AJUSTE REALIZADO AQUI ---
-            // Inscrição para a tabela de usuários (users)
+
             supabaseClient.channel('public:users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, payload => {
-                const { eventType, new: newRecord, old: oldRecord } = payload;
-                
-                // Atualiza o estado local 'state.users' de forma inteligente
-                if (eventType === 'INSERT') {
-                    if (!state.users.some(u => u.id === newRecord.id)) {
-                        state.users.push(newRecord);
-                    }
-                } else if (eventType === 'UPDATE') {
-                    const index = state.users.findIndex(u => u.id === newRecord.id);
-                    if (index !== -1) state.users[index] = newRecord;
-                } else if (eventType === 'DELETE') {
-                    state.users = state.users.filter(u => u.id !== oldRecord.id);
-                }
-                
-                // Atualiza a tela de gerenciar usuários se estiver ativa
-                if (document.querySelector('.screen.active')?.id === 'admin-user-crud-screen') {
-                    renderUserCrudList();
-                }
+                 fetchAllData().then(() => {
+                    if (document.querySelector('.screen.active')?.id === 'admin-user-crud-screen') renderUserCrudList();
+                 });
             }).subscribe();
             
-            // Inscrição da tabela de corridas (sem alterações, já estava correta)
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
                 
@@ -2029,7 +1744,6 @@
                 if (activeScreenId === 'admin-requests-screen') {
                     loadAdminRequests();
                     renderOngoingRidesTable();
-                    checkAndPlayAlert(); // Verifica se precisa tocar o som após uma atualização
                 }
                 else if (activeScreenId === 'driver-screen') loadDriverJobs();
                 else if (activeScreenId === 'user-screen') {
@@ -2144,8 +1858,12 @@
             });
         }
 
-
+        // FUNÇÃO CORRIGIDA PARA EVITAR FALHAS NA TABELA DE REGISTROS
         function translateStatus(status) {
+            // Adicionada verificação para status nulo ou indefinido para evitar erros
+            if (!status) {
+                return { text: 'INDEFINIDO', colorClass: 'status-canceled' };
+            }
             switch (status) {
                 case 'requested': return { text: 'SOLICITADO', colorClass: 'status-requested' };
                 case 'assigned': return { text: 'DESIGNADO', colorClass: 'status-assigned' };
@@ -2543,7 +2261,6 @@
         }
 
     </script>
-   <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places,visualization&callback=initApp" async defer></script>
+   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
 </body>
 </html>
-
