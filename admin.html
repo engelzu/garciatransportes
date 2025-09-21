@@ -1135,6 +1135,7 @@
                     <thead class="text-xs text-gray-300 uppercase bg-gray-900/30">
                         <tr>
                             <th scope="col" class="px-4 py-3">Usuário</th>
+                            <th scope="col" class="px-4 py-3">Origem</th>
                             <th scope="col" class="px-4 py-3">Destino</th>
                             <th scope="col" class="px-4 py-3">Motorista</th>
                             <th scope="col" class="px-4 py-3">Status</th>
@@ -1149,6 +1150,8 @@
             ongoingRides.sort((a, b) => new Date(a.requestTime) - new Date(b.requestTime));
         
             ongoingRides.forEach(ride => {
+                const rideUser = state.users.find(u => u.id === ride.userId);
+                const originAddress = rideUser && rideUser.address ? rideUser.address : 'N/A';
                 const statusInfo = translateStatus(ride.status); 
 
                 let rideTypeInfo = '';
@@ -1187,6 +1190,7 @@
                 tableHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20">
                         <td class="px-4 py-3 font-medium">${ride.userName}</td>
+                        <td class="px-4 py-3">${originAddress}</td>
                         <td class="px-4 py-3">${ride.destination}</td>
                         <td class="px-4 py-3">${driverCellHTML}</td>
                         <td class="px-4 py-3">
