@@ -1119,9 +1119,9 @@
             }
         }
         
-        function renderOngoingRidesTable() {
+        async function renderOngoingRidesTable() {
             const tableContainer = document.getElementById('admin-ongoing-rides-table');
-            tableContainer.innerHTML = '';
+            tableContainer.innerHTML = '<div class="loader mx-auto"></div>';
             
             const ongoingRides = state.rides.filter(r => !['requested', 'completed', 'canceled'].includes(r.status));
         
@@ -1129,6 +1129,29 @@
                 tableContainer.innerHTML = '<p class="text-center text-gray-400">Nenhuma corrida em andamento no momento.</p>';
                 return;
             }
+
+            const ridesWithDistancePromises = ongoingRides.map(async (ride) => {
+                let distanceKm = 'N/D';
+                if (ride.userLocation && ride.userLocation.lat && ride.destination) {
+                    try {
+                        const destinationCoords = await geocodeAddress(ride.destination);
+                        if (destinationCoords) {
+                            distanceKm = getDistanceFromLatLonInKm(
+                                ride.userLocation.lat,
+                                ride.userLocation.lon,
+                                destinationCoords.lat,
+                                destinationCoords.lng
+                            ).toFixed(1) + ' km';
+                        }
+                    } catch (error) {
+                        console.error(`Falha ao calcular distância para o destino "${ride.destination}":`, error);
+                        distanceKm = 'Erro';
+                    }
+                }
+                return { ...ride, distanceKm };
+            });
+
+            const ridesWithDistance = await Promise.all(ridesWithDistancePromises);
             
             let tableHTML = `
                 <table class="w-full text-sm text-left">
@@ -1137,6 +1160,7 @@
                             <th scope="col" class="px-4 py-3">Usuário</th>
                             <th scope="col" class="px-4 py-3">Origem</th>
                             <th scope="col" class="px-4 py-3">Destino</th>
+                            <th scope="col" class="px-4 py-3">Distância</th>
                             <th scope="col" class="px-4 py-3">Motorista</th>
                             <th scope="col" class="px-4 py-3">Status</th>
                             <th scope="col" class="px-4 py-3">Tipo</th>
@@ -1147,9 +1171,9 @@
                     <tbody>
             `;
         
-            ongoingRides.sort((a, b) => new Date(a.requestTime) - new Date(b.requestTime));
+            ridesWithDistance.sort((a, b) => new Date(a.requestTime) - new Date(b.requestTime));
         
-            ongoingRides.forEach(ride => {
+            ridesWithDistance.forEach(ride => {
                 const rideUser = state.users.find(u => u.id === ride.userId);
                 const originAddress = rideUser && rideUser.address ? rideUser.address : 'N/A';
                 const statusInfo = translateStatus(ride.status); 
@@ -1192,6 +1216,7 @@
                         <td class="px-4 py-3 font-medium">${ride.userName}</td>
                         <td class="px-4 py-3">${originAddress}</td>
                         <td class="px-4 py-3">${ride.destination}</td>
+                        <td class="px-4 py-3 font-semibold">${ride.distanceKm}</td>
                         <td class="px-4 py-3">${driverCellHTML}</td>
                         <td class="px-4 py-3">
                             <span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span>
