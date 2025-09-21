@@ -5,302 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GARCIA TRANSPORTES - Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body, html {
-            background-color: #000;
-        }
-        .main-gradient {
-            background: linear-gradient(135deg, #000000, #000000);
-        }
-        .button-gradient {
-            background: linear-gradient(to right, #000000, #000000);
-            border: 2px solid white;
-            position: relative;
-            overflow: hidden;
-        }
-        .button-gradient::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to right, rgba(255,255,255,0.3), rgba(255,255,255,0));
-            transition: transform 0.3s ease-in-out;
-            transform: translateX(-100%);
-        }
-        .button-gradient:hover::before {
-            transform: translateX(0);
-        }
-
-        .button-gradient:disabled {
-            background: #4b5563;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        .card-gradient {
-             background: linear-gradient(135deg, #000000, #000000);
-        }
-        .screen {
-            display: none;
-            background-color: #000;
-        }
-        .screen.active {
-            display: block;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 4px solid #6d28d9;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .pac-container {
-            background-color: #374151;
-            border-radius: 8px;
-            border: 1px solid #4b5563;
-        }
-        .pac-item {
-            padding: 10px;
-            font-size: 14px;
-            color: #d1d5db;
-            cursor: pointer;
-        }
-        .pac-item:hover {
-            background-color: #4b5563;
-        }
-        .pac-item-query {
-            font-weight: 600;
-            color: #f3f4f6;
-        }
-
-        .text-black { color: #ffffff !important; }
-        .text-gray-800 { color: #ffffff !important; }
-        .text-gray-400 { color: #ffffff !important; }
-        .text-gray-300 { color: #ffffff !important; }
-        .text-gray-600 { color: #ffffff !important; }
-        .text-gray-700 { color: #ffffff !important; }
-        .text-gray-500 { color: #ffffff !important; }
-        .text-green-300 { color: #ffffff !important; }
-        .text-yellow-300 { color: #ffffff !important; }
+        body, html { background-color: #000; }
+        .main-gradient { background: linear-gradient(135deg, #000000, #000000); }
+        .button-gradient { background: linear-gradient(to right, #000000, #000000); border: 2px solid white; position: relative; overflow: hidden; }
+        .button-gradient::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to right, rgba(255,255,255,0.3), rgba(255,255,255,0)); transition: transform 0.3s ease-in-out; transform: translateX(-100%); }
+        .button-gradient:hover::before { transform: translateX(0); }
+        .card-gradient { background: linear-gradient(135deg, #000000, #000000); }
+        .screen { display: none; background-color: #000; }
+        .screen.active { display: block; }
+        .text-black, .text-gray-800, .text-gray-400, .text-gray-300, .text-gray-600, .text-gray-700, .text-gray-500, .text-green-300, .text-yellow-300 { color: #ffffff !important; }
         .text-cyan-400 { color: #00ffff !important; }
-
-        h1, h2, h3, p, button, label, input::placeholder, textarea::placeholder, select, option {
-            color: #ffffff !important;
-        }
-       
-        input, select, textarea {
-            background-color: #374151 !important;
-            border-color: #4b5563 !important;
-        }
-        
-        #admin-login-screen button:first-child {
-            color: #ffffff !important;
-        }
-
-        .icon-img {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-            margin-bottom: 0.5rem;
-        }
-        
-        #admin-id, #admin-password {
-            font-size: 14px;
-            text-align: center;
-        }
-        #admin-id::placeholder, #admin-password::placeholder {
-            text-align: center;
-        }
+        h1, h2, h3, p, button, label, input::placeholder, textarea::placeholder, select, option { color: #ffffff !important; }
+        input, select, textarea { background-color: #374151 !important; border-color: #4b5563 !important; }
+        #company-password-input { font-size: 14px; text-align: center; }
+        #company-password-input::placeholder { text-align: center; }
+        #app-container { position: relative; }
+        #admin-access-icon:hover svg { stroke: #fff; }
+        .pac-container { background-color: #374151; border-radius: 8px; border: 1px solid #4b5563; z-index: 1050 !important; }
+        .pac-item { padding: 10px; font-size: 14px; color: #d1d5db; cursor: pointer; }
+        .pac-item:hover { background-color: #4b5563; }
+        .pac-item-query { font-weight: 600; color: #f3f4f6; }
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
 
-    <div id="app-container" class="w-full max-w-md mx-auto relative"> 
+    <div id="app-container" class="w-full max-w-md mx-auto"> 
 
-        <div id="initial-screen" class="screen active text-center">
-            <div class="flex flex-col items-center justify-center mb-4">
-                <div id="app-icon-container" class="h-28 w-28 mb-2"></div>
+        <div id="company-login-screen" class="screen active">
+            <div id="admin-access-icon" title="Acesso Super Admin" onclick="promptSuperAdminLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
             </div>
-            <h1 class="text-4xl sm:text-5xl font-bold text-black mb-2">GARCIA TRANSPORTES</h1>
-            <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
-            <div class="space-y-4">
-                 <button onclick="showScreen('admin-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    ADMINISTRADOR
-                </button>
-            </div>
-        </div>
-        
-        <div id="admin-login-screen" class="screen">
-            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">&larr; Voltar</button>
-            <img src="images/admin.png" alt="Ícone do Administrador" class="mx-auto icon-img" style="width: 80px; height: 80px;">
-            <h2 class="text-3xl font-bold mb-6 text-center">Login do Administrador</h2>
-            <div class="mb-4">
-                <label for="admin-id" class="block mb-2 text-sm font-medium">Matrícula</label>
-                <input type="text" id="admin-id" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite sua matrícula de admin">
-            </div>
-            <div class="mb-4">
-                <label for="admin-password" class="block mb-2 text-sm font-medium">Senha</label>
-                <input type="password" id="admin-password" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite sua senha">
-            </div>
-            <button onclick="loginAdmin()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
-            <p id="admin-login-error" class="text-red-500 text-center mt-4 hidden">Matrícula, senha ou permissão de admin inválida!</p>
+            
+            <h2 class="text-3xl font-bold mb-6 text-center">Login da Empresa</h2>
+            <div class="mb-4"><label for="company-login-select" class="block mb-2 text-sm font-medium">Empresa</label><select id="company-login-select" class="w-full p-3 rounded-lg"></select></div>
+            <div class="mb-4"><label for="company-password-input" class="block mb-2 text-sm font-medium">Senha da Empresa</label><input type="password" id="company-password-input" class="w-full p-3 rounded-lg" placeholder="Digite a senha"></div>
+            <button onclick="verifyCompanyPassword()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
+            <p id="company-login-error" class="text-red-500 text-center mt-4 hidden">Senha da empresa incorreta!</p>
         </div>
         
         <div id="admin-screen" class="screen">
              <div class="flex justify-between items-center mb-6">
                 <div></div>
-                <h2 class="text-2xl font-bold">Área do Administrador</h2>
-                <button onclick="logoutAdmin()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
+                <h2 class="text-2xl font-bold">Solicitar Corrida</h2>
+                <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
             </div>
             <p id="admin-welcome-message" class="text-center text-lg text-gray-300 mb-6"></p>
-
-            <div class="mb-8">
-                <h3 class="text-xl font-semibold mb-4 text-center border-b-2 border-gray-700 pb-2">Corridas em Andamento</h3>
-                <div id="admin-active-rides-container" class="space-y-4 max-h-64 overflow-y-auto p-2 rounded-lg bg-gray-900/50">
-                </div>
-            </div>
-
             <div id="admin-request-form" class="card-gradient p-6 rounded-lg">
-                <h3 class="text-xl font-semibold mb-6 text-center">Nova Solicitação</h3>
-                <div class="mb-4">
-                    <label for="company-select" class="block mb-2 text-sm font-medium">1. Selecione a Empresa</label>
-                    <select id="company-select" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
-                        <option value="">-- Carregando empresas... --</option>
-                    </select>
-                </div>
-                 <div class="mb-6">
-                    <label for="collaborator-select" class="block mb-2 text-sm font-medium">2. Selecione o Colaborador</label>
-                    <select id="collaborator-select" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" disabled>
-                        <option value="">-- Selecione uma empresa primeiro --</option>
-                    </select>
-                </div>
-                
-                 <div id="admin-ride-details" class="hidden">
-                     <hr class="border-gray-600 my-6">
-                     <h3 class="text-lg font-semibold mb-4 text-center">3. Detalhes da Viagem</h3>
-                    <div class="mb-4">
-                        <label for="admin-origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label>
-                        <input type="text" id="admin-origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço de partida">
-                        <button onclick="adminUseCurrentLocation()" class="mt-2 w-full py-2 px-4 text-sm font-semibold rounded-lg bg-sky-600 hover:bg-sky-700">Usar minha localização atual</button>
-                    </div>
-                    <div class="mb-4">
-                        <label for="admin-passenger-count" class="block mb-2 text-sm font-medium">Quantidade de Passageiros?</label>
-                        <select id="admin-passenger-count" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
-                            <option value="1">1 Passageiro</option>
-                            <option value="2">2 Passageiros</option>
-                            <option value="3">3 Passageiros</option>
-                            <option value="4">4 Passageiros</option>
-                        </select>
-                    </div>
+                <div class="mb-6"><label for="collaborator-select" class="block mb-2 text-sm font-medium">Colaborador</label><select id="collaborator-select" class="w-full p-3 rounded-lg"><option value="">-- Carregando... --</option></select></div>
+                <div id="admin-ride-details" class="hidden">
+                    <hr class="border-gray-600 my-6"><h3 class="text-lg font-semibold mb-4 text-center">Detalhes da Viagem</h3>
+                    <div class="mb-4"><label for="admin-origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label><input type="text" id="admin-origin" class="w-full p-3 rounded-lg" placeholder="Digite o endereço de partida"></div>
+                    <div class="mb-4"><label for="admin-passenger-count" class="block mb-2 text-sm font-medium">Passageiros</label><select id="admin-passenger-count" class="w-full p-3 rounded-lg"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
                     <div id="admin-destinations-container" class="w-full"></div>
-                    <div class="mb-4">
-                        <label for="admin-observation" class="block mb-2 text-sm font-medium">Observação (opcional)</label>
-                        <textarea id="admin-observation" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Ex: Ponto de referência..." maxlength="300" rows="3"></textarea>
-                    </div>
-                    <div class="mt-6 space-y-3">
-                        <button id="admin-request-immediate-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">
-                            SOLICITAR AGORA
-                        </button>
-                        <button id="admin-schedule-ride-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-lg">
-                            AGENDAR VIAGEM
-                        </button>
-                    </div>
-                 </div>
+                    <div class="mb-4"><label for="admin-observation" class="block mb-2 text-sm font-medium">Observação</label><textarea id="admin-observation" class="w-full p-3 rounded-lg" placeholder="Ex: Ponto de referência..." rows="2"></textarea></div>
+                    <div class="mt-6 space-y-3"><button id="admin-request-immediate-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR AGORA</button></div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
-        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
-            <p id="modal-message" class="mb-4 text-lg"></p>
-            <div id="modal-buttons" class="flex justify-center gap-4">
-                 <button id="modal-cancel" onclick="closeModal('modal')" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
-                 <button id="modal-confirm" onclick="closeModal('modal')" class="py-2 px-8 font-semibold rounded-lg button-gradient">OK</button>
+        <div id="company-management-screen" class="screen">
+            <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Gerenciar Empresas</h2><button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button></div>
+            <div class="card-gradient p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold mb-2">Adicionar/Editar Empresa</h3>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="new-company-name" placeholder="Nome da Empresa" class="w-full p-2 rounded-lg">
+                    <input type="text" id="new-company-password" placeholder="Senha" class="w-full p-2 rounded-lg">
+                </div>
+                <button onclick="addOrUpdateCompany()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar</button>
             </div>
+            <div id="company-list-container" class="space-y-3"></div>
         </div>
     </div>
-
-    <div id="admin-schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
-        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
-            <h3 class="text-2xl font-bold mb-4">Agendar Viagem</h3>
-            <div class="mb-4 text-left">
-                <label for="admin-schedule-date" class="block mb-2 text-sm font-medium">Data</label>
-                <input type="date" id="admin-schedule-date" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
-            </div>
-            <div class="mb-6 text-left">
-                <label for="admin-schedule-time" class="block mb-2 text-sm font-medium">Hora</label>
-                <input type="time" id="admin-schedule-time" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
-            </div>
-            <div class="flex justify-center gap-4">
-                <button onclick="closeModal('admin-schedule-modal')" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
-                <button onclick="confirmAdminSchedule()" class="py-2 px-8 font-semibold rounded-lg button-gradient">AGENDAR</button>
-            </div>
-        </div>
-    </div>
-
+    
     <script>
+        // --- CHAVES DE ACESSO AJUSTADAS ---
+        const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const GOOGLE_MAPS_API_KEY = 'AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg';
-
-        let state = {
-            appIcon: 'images/admin.png', 
-            currentUser: null,
-            allUsers: [],
-            adminActiveRides: [],
-            supabaseSubscription: null
-        };
-
-        const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'sb_publishable_a95qQRM7LfINIPGhajJqvw_kZd51KJY'; 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        function showModal(modalId, htmlContent, onConfirmCallback, showCancelButton = false) {
-            const modal = document.getElementById(modalId);
-            if (!modal) return;
-            const messageEl = modal.querySelector('#modal-message');
-            if(messageEl && typeof htmlContent === 'string') messageEl.textContent = htmlContent;
-            
-            const confirmBtn = modal.querySelector('#modal-confirm');
-            const cancelBtn = modal.querySelector('#modal-cancel');
-
-            if (confirmBtn) {
-                confirmBtn.onclick = () => { 
-                    if (onConfirmCallback) onConfirmCallback(); 
-                    closeModal(modalId); 
-                };
-            }
-            if (cancelBtn) {
-                cancelBtn.style.display = showCancelButton ? 'inline-block' : 'none';
-                if(showCancelButton) cancelBtn.onclick = () => closeModal(modalId);
-            }
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeModal(modalId = 'modal') {
-            document.getElementById(modalId)?.classList.add('hidden');
-            document.getElementById(modalId)?.classList.remove('flex');
-        }
-
-        function initAutocomplete(inputElement) {
-            if (inputElement && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                new google.maps.places.Autocomplete(inputElement, { types: ['address'], componentRestrictions: { 'country': 'br' } });
-            }
-        }
+        // --- FIM DAS CHAVES DE ACESSO ---
         
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let state = { loggedInCompany: null, allUsers: [] };
+
         function initializeGoogleMaps() {
             if (document.getElementById('google-maps-script-tag')) return;
             const script = document.createElement('script');
@@ -310,378 +104,127 @@
             document.head.appendChild(script);
         }
 
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-            document.getElementById(screenId)?.classList.add('active');
-            localStorage.setItem('lastAdminScreen', screenId);
+        function initAutocomplete(inputElement) {
+            if (inputElement && typeof google !== 'undefined' && google.maps && google.maps.places) {
+                new google.maps.places.Autocomplete(inputElement, {
+                    types: ['address'],
+                    componentRestrictions: { 'country': 'br' }
+                });
+            }
         }
 
-        async function loginAdmin() {
-            const matricula = document.getElementById('admin-id').value.trim();
-            const password = document.getElementById('admin-password').value.trim();
-            const errorEl = document.getElementById('admin-login-error');
+        function showScreen(screenId) { document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active')); document.getElementById(screenId)?.classList.add('active'); }
+        function logout() { state.loggedInCompany = null; document.getElementById('company-password-input').value = ''; showScreen('company-login-screen'); }
 
-            if (!matricula || !password) {
-                errorEl.textContent = 'Por favor, preencha todos os campos.';
+        async function promptSuperAdminLogin() {
+            const password = prompt("Para acessar o gerenciamento, digite a senha mestra:");
+            if (password === null) return;
+            if (password === '789512') {
+                state.loggedInCompany = { name: "Super Admin" };
+                await loadCompanyManagement();
+                showScreen('company-management-screen');
+            } else {
+                alert("Senha mestra incorreta.");
+            }
+        }
+
+        async function verifyCompanyPassword() {
+            const companyName = document.getElementById('company-login-select').value;
+            const password = document.getElementById('company-password-input').value.trim();
+            const errorEl = document.getElementById('company-login-error');
+            errorEl.classList.add('hidden');
+
+            if (!companyName || !password) {
+                errorEl.textContent = 'Preencha todos os campos.';
                 errorEl.classList.remove('hidden');
                 return;
             }
-
-            const { data, error } = await supabaseClient.from('users').select('*').eq('matricula', matricula).eq('password', password).eq('is_admin', true).single();
+            
+            const { data, error } = await supabaseClient.from('companies').select('*').eq('name', companyName).eq('password', password).single();
             
             if (error || !data) {
-                errorEl.textContent = 'Matrícula, senha ou permissão de admin inválida!';
+                errorEl.textContent = 'Senha da empresa incorreta!';
                 errorEl.classList.remove('hidden');
-                return;
+            } else {
+                state.loggedInCompany = data;
+                await setupAdminScreen();
+                showScreen('admin-screen');
             }
-
-            state.currentUser = data;
-            localStorage.setItem('loggedInAdmin', JSON.stringify(data));
-            document.getElementById('admin-welcome-message').textContent = `Olá, ${data.name}!`;
-            errorEl.classList.add('hidden');
-            document.getElementById('admin-id').value = '';
-            document.getElementById('admin-password').value = '';
-            
-            await setupAdminScreen();
-            showScreen('admin-screen');
-        }
-        
-        function logoutAdmin() {
-            if (state.supabaseSubscription) {
-                supabaseClient.removeChannel(state.supabaseSubscription);
-                state.supabaseSubscription = null;
-            }
-            state.currentUser = null;
-            state.allUsers = [];
-            state.adminActiveRides = [];
-            localStorage.removeItem('loggedInAdmin');
-            showScreen('initial-screen');
         }
 
         async function setupAdminScreen() {
-            const { data, error } = await supabaseClient.from('users').select('id, name, company, address');
-            if (error) {
-                showModal('modal', 'Erro ao carregar lista de colaboradores.');
-                return;
-            }
-            state.allUsers = data;
+            document.getElementById('admin-welcome-message').textContent = `Bem-vindo, ${state.loggedInCompany.name}!`;
+            const { data: users, error: usersError } = await supabaseClient.from('users').select('id, name, company');
+            if (usersError) { console.error("Erro ao buscar usuários:", usersError); return; }
+            state.allUsers = users;
 
-            const companies = [...new Set(data.map(user => user.company).filter(Boolean))].sort();
-            const companySelect = document.getElementById('company-select');
-            companySelect.innerHTML = '<option value="">-- Selecione uma empresa --</option>';
-            companies.forEach(company => {
-                companySelect.innerHTML += `<option value="${company}">${company}</option>`;
-            });
-            
-            companySelect.addEventListener('change', handleCompanyChange);
-            document.getElementById('collaborator-select').addEventListener('change', handleCollaboratorChange);
-            document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
-            document.getElementById('admin-request-immediate-btn').onclick = () => adminRequestRide('immediate');
-            document.getElementById('admin-schedule-ride-btn').onclick = openAdminScheduleModal;
-            
-            await fetchAllAdminRides();
-            setupRealtimeSubscription();
-        }
-
-        function handleCompanyChange(event) {
-            const selectedCompany = event.target.value;
             const collaboratorSelect = document.getElementById('collaborator-select');
-            const rideDetails = document.getElementById('admin-ride-details');
-            
-            collaboratorSelect.innerHTML = '';
-            rideDetails.classList.add('hidden');
-            
-            if (!selectedCompany) {
-                collaboratorSelect.innerHTML = '<option value="">-- Selecione uma empresa primeiro --</option>';
-                collaboratorSelect.disabled = true;
-                return;
-            }
+            const loggedInCompanyName = state.loggedInCompany.name;
+            const collaborators = state.allUsers.filter(user => user.company === loggedInCompanyName);
 
-            const collaborators = state.allUsers.filter(user => user.company === selectedCompany);
-            collaboratorSelect.innerHTML = '<option value="">-- Selecione um colaborador --</option>';
+            collaboratorSelect.innerHTML = '<option value="">-- Selecione o Colaborador --</option>';
             collaborators.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = user.name;
-                option.dataset.address = user.address || '';
-                collaboratorSelect.appendChild(option);
+                collaboratorSelect.innerHTML += `<option value="${user.id}">${user.name}</option>`;
             });
             collaboratorSelect.disabled = false;
+            
+            document.getElementById('collaborator-select').addEventListener('change', handleCollaboratorChange);
+            document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
         }
-        
+
         function handleCollaboratorChange(event) {
-             const rideDetails = document.getElementById('admin-ride-details');
-             if (event.target.value) {
-                 rideDetails.classList.remove('hidden');
-                 initAutocomplete(document.getElementById('admin-origin'));
-                 adminUpdateDestinationFields(document.getElementById('admin-passenger-count').value);
-                 const selectedOption = event.target.options[event.target.selectedIndex];
-                 const address = selectedOption.dataset.address;
-                 if (address) {
-                    const firstDestinationInput = document.getElementById('admin-destination-1');
-                    if(firstDestinationInput) firstDestinationInput.value = address;
-                 }
-             } else {
-                 rideDetails.classList.add('hidden');
-             }
+            const rideDetails = document.getElementById('admin-ride-details');
+            const showDetails = !!event.target.value;
+            rideDetails.classList.toggle('hidden', !showDetails);
+
+            if (showDetails) {
+                initAutocomplete(document.getElementById('admin-origin'));
+                adminUpdateDestinationFields(document.getElementById('admin-passenger-count').value);
+            }
         }
-        
+
         function adminUpdateDestinationFields(passengerCount) {
             const container = document.getElementById('admin-destinations-container');
-            container.innerHTML = ''; 
+            container.innerHTML = '';
             for (let i = 1; i <= passengerCount; i++) {
                 const labelText = i === 1 ? 'Destino Passageiro 1 <span class="text-red-400">(Obrigatório)</span>' : `Destino Passageiro ${i}`;
-                container.innerHTML += `
-                    <div class="mb-4">
-                        <label for="admin-destination-${i}" class="block mb-2 text-sm font-medium">${labelText}</label>
-                        <input type="text" id="admin-destination-${i}" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço completo">
-                    </div>`;
+                container.innerHTML += `<div class="mb-4"><label class="block mb-2 text-sm font-medium">${labelText}</label><input type="text" id="admin-destination-${i}" class="w-full p-3 rounded-lg" placeholder="Digite o endereço completo"></div>`;
             }
             for (let i = 1; i <= passengerCount; i++) {
                 initAutocomplete(document.getElementById(`admin-destination-${i}`));
             }
         }
+
+        async function adminRequestRide() { /* ...código da função inalterado... */ }
+        async function loadCompanyManagement() { /* ...código da função inalterado... */ }
+        async function addOrUpdateCompany() { /* ...código da função inalterado... */ }
+        async function deleteCompany(id, name) { /* ...código da função inalterado... */ }
         
-        async function adminUseCurrentLocation() {
-            const originInput = document.getElementById('admin-origin');
-            originInput.disabled = true;
-            originInput.value = 'Obtendo localização...';
-
-            if (!navigator.geolocation) {
-                showModal('modal', 'Geolocalização não é suportada pelo seu navegador.');
-                originInput.value = '';
-                originInput.disabled = false;
-                return;
+        async function populateLoginCompanies() {
+            const select = document.getElementById('company-login-select');
+            select.innerHTML = '<option>Carregando...</option>';
+            const { data, error } = await supabaseClient.from('companies').select('id, name').order('name');
+            if (error) { 
+                select.innerHTML = '<option>Erro</option>'; 
+                console.error("ERRO AO CARREGAR EMPRESAS:", error);
+                return; 
             }
-
-            try {
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-                });
-
-                const latlng = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
-
-                const geocoder = new google.maps.Geocoder();
-                await geocoder.geocode({ location: latlng }, (results, status) => {
-                    if (status === "OK") {
-                        if (results[0]) {
-                            originInput.value = results[0].formatted_address;
-                        } else {
-                            showModal('modal', 'Nenhum endereço encontrado para sua localização.');
-                            originInput.value = '';
-                        }
-                    } else {
-                        showModal('modal', 'Falha na geocodificação: ' + status);
-                        originInput.value = '';
-                    }
-                    originInput.disabled = false;
-                });
-
-            } catch (error) {
-                let userMessage = "Não foi possível obter sua localização. Verifique as permissões do navegador.";
-                if (error.code === 1) userMessage = "Você negou a permissão de localização.";
-                showModal('modal', userMessage);
-                console.error('Erro ao obter localização:', error);
-                originInput.value = '';
-                originInput.disabled = false;
-            }
-        }
-
-        function openAdminScheduleModal() {
-            const modal = document.getElementById('admin-schedule-modal');
-            const today = new Date();
-            today.setHours(today.getHours() + 1);
-            document.getElementById('admin-schedule-date').min = new Date().toISOString().split('T')[0];
-            document.getElementById('admin-schedule-date').value = today.toISOString().split('T')[0];
-            document.getElementById('admin-schedule-time').value = today.toTimeString().slice(0, 5);
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function confirmAdminSchedule() {
-            const dateInput = document.getElementById('admin-schedule-date');
-            const timeInput = document.getElementById('admin-schedule-time');
-
-            if (!dateInput.value || !timeInput.value) {
-                return showModal('modal', 'Por favor, selecione uma data e hora para agendamento.');
-            }
-            const scheduledDate = new Date(`${dateInput.value}T${timeInput.value}`);
-            if (scheduledDate < new Date()) {
-                return showModal('modal', 'A data e hora do agendamento não podem ser no passado.');
-            }
-            const scheduledDateTime = scheduledDate.toISOString();
-            closeModal('admin-schedule-modal');
-            adminRequestRide('scheduled', scheduledDateTime);
+            select.innerHTML = data.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         }
         
-        async function adminRequestRide(requestType, scheduledDateTime = null) {
-            const immediateBtn = document.getElementById('admin-request-immediate-btn');
-            const scheduleBtn = document.getElementById('admin-schedule-ride-btn');
-            const collaboratorId = document.getElementById('collaborator-select').value;
-            const collaborator = state.allUsers.find(u => u.id == collaboratorId);
-
-            if (!collaborator) return showModal('modal', 'Por favor, selecione um colaborador válido.');
-
-            const originAddress = document.getElementById('admin-origin').value.trim();
-            if (!originAddress) return showModal('modal', 'O campo de origem é obrigatório.');
-
-            const passengerCount = document.getElementById('admin-passenger-count').value;
-            const destinations = Array.from({ length: passengerCount }, (_, i) => document.getElementById(`admin-destination-${i+1}`)?.value.trim() || '');
-
-            if (!destinations[0]) return showModal('modal', 'O destino do primeiro passageiro é obrigatório.');
-            
-            immediateBtn.disabled = true;
-            scheduleBtn.disabled = true;
-            immediateBtn.textContent = 'Processando...';
-            
-            try {
-                const geocoder = new google.maps.Geocoder();
-                const geocodeResult = await new Promise((resolve, reject) => {
-                    geocoder.geocode({ 'address': originAddress }, (results, status) => {
-                        if (status === 'OK' && results[0]) {
-                            resolve(results[0].geometry.location);
-                        } else {
-                            reject(new Error('Endereço de origem inválido. Por favor, verifique e tente novamente.'));
-                        }
-                    });
-                });
-                const userLocation = { lat: geocodeResult.lat(), lon: geocodeResult.lng() };
-
-                const newRideData = {
-                    origin_address: originAddress,
-                    userLocation: userLocation,
-                    destination: JSON.stringify(destinations),
-                    observation: document.getElementById('admin-observation').value.trim(),
-                    status: requestType === 'scheduled' ? 'scheduled' : 'requested',
-                    userId: collaborator.id,
-                    userName: collaborator.name,
-                    userCompany: collaborator.company,
-                    requestTime: new Date().toISOString(),
-                    request_type: requestType,
-                    scheduled_datetime: scheduledDateTime,
-                    requested_by_admin_id: state.currentUser.id,
-                    requested_by_admin_name: state.currentUser.name,
-                    passenger_count: parseInt(passengerCount)
-                };
-
-                const { data, error } = await supabaseClient.from('rides').insert(newRideData).select().single();
-                if (error) throw error;
-                
-                document.getElementById('company-select').value = '';
-                handleCompanyChange({target: {value: ''}});
-                document.getElementById('admin-observation').value = '';
-                document.getElementById('admin-origin').value = '';
-
-                const successMessage = requestType === 'scheduled' 
-                    ? `Viagem para ${data.userName} agendada com sucesso!`
-                    : `Corrida para ${data.userName} solicitada com sucesso!`;
-                showModal('modal', successMessage);
-
-            } catch(error) {
-                showModal('modal', `Não foi possível processar a solicitação: ${error.message}`);
-            } finally {
-                immediateBtn.disabled = false;
-                scheduleBtn.disabled = false;
-                immediateBtn.textContent = 'SOLICITAR AGORA';
-            }
-        }
-        
-        async function fetchAllAdminRides() {
-            if (!state.currentUser) return;
-            const { data, error } = await supabaseClient
-                .from('rides')
-                .select('*')
-                .eq('requested_by_admin_id', state.currentUser.id)
-                .in('status', ['requested', 'assigned', 'accepted', 'arrived_pickup', 'in_progress', 'scheduled']);
-            
-            if (error) {
-                console.error("Erro ao buscar corridas ativas:", error);
-                return;
-            }
-            state.adminActiveRides = data || [];
-            renderAdminRideList();
-        }
-
-        function renderAdminRideList() {
-            const container = document.getElementById('admin-active-rides-container');
-            if (!container) return;
-            
-            if (state.adminActiveRides.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 p-4">Nenhuma solicitação ativa no momento.</p>';
-                return;
-            }
-
-            container.innerHTML = state.adminActiveRides
-                .sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime))
-                .map(ride => {
-                    const canCancel = ['requested', 'assigned', 'accepted', 'scheduled'].includes(ride.status);
-                    const cancelButton = canCancel ? `<button onclick="adminCancelRide(${ride.id})" class="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancelar</button>` : '';
-                    let scheduleInfo = '';
-                    if (ride.status === 'scheduled' && ride.scheduled_datetime) {
-                        const date = new Date(ride.scheduled_datetime).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour:'2-digit', minute:'2-digit'});
-                        scheduleInfo = `<p class="text-xs text-yellow-300">Agendado: ${date}</p>`;
-                    }
-                    return `
-                        <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-                            <div>
-                                <p class="font-semibold">${ride.userName}</p>
-                                <p class="text-sm text-cyan-400">${translateStatus(ride.status)}</p>
-                                ${scheduleInfo}
-                            </div>
-                            ${cancelButton}
-                        </div>
-                    `;
-            }).join('');
-        }
-
-        async function adminCancelRide(rideId) {
-            showModal('modal', 'Tem certeza que deseja cancelar esta solicitação?', async () => {
-                const { error } = await supabaseClient.from('rides').update({ status: 'canceled' }).eq('id', rideId);
-                if (error) {
-                    showModal('modal', 'Não foi possível cancelar a corrida.');
-                } else {
-                    showModal('modal', 'A corrida foi cancelada com sucesso.');
-                }
-            }, true); 
-        }
-
-        function setupRealtimeSubscription() {
-            if (state.supabaseSubscription) return;
-            state.supabaseSubscription = supabaseClient.channel('public:rides')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (payload) => {
-                    fetchAllAdminRides();
-                })
-                .subscribe();
-        }
-        
-        function translateStatus(status) {
-            const translations = {'requested':'SOLICITADO','assigned':'DESIGNADO','accepted':'ACEITO','arrived_pickup':'NO LOCAL','in_progress':'EM ANDAMENTO','scheduled':'AGENDADO','completed':'FINALIZADA','canceled':'CANCELADA'};
-            return translations[status] || status.toUpperCase();
-        }
-
         function initApp() {
-            document.getElementById('app-icon-container').innerHTML = `<img src="${state.appIcon}" class="h-full w-full object-contain">`;
             initializeGoogleMaps();
-            const loggedInAdmin = localStorage.getItem('loggedInAdmin');
-            if (loggedInAdmin) {
-                 try {
-                     state.currentUser = JSON.parse(loggedInAdmin);
-                     document.getElementById('admin-welcome-message').textContent = `Olá, ${state.currentUser.name}!`;
-                     setupAdminScreen();
-                     showScreen('admin-screen');
-                 } catch (e) {
-                     localStorage.removeItem('loggedInAdmin');
-                     showScreen('initial-screen');
-                 }
-            } else {
-                 showScreen('initial-screen');
-            }
+            populateLoginCompanies();
+            document.getElementById('admin-request-immediate-btn').onclick = adminRequestRide;
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
+
+        // Funções omitidas para clareza, mas presentes no código final
+        async function adminRequestRide() { const collaboratorId = document.getElementById('collaborator-select').value; if (!collaboratorId) return alert('Selecione um colaborador.'); const collaborator = state.allUsers.find(u => u.id == collaboratorId); const passengerCount = document.getElementById('admin-passenger-count').value; const destinations = []; for (let i = 1; i <= passengerCount; i++) { const destValue = document.getElementById(`admin-destination-${i}`)?.value.trim(); if (destValue) destinations.push(destValue); } const rideData = { userId: collaborator.id, userName: collaborator.name, userCompany: collaborator.company, origin_address: document.getElementById('admin-origin').value.trim(), destination: JSON.stringify(destinations), passenger_count: parseInt(passengerCount), observation: document.getElementById('admin-observation').value.trim(), status: 'requested', requestTime: new Date().toISOString(), requested_by_admin_name: state.loggedInCompany.name }; if (!rideData.origin_address || destinations.length === 0) { return alert('Origem e pelo menos um Destino são obrigatórios.'); } const { error } = await supabaseClient.from('rides').insert([rideData]); if (error) { alert('Erro ao solicitar corrida: ' + error.message); } else { alert(`Corrida para ${collaborator.name} solicitada com sucesso!`); document.getElementById('collaborator-select').value = ''; handleCollaboratorChange({target: {value: ''}}); } }
+        async function loadCompanyManagement() { const container = document.getElementById('company-list-container'); container.innerHTML = '<p>Carregando...</p>'; const { data, error } = await supabaseClient.from('companies').select('*').order('name'); if (error) { container.innerHTML = '<p>Erro ao carregar.</p>'; console.error(error); return; } container.innerHTML = data.map(c => `<div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center"><div><p class="font-semibold text-lg">${c.name}</p><p class="text-sm text-gray-400">Senha: ${c.password}</p></div><button onclick="deleteCompany(${c.id},'${c.name}')" class="py-1 px-3 font-semibold rounded-lg bg-red-600 hover:bg-red-700">X</button></div>`).join(''); }
+        async function addOrUpdateCompany() { const name = document.getElementById('new-company-name').value.trim(); const password = document.getElementById('new-company-password').value.trim(); if(!name || !password) return alert('Nome e Senha são obrigatórios.'); const { error } = await supabaseClient.from('companies').upsert({ name, password }, { onConflict: 'name' }); if(error) { alert('Erro ao salvar empresa.'); console.error(error); } else { document.getElementById('new-company-name').value = ''; document.getElementById('new-company-password').value = ''; await populateLoginCompanies(); await loadCompanyManagement(); } }
+        async function deleteCompany(id, name) { if (!confirm(`Excluir a empresa "${name}"?`)) return; const { error } = await supabaseClient.from('companies').delete().eq('id', id); if (error) { alert('Erro ao excluir.'); } else { await populateLoginCompanies(); await loadCompanyManagement(); } }
     </script>
 </body>
 </html>
