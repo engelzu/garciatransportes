@@ -2239,7 +2239,7 @@
             }
         }
         
-        // Inicializa o mapa para exibir marcadores individuais
+        // Inicializa o mapa para exibir o mapa de calor
         async function initHeatmap() {
             const mapDiv = document.getElementById('heatmap-canvas');
             if (!mapDiv) return;
@@ -2258,15 +2258,12 @@
                         geocodeAddress(user.address)
                             .then(coords => {
                                 if (coords) {
-                                    locationsData.push({
-                                        position: new google.maps.LatLng(coords.lat, coords.lng),
-                                        name: user.name 
-                                    });
+                                    locationsData.push(new google.maps.LatLng(coords.lat, coords.lng));
                                 }
                                 resolve();
                             })
                             .catch(error => {
-                                console.error(`Falha ao geocodificar o endereço "${user.address}" para o marcador: ${error}`);
+                                console.error(`Falha ao geocodificar o endereço "${user.address}" para o mapa de calor: ${error}`);
                                 resolve();
                             });
                     } else {
@@ -2277,15 +2274,17 @@
             await Promise.all(geocodePromises);
 
             if (locationsData.length > 0) {
-                locationsData.forEach(data => {
-                    new google.maps.Marker({
-                        position: data.position,
-                        map: map,
-                        title: data.name 
-                    });
+                if (heatmap) {
+                    heatmap.setMap(null); // Limpa o mapa de calor anterior se existir
+                }
+                heatmap = new google.maps.visualization.HeatmapLayer({
+                    data: locationsData,
+                    map: map
                 });
+                heatmap.set('radius', 20);
+                heatmap.set('opacity', 0.8);
             } else {
-                console.log("Nenhum dado de endereço de usuário encontrado para exibir os marcadores.");
+                console.log("Nenhum dado de endereço de usuário encontrado para exibir o mapa de calor.");
             }
         }
 
