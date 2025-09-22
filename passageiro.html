@@ -630,7 +630,6 @@
             } else if (type === 'scheduled') {
                 openScheduleModal();
             }
-            showScreen('user-screen');
         }
 
         function openScheduleModal() {
@@ -673,20 +672,17 @@
 
         async function requestRide() {
             if (isProcessingRequest) return;
+            showScreen('user-screen');
 
             const originAddress = document.getElementById('origin').value.trim();
             const destinations = selectedDestinations;
             const observation = selectedObservation;
             const passengerCount = document.getElementById('passenger-count').value;
             const requestRideBtn = document.getElementById('request-ride-btn');
-
-            if (!originAddress) {
-                showModal('modal', 'Por favor, insira o endereço de origem.');
-                return;
-            }
             
-            if (!destinations || destinations.length === 0 || !destinations[0]) {
-                showModal('modal', 'Por favor, insira o destino do primeiro passageiro.');
+            // Validações já foram feitas no handler do botão, mas uma checagem extra não faz mal
+            if (!originAddress || !destinations || destinations.length === 0 || !destinations[0]) {
+                showModal('modal', 'Origem ou destino faltando. Por favor, preencha o formulário novamente.');
                 return;
             }
 
@@ -1238,6 +1234,7 @@
             XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
         }
 
+        // --- LÓGICA CORRIGIDA PARA O BOTÃO DE SOLICITAÇÃO ---
         document.getElementById('request-ride-btn').onclick = function() {
             const passengerCount = document.getElementById('passenger-count').value;
             const destinations = [];
@@ -1263,8 +1260,11 @@
                 return;
             }
             
+            // Salva os dados do formulário em variáveis globais para uso posterior
             selectedDestinations = destinations; 
             selectedObservation = document.getElementById('observation').value.trim();
+            
+            // Mostra a tela de seleção (Imediato / Agendar)
             showScreen('request-type-screen'); 
         };
     </script>
