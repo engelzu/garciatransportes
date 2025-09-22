@@ -30,6 +30,8 @@
         .pac-item { padding: 10px; font-size: 14px; color: #d1d5db; cursor: pointer; }
         .pac-item:hover { background-color: #4b5563; }
         .pac-item-query { font-weight: 600; color: #f3f4f6; }
+        #schedule-modal { display: none; }
+        #schedule-modal.flex { display: flex; }
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
@@ -65,7 +67,10 @@
                     <div class="mb-4"><label for="admin-passenger-count" class="block mb-2 text-sm font-medium">Passageiros</label><select id="admin-passenger-count" class="w-full p-3 rounded-lg"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
                     <div id="admin-destinations-container" class="w-full"></div>
                     <div class="mb-4"><label for="admin-observation" class="block mb-2 text-sm font-medium">Observação</label><textarea id="admin-observation" class="w-full p-3 rounded-lg" placeholder="Ex: Ponto de referência..." rows="2"></textarea></div>
-                    <div class="mt-6 space-y-3"><button id="admin-request-immediate-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR AGORA</button></div>
+                    <div class="mt-6 space-y-3">
+                        <button id="admin-request-immediate-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR AGORA</button>
+                        <button id="admin-request-scheduled-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">AGENDAR</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -84,6 +89,24 @@
         </div>
     </div>
     
+    <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
+            <h3 class="text-2xl font-bold mb-4">Agendar Corrida</h3>
+            <div class="mb-4 text-left">
+                <label for="schedule-date" class="block mb-2 text-sm font-medium">Data</label>
+                <input type="date" id="schedule-date" class="w-full p-3 rounded-lg">
+            </div>
+            <div class="mb-6 text-left">
+                <label for="schedule-time" class="block mb-2 text-sm font-medium">Hora</label>
+                <input type="time" id="schedule-time" class="w-full p-3 rounded-lg">
+            </div>
+            <div class="flex justify-center gap-4">
+                <button onclick="closeScheduleModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
+                <button onclick="confirmAdminSchedule()" class="py-2 px-8 font-semibold rounded-lg button-gradient">AGENDAR</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- CHAVES DE ACESSO AJUSTADAS ---
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
@@ -94,6 +117,8 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let state = { loggedInCompany: null, allUsers: [] };
+        let adminSelectedRequestType = '';
+        let adminScheduledDateTime = null;
 
         function initializeGoogleMaps() {
             if (document.getElementById('google-maps-script-tag')) return;
@@ -194,12 +219,86 @@
                 initAutocomplete(document.getElementById(`admin-destination-${i}`));
             }
         }
-
-        async function adminRequestRide() { /* ...código da função inalterado... */ }
-        async function loadCompanyManagement() { /* ...código da função inalterado... */ }
-        async function addOrUpdateCompany() { /* ...código da função inalterado... */ }
-        async function deleteCompany(id, name) { /* ...código da função inalterado... */ }
         
+        function openAdminScheduleModal() {
+            const modal = document.getElementById('schedule-modal');
+            const today = new Date();
+            document.getElementById('schedule-date').min = new Date().toISOString().split('T')[0];
+            document.getElementById('schedule-date').value = today.toISOString().split('T')[0];
+            document.getElementById('schedule-time').value = today.toTimeString().slice(0, 5);
+            modal.classList.add('flex');
+        }
+
+        function closeScheduleModal() {
+            document.getElementById('schedule-modal').classList.remove('flex');
+        }
+
+        function confirmAdminSchedule() {
+            const dateInput = document.getElementById('schedule-date');
+            const timeInput = document.getElementById('schedule-time');
+            if (!dateInput.value || !timeInput.value) { return alert('Por favor, selecione data e hora.'); }
+            
+            const scheduledDate = new Date(`${dateInput.value}T${timeInput.value}`);
+            if (scheduledDate < new Date()) { return alert('A data e hora do agendamento não podem ser no passado.'); }
+
+            adminScheduledDateTime = scheduledDate.toISOString();
+            adminSelectedRequestType = 'scheduled';
+            
+            closeScheduleModal();
+            adminRequestRide();
+        }
+
+        async function adminRequestRide() {
+            const collaboratorId = document.getElementById('collaborator-select').value;
+            if (!collaboratorId) return alert('Selecione um colaborador.');
+
+            const collaborator = state.allUsers.find(u => u.id == collaboratorId);
+            const passengerCount = document.getElementById('admin-passenger-count').value;
+            const destinations = [];
+            for (let i = 1; i <= passengerCount; i++) {
+                const destValue = document.getElementById(`admin-destination-${i}`)?.value.trim();
+                if (destValue) destinations.push(destValue);
+            }
+
+            if (!document.getElementById('admin-origin').value.trim() || destinations.length === 0) {
+                return alert('Origem e pelo menos um Destino são obrigatórios.');
+            }
+
+            let rideData = {
+                userId: collaborator.id,
+                userName: collaborator.name,
+                userCompany: collaborator.company,
+                origin_address: document.getElementById('admin-origin').value.trim(),
+                destination: JSON.stringify(destinations),
+                passenger_count: parseInt(passengerCount),
+                observation: document.getElementById('admin-observation').value.trim(),
+                requestTime: new Date().toISOString(),
+                requested_by_admin_name: state.loggedInCompany.name,
+            };
+
+            if (adminSelectedRequestType === 'scheduled' && adminScheduledDateTime) {
+                rideData.status = 'scheduled';
+                rideData.request_type = 'scheduled';
+                rideData.scheduled_datetime = adminScheduledDateTime;
+            } else {
+                rideData.status = 'requested';
+                rideData.request_type = 'immediate';
+            }
+
+            const { error } = await supabaseClient.from('rides').insert([rideData]);
+            
+            if (error) {
+                alert('Erro ao solicitar corrida: ' + error.message);
+            } else {
+                alert(`Corrida para ${collaborator.name} solicitada com sucesso!`);
+                document.getElementById('collaborator-select').value = '';
+                handleCollaboratorChange({ target: { value: '' } });
+            }
+
+            adminSelectedRequestType = '';
+            adminScheduledDateTime = null;
+        }
+
         async function populateLoginCompanies() {
             const select = document.getElementById('company-login-select');
             select.innerHTML = '<option>Carregando...</option>';
@@ -215,13 +314,18 @@
         function initApp() {
             initializeGoogleMaps();
             populateLoginCompanies();
-            document.getElementById('admin-request-immediate-btn').onclick = adminRequestRide;
+            
+            document.getElementById('admin-request-immediate-btn').onclick = () => {
+                adminSelectedRequestType = 'immediate';
+                adminScheduledDateTime = null;
+                adminRequestRide();
+            };
+            document.getElementById('admin-request-scheduled-btn').onclick = openAdminScheduleModal;
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
 
-        // Funções omitidas para clareza, mas presentes no código final
-        async function adminRequestRide() { const collaboratorId = document.getElementById('collaborator-select').value; if (!collaboratorId) return alert('Selecione um colaborador.'); const collaborator = state.allUsers.find(u => u.id == collaboratorId); const passengerCount = document.getElementById('admin-passenger-count').value; const destinations = []; for (let i = 1; i <= passengerCount; i++) { const destValue = document.getElementById(`admin-destination-${i}`)?.value.trim(); if (destValue) destinations.push(destValue); } const rideData = { userId: collaborator.id, userName: collaborator.name, userCompany: collaborator.company, origin_address: document.getElementById('admin-origin').value.trim(), destination: JSON.stringify(destinations), passenger_count: parseInt(passengerCount), observation: document.getElementById('admin-observation').value.trim(), status: 'requested', requestTime: new Date().toISOString(), requested_by_admin_name: state.loggedInCompany.name }; if (!rideData.origin_address || destinations.length === 0) { return alert('Origem e pelo menos um Destino são obrigatórios.'); } const { error } = await supabaseClient.from('rides').insert([rideData]); if (error) { alert('Erro ao solicitar corrida: ' + error.message); } else { alert(`Corrida para ${collaborator.name} solicitada com sucesso!`); document.getElementById('collaborator-select').value = ''; handleCollaboratorChange({target: {value: ''}}); } }
+        // Funções de gerenciamento de empresas
         async function loadCompanyManagement() { const container = document.getElementById('company-list-container'); container.innerHTML = '<p>Carregando...</p>'; const { data, error } = await supabaseClient.from('companies').select('*').order('name'); if (error) { container.innerHTML = '<p>Erro ao carregar.</p>'; console.error(error); return; } container.innerHTML = data.map(c => `<div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center"><div><p class="font-semibold text-lg">${c.name}</p><p class="text-sm text-gray-400">Senha: ${c.password}</p></div><button onclick="deleteCompany(${c.id},'${c.name}')" class="py-1 px-3 font-semibold rounded-lg bg-red-600 hover:bg-red-700">X</button></div>`).join(''); }
         async function addOrUpdateCompany() { const name = document.getElementById('new-company-name').value.trim(); const password = document.getElementById('new-company-password').value.trim(); if(!name || !password) return alert('Nome e Senha são obrigatórios.'); const { error } = await supabaseClient.from('companies').upsert({ name, password }, { onConflict: 'name' }); if(error) { alert('Erro ao salvar empresa.'); console.error(error); } else { document.getElementById('new-company-name').value = ''; document.getElementById('new-company-password').value = ''; await populateLoginCompanies(); await loadCompanyManagement(); } }
         async function deleteCompany(id, name) { if (!confirm(`Excluir a empresa "${name}"?`)) return; const { error } = await supabaseClient.from('companies').delete().eq('id', id); if (error) { alert('Erro ao excluir.'); } else { await populateLoginCompanies(); await loadCompanyManagement(); } }
