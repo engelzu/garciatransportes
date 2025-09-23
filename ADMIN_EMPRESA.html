@@ -68,6 +68,7 @@
             <div class="flex justify-center gap-2 mb-6">
                 <button id="tab-request-ride" class="tab-button active" onclick="showAdminSubScreen('request-ride-screen')">Solicitar Corrida</button>
                 <button id="tab-approve-ride" class="tab-button" onclick="showAdminSubScreen('approval-ride-screen')">Aprovar Solicitações</button>
+                <button id="tab-history" class="tab-button" onclick="showAdminSubScreen('history-screen')">Histórico</button>
             </div>
 
             <div id="request-ride-screen" class="admin-sub-screen active">
@@ -91,6 +92,12 @@
             <div id="approval-ride-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Aprovar Solicitações Pendentes</h2>
                 <div id="pending-rides-container" class="space-y-4">
+                </div>
+            </div>
+
+            <div id="history-screen" class="admin-sub-screen">
+                <h2 class="text-2xl font-bold text-center mb-4">Histórico de Corridas</h2>
+                <div id="history-rides-container" class="space-y-4">
                 </div>
             </div>
         </div>
@@ -341,6 +348,9 @@
             } else if (subScreenId === 'approval-ride-screen') {
                 document.getElementById('tab-approve-ride').classList.add('active');
                 loadPendingRides();
+            } else if (subScreenId === 'history-screen') {
+                document.getElementById('tab-history').classList.add('active');
+                loadHistoryRides();
             }
         }
         
@@ -382,6 +392,61 @@
                         <div class="flex justify-end gap-3 mt-4">
                              <button onclick="rejectRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-red-600 hover:bg-red-700">NÃO ACEITAR</button>
                              <button onclick="approveRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-green-600 hover:bg-green-700">ACEITE</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function loadHistoryRides() {
+            const container = document.getElementById('history-rides-container');
+            container.innerHTML = '<p class="text-center">Carregando histórico...</p>';
+
+            const { data: rides, error } = await supabaseClient
+                .from('rides')
+                .select('*')
+                .eq('userCompany', state.loggedInCompany.name)
+                .not('status', 'eq', 'pending_approval')
+                .order('requestTime', { ascending: false });
+
+            if (error) {
+                container.innerHTML = '<p class="text-center text-red-500">Erro ao carregar o histórico.</p>';
+                console.error("Erro ao buscar histórico de corridas:", error);
+                return;
+            }
+
+            if (rides.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400">Nenhum registro de corrida encontrado.</p>';
+                return;
+            }
+
+            const statusMap = {
+                'approved': { text: 'Aprovada', color: 'text-green-400' },
+                'rejected': { text: 'Rejeitada', color: 'text-red-500' },
+                'scheduled': { text: 'Agendada', color: 'text-cyan-400' },
+                'completed': { text: 'Concluída', color: 'text-purple-400' },
+                'cancelled': { text: 'Cancelada', color: 'text-yellow-500' },
+                'requested': { text: 'Solicitada (Aguardando Motorista)', color: 'text-yellow-300'}
+            };
+
+            container.innerHTML = rides.map(ride => {
+                const destinations = JSON.parse(ride.destination || '[]');
+                const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
+                const statusInfo = statusMap[ride.status] || { text: ride.status, color: 'text-gray-300' };
+                
+                return `
+                    <div class="card-gradient p-4 rounded-lg border border-gray-700">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold text-lg">${ride.userName}</p>
+                                <p class="text-sm text-gray-400 mb-3">Solicitado em: ${requestDate}</p>
+                            </div>
+                            <span class="font-bold ${statusInfo.color}">${statusInfo.text}</span>
+                        </div>
+                        <div class="text-sm space-y-1">
+                            <p><strong>De:</strong> ${ride.origin_address}</p>
+                            <p><strong>Para:</strong> ${destinations.join(', ')}</p>
+                            ${ride.observation ? `<p><strong>Obs:</strong> ${ride.observation}</p>` : ''}
                         </div>
                     </div>
                 `;
@@ -447,9 +512,15 @@
                 .channel('public:rides')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
                     const activeScreen = document.querySelector('.screen.active');
-                    const activeSubScreen = activeScreen ? activeScreen.querySelector('.admin-sub-screen.active') : null;
-                    if (activeSubScreen && activeSubScreen.id === 'approval-ride-screen') {
-                        loadPendingRides();
+                    if (!activeScreen) return;
+
+                    const activeSubScreen = activeScreen.querySelector('.admin-sub-screen.active');
+                    if (activeSubScreen) {
+                        if (activeSubScreen.id === 'approval-ride-screen') {
+                            loadPendingRides();
+                        } else if (activeSubScreen.id === 'history-screen') {
+                            loadHistoryRides();
+                        }
                     }
                 })
                 .subscribe();
