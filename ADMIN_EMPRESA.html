@@ -250,7 +250,6 @@
         function openAdminScheduleModal() {
             const modal = document.getElementById('schedule-modal');
             const today = new Date();
-            document.getElementById('schedule-date').min = new Date().toISOString().split('T')[0];
             document.getElementById('schedule-date').value = today.toISOString().split('T')[0];
             document.getElementById('schedule-time').value = today.toTimeString().slice(0, 5);
             modal.classList.add('flex');
@@ -266,7 +265,6 @@
             if (!dateInput.value || !timeInput.value) { return alert('Por favor, selecione data e hora.'); }
             
             const scheduledDate = new Date(`${dateInput.value}T${timeInput.value}`);
-            if (scheduledDate < new Date()) { return alert('A data e hora do agendamento não podem ser no passado.'); }
 
             adminScheduledDateTime = scheduledDate.toISOString();
             adminSelectedRequestType = 'scheduled';
