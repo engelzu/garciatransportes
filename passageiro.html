@@ -234,7 +234,7 @@
             <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
             <div class="space-y-4">
                 <button onclick="showScreen('user-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-sky-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-sky-300" fill="none" viewBox="0 0 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     PASSAGEIRO
@@ -572,7 +572,6 @@
             }
         }
         
-        // --- NOVA FUNÇÃO PARA USAR LOCALIZAÇÃO ATUAL ---
         async function useCurrentLocation() {
             const originInput = document.getElementById('origin');
             originInput.disabled = true;
@@ -680,7 +679,6 @@
             const passengerCount = document.getElementById('passenger-count').value;
             const requestRideBtn = document.getElementById('request-ride-btn');
             
-            // Validações já foram feitas no handler do botão, mas uma checagem extra não faz mal
             if (!originAddress || !destinations || destinations.length === 0 || !destinations[0]) {
                 showModal('modal', 'Origem ou destino faltando. Por favor, preencha o formulário novamente.');
                 return;
@@ -714,12 +712,13 @@
                     throw new Error('Usuário não encontrado. Por favor, faça login novamente.');
                 }
 
+                // *** ALTERAÇÃO APLICADA AQUI ***
                 let newRideData = {
                     origin_address: originAddress,
                     destination: JSON.stringify(destinations),
                     observation: observation,
                     passenger_count: parseInt(passengerCount),
-                    status: 'requested',
+                    status: 'pending_approval', // Alterado de 'requested'
                     userId: currentUser.id,
                     userName: currentUser.name,
                     userCompany: currentUser.company,
@@ -728,9 +727,10 @@
                     request_type: selectedRequestType
                 };
 
+                // *** ALTERAÇÃO APLICADA AQUI ***
                 if (selectedRequestType === 'scheduled' && scheduledDateTime) {
                     newRideData.scheduled_datetime = scheduledDateTime;
-                    newRideData.status = 'scheduled';
+                    newRideData.status = 'pending_approval'; // Alterado de 'scheduled'
                 }
 
                 const { data, error } = await supabaseClient.from('rides').insert([newRideData]).select().single();
@@ -773,12 +773,12 @@
                 .from('rides')
                 .select('*')
                 .eq('userId', state.currentUser.id)
-                .in('status', ['requested', 'assigned', 'accepted', 'arrived_pickup', 'in_progress', 'scheduled'])
+                .in('status', ['pending_approval', 'approved', 'rejected', 'requested', 'assigned', 'accepted', 'arrived_pickup', 'in_progress', 'scheduled'])
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .single();
 
-            if (activeRide) {
+            if (activeRide && activeRide.status !== 'rejected') {
                 state.currentUserRideId = activeRide.id;
                 localStorage.setItem('currentUserRideId', activeRide.id);
 
@@ -794,6 +794,9 @@
 
                 startUserStatusCheck(); 
             } else {
+                if(activeRide && activeRide.status === 'rejected'){
+                     showModal('modal', 'Sua solicitação de corrida não foi aprovada pela sua empresa.');
+                }
                 state.currentUserRideId = null;
                 localStorage.removeItem('currentUserRideId');
                 
@@ -824,7 +827,7 @@
                 
                 const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
                 
-                if (myRide && !['completed', 'canceled'].includes(myRide.status)) {
+                if (myRide && !['completed', 'canceled', 'rejected'].includes(myRide.status)) {
                    updateUserStatusMessage(myRide); 
                 } else {
                     clearInterval(state.userStatusInterval);
@@ -859,7 +862,6 @@
             const silenceBtn = document.getElementById('silence-alert-btn');
             const arrivalSound = document.getElementById('arrival-sound');
 
-            // Reseta o estado do alerta sonoro
             silenceBtn.classList.add('hidden');
             if (arrivalSound && !arrivalSound.paused) {
                 arrivalSound.pause();
@@ -880,6 +882,11 @@
             const getIcon = (id) => document.getElementById(`status-icon-${id}`);
 
             switch(ride.status) {
+                case 'pending_approval':
+                    message = 'Aguardando aprovação da sua empresa...';
+                    getIcon('searching').classList.remove('hidden');
+                    break;
+                case 'approved':
                 case 'requested':
                     message = 'Procurando o melhor motorista para você...';
                     getIcon('searching').classList.remove('hidden');
@@ -918,13 +925,13 @@
 
             statusMessageEl.innerHTML = message + scheduleInfo;
             
-            if (ride.request_type === 'scheduled' && ['scheduled', 'assigned', 'accepted'].includes(ride.status)) {
+            if (ride.request_type === 'scheduled' && ['pending_approval', 'approved', 'scheduled', 'assigned', 'accepted'].includes(ride.status)) {
                 editScheduleBtn.classList.remove('hidden');
             } else {
                 editScheduleBtn.classList.add('hidden');
             }
 
-            if (['requested', 'scheduled', 'assigned', 'accepted'].includes(ride.status)) {
+            if (['pending_approval', 'approved', 'requested', 'scheduled', 'assigned', 'accepted'].includes(ride.status)) {
                 cancelRideBtn.classList.remove('hidden');
             } else {
                 cancelRideBtn.classList.add('hidden');
@@ -1020,7 +1027,6 @@
             handleVideoEnd();
         }
 
-        // --- FUNCIONALIDADE DO GOOGLE MAPS RESTAURADA ---
         function initAutocomplete(inputElement) {
             if (typeof google !== 'undefined' && google.maps && google.maps.places) {
                 new google.maps.places.Autocomplete(inputElement, { 
@@ -1062,6 +1068,9 @@
 
         function translateStatus(status) {
             const translations = {
+                'pending_approval': 'AGUARDANDO APROVAÇÃO',
+                'approved': 'APROVADA',
+                'rejected': 'REJEITADA',
                 'requested': 'SOLICITADO', 
                 'assigned': 'DESIGNADO', 
                 'accepted': 'ACEITO',
@@ -1124,7 +1133,7 @@
                 `;
                 tbody.appendChild(row);
             });
-            table.appendChild(tbody);
+            table.appendChild(table);
             historyContainer.appendChild(table); 
         }
 
@@ -1145,7 +1154,6 @@
                  return;
             }
             
-            // GARANTE QUE OS DADOS ESTÃO ATUALIZADOS
             await fetchAllData();
             
             const rideToEdit = state.rides.find(r => r.id === currentRideId);
@@ -1197,7 +1205,7 @@
             } else {
                 closeModal('schedule-modal');
                 showModal('modal', 'Agendamento atualizado com sucesso!');
-                checkUserRideStatus(); // Atualiza a tela de status principal
+                checkUserRideStatus();
             }
         }
         
@@ -1234,7 +1242,6 @@
             XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
         }
 
-        // --- LÓGICA CORRIGIDA PARA O BOTÃO DE SOLICITAÇÃO ---
         document.getElementById('request-ride-btn').onclick = function() {
             const passengerCount = document.getElementById('passenger-count').value;
             const destinations = [];
@@ -1260,11 +1267,9 @@
                 return;
             }
             
-            // Salva os dados do formulário em variáveis globais para uso posterior
             selectedDestinations = destinations; 
             selectedObservation = document.getElementById('observation').value.trim();
             
-            // Mostra a tela de seleção (Imediato / Agendar)
             showScreen('request-type-screen'); 
         };
     </script>

@@ -129,8 +129,7 @@
         .status-pending_approval { background-color: #a16207; color: #ffffff; } /* Yellow-700 */
         .status-approved { background-color: #0d9488; color: #ffffff; } /* Teal-600 */
         .status-rejected { background-color: #991b1b; color: #ffffff; } /* Red-800 */
-
-        /* CORREÇÃO: Estilo movido para o <head> para garantir funcionamento */
+        
         #initial-screen button[onclick="showScreen('user-login-screen')"],
         #initial-screen button[onclick="showScreen('driver-selection-screen')"] {
             display: none;
@@ -138,6 +137,8 @@
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
+
+    <audio id="admin-ringtone" preload="auto" src="SOM/somchamada.mp3"></audio>
 
     <div id="countdown-timer" class="fixed top-4 right-4 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full"></div>
 
@@ -275,7 +276,7 @@
         
         <div id="admin-requests-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
-                <button onclick="showScreen('admin-screen')" class="text-yellow-300">← Voltar ao Painel</button>
+                <button onclick="promptToGoBack()" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
                 <div class="w-32"></div> </div>
             
@@ -510,17 +511,23 @@
 
     <script>
         // --- FUNÇÕES AUXILIARES IMPORTANTES ---
+
+        // Função auxiliar para geocodificar um endereço usando a API do Google Maps
         async function geocodeAddress(address) {
+            // Verifica se o Geocoder do Google Maps está disponível. Isso é crucial
+            // porque o script do Google Maps carrega de forma assíncrona.
             if (!google || !google.maps || !google.maps.Geocoder) {
                 console.error("Geocoder do Google Maps não disponível ainda.");
+                // Tenta novamente após um pequeno atraso, se não estiver disponível
                 return new Promise((resolve, reject) => {
                     setTimeout(() => {
                         if (google && google.maps && google.maps.Geocoder) {
-                            resolve(geocodeAddress(address));
+                            // Chama recursivamente a função após o atraso se o Geocoder estiver pronto
+                            resolve(geocodeAddress(address)); 
                         } else {
                             reject("Geocoder do Google Maps não disponível após tentativas.");
                         }
-                    }, 500);
+                    }, 500); // Espera 500ms antes de tentar novamente
                 });
             }
 
@@ -529,6 +536,7 @@
                 geocoder.geocode({ 'address': address, 'region': 'br' }, (results, status) => {
                     console.log(`Geocoding status for "${address}": ${status}`); // Log para depuração
                     if (status === 'OK') {
+                        // Retorna a geometria do primeiro resultado se bem-sucedido
                         if (results[0] && results[0].geometry && results[0].geometry.location) {
                             resolve({ lat: results[0].geometry.location.lat(), lng: results[0].geometry.location.lng() });
                         } else {
@@ -536,6 +544,7 @@
                             reject(`Nenhuma localização encontrada para o endereço: ${address}`);
                         }
                     } else {
+                        // Lida com outros status de erro da API
                         console.error(`A geocodificação não foi bem-sucedida pelo seguinte motivo: ${status} para o endereço: ${address}`);
                         reject(`${status}: ${address}`);
                     }
@@ -543,6 +552,7 @@
             });
         }
 
+        // Calcula a distância em km entre dois pontos geográficos usando a fórmula de Haversine
         function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
             const R = 6371; // Raio da Terra em quilômetros
             const dLat = deg2rad(lat2 - lat1);
@@ -556,14 +566,13 @@
             return d;
         }
 
+        // Converte graus para radianos
         function deg2rad(deg) { 
             return deg * (Math.PI / 180); 
         }
 
         // --- CONFIGURAÇÃO INICIAL E ESTADO DA APLICAÇÃO ---
         let driverWatchId = null; 
-        let audioCtx;
-        let beepInterval = null;
         let map;
         let heatmap;
         let tempDriverId = null; // Armazena temporariamente o ID do motorista para login
@@ -588,40 +597,70 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- LÓGICA DE ÁUDIO ---
-        function playBeep() {
-            if (!audioCtx) {
-                try {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                } catch (e) {
-                    console.error("Web Audio API não é suportada neste navegador");
-                    return;
-                }
-            }
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.type = 'sine'; 
-            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1); 
+        // --- LÓGICA DE ÁUDIO (SIRENE) ---
+        const adminRingtone = document.getElementById('admin-ringtone');
+        let adminRingInterval = null;
+        let adminAudioUnlocked = false;
+
+        function unlockAdminAudio() {
+            if (adminAudioUnlocked) return;
+            if (!adminRingtone) return;
+            adminRingtone.muted = true;
+            adminRingtone.play().then(() => {
+                adminRingtone.pause();
+                adminRingtone.currentTime = 0;
+                adminRingtone.muted = false;
+                adminAudioUnlocked = true;
+                console.log("Áudio do Admin desbloqueado.");
+                document.body.removeEventListener('click', unlockAdminAudio);
+                document.body.removeEventListener('touchstart', unlockAdminAudio);
+            }).catch(() => {
+                adminRingtone.muted = false;
+            });
         }
 
-        function startBeeping() {
-            stopBeeping(); 
-            beepInterval = setInterval(playBeep, 3000);
-            document.getElementById('silence-btn').classList.remove('hidden');
+        document.body.addEventListener('click', unlockAdminAudio);
+        document.body.addEventListener('touchstart', unlockAdminAudio);
+
+        function playAdminRingSound() {
+            if (!adminAudioUnlocked) {
+                console.warn("Áudio do admin bloqueado, aguardando interação do usuário.");
+                return;
+            }
+            adminRingtone.currentTime = 0;
+            adminRingtone.play().catch(e => console.error("Erro ao tocar som do admin:", e));
         }
 
-        function stopBeeping() {
-            if (beepInterval) {
-                clearInterval(beepInterval);
-                beepInterval = null;
+        function startRingingAdmin() {
+            stopRingingAdmin(); 
+            playAdminRingSound(); 
+            adminRingInterval = setInterval(playAdminRingSound, 6000);
+            
+            // Adicionado botão de silenciar ao DOM para poder ser usado
+            const silenceBtnContainer = document.querySelector('#admin-requests-screen .lg\\:col-span-1');
+            if (silenceBtnContainer && !document.getElementById('admin-silence-btn')) {
+                const silenceBtn = document.createElement('button');
+                silenceBtn.id = 'admin-silence-btn';
+                silenceBtn.textContent = 'Silenciar Alerta';
+                silenceBtn.className = 'w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900';
+                silenceBtn.onclick = stopRingingAdmin;
+                silenceBtnContainer.prepend(silenceBtn);
             }
-            document.getElementById('silence-btn').classList.add('hidden');
+            document.getElementById('admin-silence-btn')?.classList.remove('hidden');
         }
+
+        function stopRingingAdmin() {
+            if (adminRingInterval) {
+                clearInterval(adminRingInterval);
+                adminRingInterval = null;
+            }
+            if(adminRingtone) {
+                adminRingtone.pause();
+                adminRingtone.currentTime = 0;
+            }
+            document.getElementById('admin-silence-btn')?.classList.add('hidden');
+        }
+
 
         // --- LÓGICA DE MODAL ---
         function showModal(message, onConfirm, showCancel = false, content = {}) {
@@ -693,8 +732,8 @@
                 }
             });
         }
-
-        // --- LÓGICA DE LOGIN E SESSÃO ---
+        
+        // --- FUNÇÕES DE LOGIN E SESSÃO ---
         function logout() {
             state.currentUserId = null;
             state.currentDriverId = null;
@@ -722,8 +761,6 @@
             const password = document.getElementById('user-password').value;
             const errorEl = document.getElementById('user-login-error');
 
-            console.log('Tentando login para matrícula:', matricula); 
-
             const { data: user, error } = await supabaseClient
                 .from('users')
                 .select('*')
@@ -739,7 +776,6 @@
             }
 
             if (user) {
-                console.log('Usuário logado com sucesso:', user);
                 state.currentUserId = user.id;
                 localStorage.setItem('sessionType', 'user');
                 localStorage.setItem('loggedInUserId', user.id);
@@ -748,18 +784,17 @@
                 document.getElementById('user-password').value = '';
                 showScreen('user-screen'); 
             } else {
-                console.log('Nenhum usuário encontrado ou credenciais incorretas.');
                 errorEl.textContent = 'Matrícula ou senha incorreta!';
                 errorEl.classList.remove('hidden');
             }
         }
-
+        
         // --- NAVEGAÇÃO ENTRE TELAS ---
         function showScreen(screenId) {
             const body = document.body;
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
-            stopBeeping(); 
+            stopRingingAdmin(); // Para a sirene do admin ao trocar de tela
             
             if(clockInterval) clearInterval(clockInterval);
 
@@ -821,13 +856,16 @@
 
             confirmBtn.textContent = 'Exportar e Voltar';
             confirmBtn.onclick = () => {
+                // Verificamos se há corridas ANTES de tentar exportar
                 if (state.rides.length === 0) {
                     showModal("Nenhuma corrida para exportar. Voltando ao painel...");
+                    // Aguarda 2 segundos para o usuário ler e depois volta
                     setTimeout(() => {
                         closeModal();
                         showScreen('admin-screen');
                     }, 2000);
                 } else {
+                    // Se houver dados, exporta e volta imediatamente
                     exportDailyReportNow();
                     closeModal();
                     showScreen('admin-screen');
@@ -1620,7 +1658,7 @@
 
             if (myJobs.length === 0) {
                 list.innerHTML = '<p class="text-center text-gray-400">Nenhuma corrida para você no momento.</p>';
-                stopBeeping();
+                stopRingingAdmin(); // Usa a função de parar do admin
                 if (driverWatchId) {
                     navigator.geolocation.clearWatch(driverWatchId);
                     driverWatchId = null;
@@ -1654,11 +1692,11 @@
                 card.innerHTML = content;
                 list.appendChild(card);
             });
-            if (hasAssignedJob) startBeeping(); else stopBeeping();
+            if (hasAssignedJob) startRingingAdmin(); else stopRingingAdmin();
         }
 
         async function acceptRide(rideId) {
-            stopBeeping();
+            stopRingingAdmin();
             startDriverTracking(rideId); 
 
             const { error } = await supabaseClient.from('rides').update({ status: 'accepted', acceptTime: new Date().toISOString() }).eq('id', rideId);
@@ -1762,35 +1800,30 @@
             }).subscribe();
             
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
-                const { eventType, new: newRecord, old: oldRecord } = payload;
                 
-                // Otimização para atualizar o estado localmente sem refazer o fetch de tudo
-                if (eventType === 'INSERT') {
-                    if (!state.rides.some(ride => ride.id === newRecord.id)) state.rides.push(newRecord);
-                } else if (eventType === 'UPDATE') {
-                    const rideIndex = state.rides.findIndex(r => r.id === newRecord.id);
-                    if (rideIndex !== -1) state.rides[rideIndex] = newRecord;
-                } else if (eventType === 'DELETE') {
-                    state.rides = state.rides.filter(r => r.id !== oldRecord.id);
+                if (payload.eventType === 'INSERT' && document.getElementById('admin-requests-screen').classList.contains('active')) {
+                    const newRide = payload.new;
+                    if (newRide.status === 'requested' || newRide.status === 'approved') {
+                        startRingingAdmin();
+                    }
                 }
 
-                // Atualiza a tela ativa
-                const activeScreenId = document.querySelector('.screen.active')?.id;
-                if (activeScreenId === 'admin-requests-screen') {
-                    loadAdminRequests();
-                    renderOngoingRidesTable();
-                }
-                else if (activeScreenId === 'driver-screen') loadDriverJobs();
-                else if (activeScreenId === 'user-screen') {
-                    if (state.currentUserRideId && (newRecord?.id === state.currentUserRideId || oldRecord?.id === state.currentUserRideId)) {
-                        checkUserRideStatus(); 
+                fetchAllData().then(() => {
+                    const activeScreenId = document.querySelector('.screen.active')?.id;
+                    if (activeScreenId === 'admin-requests-screen') {
+                        loadAdminRequests();
+                        renderOngoingRidesTable();
                     }
-                    updateAvailableDriversCount(); 
-                    renderUserRideHistory(); 
-                }
-                else if (activeScreenId === 'driver-selection-screen') {
-                    populateDriverSelection(); 
-                }
+                    else if (activeScreenId === 'driver-screen') loadDriverJobs();
+                    else if (activeScreenId === 'user-screen') {
+                        checkUserRideStatus(); 
+                        updateAvailableDriversCount(); 
+                        renderUserRideHistory(); 
+                    }
+                    else if (activeScreenId === 'driver-selection-screen') {
+                        populateDriverSelection(); 
+                    }
+                });
             }).subscribe();
         }
 
@@ -2105,21 +2138,29 @@
 
         async function loadAllRecords() {
             const tableBody = document.getElementById('all-records-body');
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>';
-
-            const { data: allRides, error } = await supabaseClient.from('rides').select('*').order('requestTime', { ascending: false });
-            if (error) {
-                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>';
-                return;
-            }
-            state.rides = allRides; // Atualiza o estado global com todos os registros
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>';
             
-            if (allRides.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>';
+            const { data, error } = await supabaseClient.from('rides').select('*').order('requestTime', { ascending: false });
+            if (error) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>';
+                return;
+            }
+            state.rides = data;
+            
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>';
                 return;
             }
 
-            tableBody.innerHTML = allRides.map(ride => {
+            const rowPromises = data.map(async (ride) => {
+                let distanceKm = '-'; 
+                if (ride.userLocation && ride.destination) {
+                    try {
+                        const destCoords = await geocodeAddress(ride.destination);
+                        distanceKm = getDistanceFromLatLonInKm(ride.userLocation.lat, ride.userLocation.lon, destCoords.lat, destCoords.lng).toFixed(2); 
+                    } catch (e) { distanceKm = 'Erro'; }
+                }
+
                 const statusInfo = translateStatus(ride.status);
                 return `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20">
@@ -2129,32 +2170,36 @@
                         <td class="px-4 py-3">${ride.destination}</td>
                         <td class="px-4 py-3">${ride.driverName || '-'}</td>
                         <td class="px-4 py-3"><span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span></td>
+                        <td class="px-4 py-3">${distanceKm}</td> 
                     </tr>
                 `;
-            }).join('');
+            });
+            
+            tableBody.innerHTML = (await Promise.all(rowPromises)).join('');
         }
         
         function filterRecordsByDate() {
             const startDate = document.getElementById('records-start-date').value;
             const endDate = document.getElementById('records-end-date').value;
             const tableBody = document.getElementById('all-records-body');
-            const rows = tableBody.getElementsByTagName('tr');
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
 
-            const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+            const start = startDate ? new Date(startDate).getTime() : null;
             const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-
-            for (let i = 0; i < rows.length; i++) {
-                const dateCell = rows[i].getElementsByTagName('td')[0];
+            
+            rows.forEach(row => {
+                const dateCell = row.cells[0];
                 if (dateCell) {
-                    const dateParts = dateCell.textContent.split(' ')[0].split('/');
-                    const recordDate = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`).getTime();
+                    const [date, time] = dateCell.textContent.split(', ');
+                    const [day, month, year] = date.split('/');
+                    const recordDate = new Date(`${year}-${month}-${day}T${time}`).getTime();
                     
                     let show = true;
                     if (start && recordDate < start) show = false;
                     if (end && recordDate > end) show = false;
-                    rows[i].style.display = show ? '' : 'none';
+                    row.style.display = show ? '' : 'none';
                 }
-            }
+            });
         }
         
         async function adminCompleteRide(rideId) {
@@ -2165,7 +2210,7 @@
         }
 
         async function adminDeleteRide(rideId) {
-            if (!confirm('ATENÇÃO: Esta ação é irreversível. Deseja realmente excluir esta corrida?')) return;
+            if (!confirm('ATENÇÃO: Ação irreversível. Deseja realmente excluir esta corrida?')) return;
             const { error } = await supabaseClient.from('rides').delete().eq('id', rideId);
             if (error) alert('Não foi possível excluir a corrida.');
             else alert('Corrida excluída com sucesso!');

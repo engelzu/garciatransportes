@@ -32,6 +32,13 @@
         .pac-item-query { font-weight: 600; color: #f3f4f6; }
         #schedule-modal { display: none; }
         #schedule-modal.flex { display: flex; }
+
+        /* --- CSS PARA ABAS --- */
+        .tab-button { background-color: #374151; border: 1px solid #4b5563; padding: 10px 15px; cursor: pointer; transition: all 0.2s ease-in-out; border-radius: 8px; font-weight: 600; }
+        .tab-button.active { background-color: #00ffff; color: #000 !important; border-color: #00ffff; }
+        .admin-sub-screen { display: none; }
+        .admin-sub-screen.active { display: block; }
+
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
@@ -40,7 +47,7 @@
 
         <div id="company-login-screen" class="screen active">
             <div id="admin-access-icon" title="Acesso Super Admin" onclick="promptSuperAdminLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                 </svg>
             </div>
@@ -53,24 +60,37 @@
         </div>
         
         <div id="admin-screen" class="screen">
-             <div class="flex justify-between items-center mb-6">
-                <div></div>
-                <h2 class="text-2xl font-bold">Solicitar Corrida</h2>
+            <div class="flex justify-between items-center mb-6">
+                <p id="admin-welcome-message" class="text-lg text-gray-300"></p>
                 <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
             </div>
-            <p id="admin-welcome-message" class="text-center text-lg text-gray-300 mb-6"></p>
-            <div id="admin-request-form" class="card-gradient p-6 rounded-lg">
-                <div class="mb-6"><label for="collaborator-select" class="block mb-2 text-sm font-medium">Colaborador</label><select id="collaborator-select" class="w-full p-3 rounded-lg"><option value="">-- Carregando... --</option></select></div>
-                <div id="admin-ride-details" class="hidden">
-                    <hr class="border-gray-600 my-6"><h3 class="text-lg font-semibold mb-4 text-center">Detalhes da Viagem</h3>
-                    <div class="mb-4"><label for="admin-origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label><input type="text" id="admin-origin" class="w-full p-3 rounded-lg" placeholder="Digite o endereço de partida"></div>
-                    <div class="mb-4"><label for="admin-passenger-count" class="block mb-2 text-sm font-medium">Passageiros</label><select id="admin-passenger-count" class="w-full p-3 rounded-lg"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
-                    <div id="admin-destinations-container" class="w-full"></div>
-                    <div class="mb-4"><label for="admin-observation" class="block mb-2 text-sm font-medium">Observação</label><textarea id="admin-observation" class="w-full p-3 rounded-lg" placeholder="Ex: Ponto de referência..." rows="2"></textarea></div>
-                    <div class="mt-6 space-y-3">
-                        <button id="admin-request-immediate-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR AGORA</button>
-                        <button id="admin-request-scheduled-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">AGENDAR</button>
+
+            <div class="flex justify-center gap-2 mb-6">
+                <button id="tab-request-ride" class="tab-button active" onclick="showAdminSubScreen('request-ride-screen')">Solicitar Corrida</button>
+                <button id="tab-approve-ride" class="tab-button" onclick="showAdminSubScreen('approval-ride-screen')">Aprovar Solicitações</button>
+            </div>
+
+            <div id="request-ride-screen" class="admin-sub-screen active">
+                <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
+                <div id="admin-request-form" class="card-gradient p-6 rounded-lg">
+                    <div class="mb-6"><label for="collaborator-select" class="block mb-2 text-sm font-medium">Colaborador</label><select id="collaborator-select" class="w-full p-3 rounded-lg"><option value="">-- Carregando... --</option></select></div>
+                    <div id="admin-ride-details" class="hidden">
+                        <hr class="border-gray-600 my-6"><h3 class="text-lg font-semibold mb-4 text-center">Detalhes da Viagem</h3>
+                        <div class="mb-4"><label for="admin-origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label><input type="text" id="admin-origin" class="w-full p-3 rounded-lg" placeholder="Digite o endereço de partida"></div>
+                        <div class="mb-4"><label for="admin-passenger-count" class="block mb-2 text-sm font-medium">Passageiros</label><select id="admin-passenger-count" class="w-full p-3 rounded-lg"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+                        <div id="admin-destinations-container" class="w-full"></div>
+                        <div class="mb-4"><label for="admin-observation" class="block mb-2 text-sm font-medium">Observação</label><textarea id="admin-observation" class="w-full p-3 rounded-lg" placeholder="Ex: Ponto de referência..." rows="2"></textarea></div>
+                        <div class="mt-6 space-y-3">
+                            <button id="admin-request-immediate-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR AGORA</button>
+                            <button id="admin-request-scheduled-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">AGENDAR</button>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            <div id="approval-ride-screen" class="admin-sub-screen">
+                <h2 class="text-2xl font-bold text-center mb-4">Aprovar Solicitações Pendentes</h2>
+                <div id="pending-rides-container" class="space-y-4">
                 </div>
             </div>
         </div>
@@ -108,11 +128,9 @@
     </div>
 
     <script>
-        // --- CHAVES DE ACESSO AJUSTADAS ---
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const GOOGLE_MAPS_API_KEY = 'AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg';
-        // --- FIM DAS CHAVES DE ACESSO ---
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
@@ -179,6 +197,8 @@
 
         async function setupAdminScreen() {
             document.getElementById('admin-welcome-message').textContent = `Bem-vindo, ${state.loggedInCompany.name}!`;
+            showAdminSubScreen('request-ride-screen');
+
             const { data: users, error: usersError } = await supabaseClient.from('users').select('id, name, company');
             if (usersError) { console.error("Erro ao buscar usuários:", usersError); return; }
             state.allUsers = users;
@@ -311,6 +331,107 @@
             select.innerHTML = data.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         }
         
+        function showAdminSubScreen(subScreenId) {
+            document.querySelectorAll('.admin-sub-screen').forEach(screen => screen.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
+
+            document.getElementById(subScreenId).classList.add('active');
+            if (subScreenId === 'request-ride-screen') {
+                document.getElementById('tab-request-ride').classList.add('active');
+            } else if (subScreenId === 'approval-ride-screen') {
+                document.getElementById('tab-approve-ride').classList.add('active');
+                loadPendingRides();
+            }
+        }
+        
+        async function loadPendingRides() {
+            const container = document.getElementById('pending-rides-container');
+            container.innerHTML = '<p class="text-center">Carregando solicitações...</p>';
+
+            const { data: rides, error } = await supabaseClient
+                .from('rides')
+                .select('*')
+                .eq('userCompany', state.loggedInCompany.name)
+                .eq('status', 'pending_approval')
+                .order('requestTime', { ascending: true });
+
+            if (error) {
+                container.innerHTML = '<p class="text-center text-red-500">Erro ao carregar solicitações.</p>';
+                console.error("Erro ao buscar corridas pendentes:", error);
+                return;
+            }
+
+            if (rides.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400">Nenhuma solicitação pendente no momento.</p>';
+                return;
+            }
+
+            container.innerHTML = rides.map(ride => {
+                const destinations = JSON.parse(ride.destination || '[]');
+                const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
+                
+                return `
+                    <div id="ride-card-${ride.id}" class="card-gradient p-4 rounded-lg border border-gray-700">
+                        <p class="font-bold text-lg">${ride.userName}</p>
+                        <p class="text-sm text-gray-400 mb-3">Solicitado em: ${requestDate}</p>
+                        <div class="text-sm space-y-1">
+                            <p><strong>De:</strong> ${ride.origin_address}</p>
+                            <p><strong>Para:</strong> ${destinations.join(', ')}</p>
+                            ${ride.observation ? `<p><strong>Obs:</strong> ${ride.observation}</p>` : ''}
+                        </div>
+                        <div class="flex justify-end gap-3 mt-4">
+                             <button onclick="rejectRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-red-600 hover:bg-red-700">NÃO ACEITAR</button>
+                             <button onclick="approveRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-green-600 hover:bg-green-700">ACEITE</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function approveRide(rideId) {
+            if (!confirm('Tem certeza que deseja APROVAR esta corrida?')) return;
+
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ status: 'approved' })
+                .eq('id', rideId);
+
+            if (error) {
+                alert('Erro ao aprovar a corrida: ' + error.message);
+            } else {
+                alert('Corrida aprovada com sucesso!');
+                const card = document.getElementById(`ride-card-${rideId}`);
+                if(card) card.remove();
+
+                const container = document.getElementById('pending-rides-container');
+                if (!container.hasChildNodes() || container.children.length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-400">Nenhuma solicitação pendente no momento.</p>';
+                }
+            }
+        }
+
+        async function rejectRide(rideId) {
+            if (!confirm('Tem certeza que deseja NÃO ACEITAR esta corrida?')) return;
+            
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ status: 'rejected' })
+                .eq('id', rideId);
+
+            if (error) {
+                alert('Erro ao rejeitar a corrida: ' + error.message);
+            } else {
+                alert('Corrida não aceita.');
+                const card = document.getElementById(`ride-card-${rideId}`);
+                if(card) card.remove();
+                
+                const container = document.getElementById('pending-rides-container');
+                if (!container.hasChildNodes() || container.children.length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-400">Nenhuma solicitação pendente no momento.</p>';
+                }
+            }
+        }
+        
         function initApp() {
             initializeGoogleMaps();
             populateLoginCompanies();
@@ -321,11 +442,21 @@
                 adminRequestRide();
             };
             document.getElementById('admin-request-scheduled-btn').onclick = openAdminScheduleModal;
+
+             supabaseClient
+                .channel('public:rides')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
+                    const activeScreen = document.querySelector('.screen.active');
+                    const activeSubScreen = activeScreen ? activeScreen.querySelector('.admin-sub-screen.active') : null;
+                    if (activeSubScreen && activeSubScreen.id === 'approval-ride-screen') {
+                        loadPendingRides();
+                    }
+                })
+                .subscribe();
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
 
-        // Funções de gerenciamento de empresas
         async function loadCompanyManagement() { const container = document.getElementById('company-list-container'); container.innerHTML = '<p>Carregando...</p>'; const { data, error } = await supabaseClient.from('companies').select('*').order('name'); if (error) { container.innerHTML = '<p>Erro ao carregar.</p>'; console.error(error); return; } container.innerHTML = data.map(c => `<div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center"><div><p class="font-semibold text-lg">${c.name}</p><p class="text-sm text-gray-400">Senha: ${c.password}</p></div><button onclick="deleteCompany(${c.id},'${c.name}')" class="py-1 px-3 font-semibold rounded-lg bg-red-600 hover:bg-red-700">X</button></div>`).join(''); }
         async function addOrUpdateCompany() { const name = document.getElementById('new-company-name').value.trim(); const password = document.getElementById('new-company-password').value.trim(); if(!name || !password) return alert('Nome e Senha são obrigatórios.'); const { error } = await supabaseClient.from('companies').upsert({ name, password }, { onConflict: 'name' }); if(error) { alert('Erro ao salvar empresa.'); console.error(error); } else { document.getElementById('new-company-name').value = ''; document.getElementById('new-company-password').value = ''; await populateLoginCompanies(); await loadCompanyManagement(); } }
         async function deleteCompany(id, name) { if (!confirm(`Excluir a empresa "${name}"?`)) return; const { error } = await supabaseClient.from('companies').delete().eq('id', id); if (error) { alert('Erro ao excluir.'); } else { await populateLoginCompanies(); await loadCompanyManagement(); } }
