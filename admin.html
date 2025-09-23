@@ -220,6 +220,11 @@
                     <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-300 font-semibold"></p>
                     
                     <div class="mb-4">
+                        <label for="origin" class="block mb-2 text-sm font-medium">Qual a sua origem?</label>
+                        <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço de partida completo">
+                    </div>
+
+                    <div class="mb-4">
                         <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
                         <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço completo">
                     </div>
@@ -878,9 +883,10 @@
         // --- LÓGICA DO USUÁRIO ---
         
         async function requestRide() {
+            const origin = document.getElementById('origin').value;
             const destination = document.getElementById('destination').value;
-            if (!destination) {
-                showModal('Por favor, insira um destino.');
+            if (!origin || !destination) {
+                showModal('Por favor, insira a origem e o destino.');
                 return;
             }
         
@@ -902,19 +908,16 @@
         
             document.getElementById('user-request-form').classList.add('hidden');
             document.getElementById('user-status').classList.remove('hidden');
-            document.getElementById('user-status-message').textContent = 'Obtendo sua localização...';
+            document.getElementById('user-status-message').textContent = 'Validando endereço de origem...';
         
-            if (!navigator.geolocation) {
-                showModal('Geolocalização não é suportada pelo seu navegador.');
-                return;
-            }
-        
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const userLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
+            try {
+                const originCoords = await geocodeAddress(origin);
+                const userLocation = { lat: originCoords.lat, lon: originCoords.lng };
                 const currentUser = state.users.find(u => u.id === state.currentUserId);
         
                 const newRide = {
                     destination: destination,
+                    origin_address: origin,
                     status: 'requested',
                     userId: currentUser.id,
                     userName: currentUser.name,
@@ -929,7 +932,7 @@
         
                 if (error) {
                     console.error("Erro ao solicitar corrida:", error);
-                    showModal("Não foi possível solicitar a corrida.");
+                    showModal("Não foi possível solicitar a corrida. Verifique os endereços.");
                     document.getElementById('user-request-form').classList.remove('hidden');
                     document.getElementById('user-status').classList.add('hidden');
                     return;
@@ -939,16 +942,12 @@
                 document.getElementById('user-status-message').textContent = 'Aguardando um motorista aceitar...';
                 startUserStatusCheck();
         
-            }, (error) => { 
-                console.error("Erro ao obter localização do usuário:", error);
-                showModal('Não foi possível obter sua localização. Verifique as permissões de localização no seu dispositivo/navegador.');
+            } catch (error) {
+                console.error("Erro ao geocodificar o endereço de origem:", error);
+                showModal('Não foi possível encontrar o endereço de origem. Por favor, verifique e tente novamente.');
                 document.getElementById('user-request-form').classList.remove('hidden');
                 document.getElementById('user-status').classList.add('hidden');
-            }, {
-                enableHighAccuracy: true, 
-                timeout: 10000, 
-                maximumAge: 0 
-            });
+            }
         }
 
         function checkUserRideStatus() {
@@ -1225,7 +1224,7 @@
         
             ridesWithDistance.forEach(ride => {
                 const rideUser = state.users.find(u => u.id === ride.userId);
-                const originAddress = rideUser && rideUser.address ? rideUser.address : 'N/A';
+                const originAddress = ride.origin_address ? ride.origin_address : 'Origem não informada';
                 const statusInfo = translateStatus(ride.status); 
 
                 let rideTypeInfo = '';
@@ -2279,8 +2278,12 @@
 
         function initAutocomplete() {
             const destinationInput = document.getElementById('destination');
+            const originInput = document.getElementById('origin');
             if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
                 new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
+            }
+            if (originInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
+                new google.maps.places.Autocomplete(originInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
             }
         }
         
