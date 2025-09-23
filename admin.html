@@ -126,6 +126,15 @@
         .status-in_progress { background-color: #8b5cf6; color: #ffffff; } /* Violet */
         .status-completed { background-color: #10b981; color: #ffffff; } /* Emerald */
         .status-canceled { background-color: #ef4444; color: #ffffff; } /* Red */
+        .status-pending_approval { background-color: #a16207; color: #ffffff; } /* Yellow-700 */
+        .status-approved { background-color: #0d9488; color: #ffffff; } /* Teal-600 */
+        .status-rejected { background-color: #991b1b; color: #ffffff; } /* Red-800 */
+
+        /* CORREÇÃO: Estilo movido para o <head> para garantir funcionamento */
+        #initial-screen button[onclick="showScreen('user-login-screen')"],
+        #initial-screen button[onclick="showScreen('driver-selection-screen')"] {
+            display: none;
+        }
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
@@ -140,13 +149,6 @@
                 <h1 class="text-4xl sm:text-5xl font-bold text-black">GARCIA TRANSPORTE</h1>
             </div>
             
-            <style>
-                button[onclick="showScreen('user-login-screen')"],
-                button[onclick="showScreen('driver-selection-screen')"] {
-                    display: none;
-                }
-            </style>
-
             <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
             <div class="space-y-4 max-w-md mx-auto">
                 <button onclick="showScreen('admin-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
@@ -209,7 +211,7 @@
 
         <div id="user-screen" class="screen">
              <div class="max-w-md mx-auto">
-                <button onclick="logoutUser()" class="mb-4 text-yellow-300">← Sair</button>
+                <button onclick="logout()" class="mb-4 text-yellow-300">← Sair</button>
                 <h2 class="text-3xl font-bold mb-6 text-center">Área do Usuário</h2>
                 
                 <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6">
@@ -259,7 +261,7 @@
         </div>
 
         <div id="admin-screen" class="screen">
-            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
+            <button onclick="logout()" class="mb-4 text-yellow-300">← Sair e Voltar à Tela Inicial</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Painel do Administrador</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                  <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg">Gerenciar Motoristas</button>
@@ -273,7 +275,7 @@
         
         <div id="admin-requests-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
-                <button onclick="promptToGoBack()" class="text-yellow-300">← Voltar ao Painel</button>
+                <button onclick="showScreen('admin-screen')" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
                 <div class="w-32"></div> </div>
             
@@ -508,23 +510,17 @@
 
     <script>
         // --- FUNÇÕES AUXILIARES IMPORTANTES ---
-
-        // Função auxiliar para geocodificar um endereço usando a API do Google Maps
         async function geocodeAddress(address) {
-            // Verifica se o Geocoder do Google Maps está disponível. Isso é crucial
-            // porque o script do Google Maps carrega de forma assíncrona.
             if (!google || !google.maps || !google.maps.Geocoder) {
                 console.error("Geocoder do Google Maps não disponível ainda.");
-                // Tenta novamente após um pequeno atraso, se não estiver disponível
                 return new Promise((resolve, reject) => {
                     setTimeout(() => {
                         if (google && google.maps && google.maps.Geocoder) {
-                            // Chama recursivamente a função após o atraso se o Geocoder estiver pronto
-                            resolve(geocodeAddress(address)); 
+                            resolve(geocodeAddress(address));
                         } else {
                             reject("Geocoder do Google Maps não disponível após tentativas.");
                         }
-                    }, 500); // Espera 500ms antes de tentar novamente
+                    }, 500);
                 });
             }
 
@@ -533,7 +529,6 @@
                 geocoder.geocode({ 'address': address, 'region': 'br' }, (results, status) => {
                     console.log(`Geocoding status for "${address}": ${status}`); // Log para depuração
                     if (status === 'OK') {
-                        // Retorna a geometria do primeiro resultado se bem-sucedido
                         if (results[0] && results[0].geometry && results[0].geometry.location) {
                             resolve({ lat: results[0].geometry.location.lat(), lng: results[0].geometry.location.lng() });
                         } else {
@@ -541,7 +536,6 @@
                             reject(`Nenhuma localização encontrada para o endereço: ${address}`);
                         }
                     } else {
-                        // Lida com outros status de erro da API
                         console.error(`A geocodificação não foi bem-sucedida pelo seguinte motivo: ${status} para o endereço: ${address}`);
                         reject(`${status}: ${address}`);
                     }
@@ -549,7 +543,6 @@
             });
         }
 
-        // Calcula a distância em km entre dois pontos geográficos usando a fórmula de Haversine
         function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
             const R = 6371; // Raio da Terra em quilômetros
             const dLat = deg2rad(lat2 - lat1);
@@ -563,7 +556,6 @@
             return d;
         }
 
-        // Converte graus para radianos
         function deg2rad(deg) { 
             return deg * (Math.PI / 180); 
         }
@@ -702,13 +694,23 @@
             });
         }
 
-        // --- LÓGICA DE LOGIN ---
+        // --- LÓGICA DE LOGIN E SESSÃO ---
+        function logout() {
+            state.currentUserId = null;
+            state.currentDriverId = null;
+            localStorage.removeItem('sessionType');
+            localStorage.removeItem('loggedInUserId');
+            localStorage.removeItem('loggedInDriverId');
+            showScreen('initial-screen');
+        }
+
         async function loginAdmin() { 
             const password = document.getElementById('admin-password').value;
             const errorEl = document.getElementById('admin-login-error');
             if (password === '789512') { 
                 errorEl.classList.add('hidden');
                 document.getElementById('admin-password').value = ''; 
+                localStorage.setItem('sessionType', 'admin');
                 showScreen('admin-screen'); 
             } else {
                 errorEl.classList.remove('hidden'); 
@@ -729,7 +731,7 @@
                 .eq('password', password)
                 .single();
             
-            if (error) {
+            if (error && error.code !== 'PGRST116') {
                 console.error('Erro no Supabase ao tentar login:', error);
                 errorEl.textContent = 'Erro de comunicação com o servidor. Por favor, tente novamente.';
                 errorEl.classList.remove('hidden');
@@ -739,6 +741,7 @@
             if (user) {
                 console.log('Usuário logado com sucesso:', user);
                 state.currentUserId = user.id;
+                localStorage.setItem('sessionType', 'user');
                 localStorage.setItem('loggedInUserId', user.id);
                 errorEl.classList.add('hidden');
                 document.getElementById('user-id').value = ''; 
@@ -749,12 +752,6 @@
                 errorEl.textContent = 'Matrícula ou senha incorreta!';
                 errorEl.classList.remove('hidden');
             }
-        }
-
-        function logoutUser() {
-            state.currentUserId = null;
-            localStorage.removeItem('loggedInUserId');
-            showScreen('initial-screen');
         }
 
         // --- NAVEGAÇÃO ENTRE TELAS ---
@@ -824,16 +821,13 @@
 
             confirmBtn.textContent = 'Exportar e Voltar';
             confirmBtn.onclick = () => {
-                // Verificamos se há corridas ANTES de tentar exportar
                 if (state.rides.length === 0) {
                     showModal("Nenhuma corrida para exportar. Voltando ao painel...");
-                    // Aguarda 2 segundos para o usuário ler e depois volta
                     setTimeout(() => {
                         closeModal();
                         showScreen('admin-screen');
                     }, 2000);
                 } else {
-                    // Se houver dados, exporta e volta imediatamente
                     exportDailyReportNow();
                     closeModal();
                     showScreen('admin-screen');
@@ -1062,7 +1056,7 @@
         function loadAdminRequests() {
             const list = document.getElementById('admin-requests-list');
             list.innerHTML = '';
-            const requestedRides = state.rides.filter(r => r.status === 'requested');
+            const requestedRides = state.rides.filter(r => r.status === 'requested' || r.status === 'approved');
             const inProgressRides = state.rides.filter(r => ['assigned', 'accepted', 'arrived_pickup', 'in_progress'].includes(r.status));
             const completedRides = state.rides.filter(r => r.status === 'completed');
             const activeDriversCount = state.drivers.filter(d => d.status === 'active').length;
@@ -1123,7 +1117,7 @@
             const tableContainer = document.getElementById('admin-ongoing-rides-table');
             tableContainer.innerHTML = '<div class="loader mx-auto"></div>';
             
-            const ongoingRides = state.rides.filter(r => !['requested', 'completed', 'canceled'].includes(r.status));
+            const ongoingRides = state.rides.filter(r => !['requested', 'approved', 'pending_approval', 'rejected', 'completed', 'canceled'].includes(r.status));
         
             if (ongoingRides.length === 0) {
                 tableContainer.innerHTML = '<p class="text-center text-gray-400">Nenhuma corrida em andamento no momento.</p>';
@@ -1194,21 +1188,30 @@
                 }
                 
                 let driverCellHTML = ride.driverName || 'N/A';
-                let actionsCellHTML = '';
+                let actionsCellHTML = `<div class="flex items-center gap-2">`;
 
                 if (ride.status !== 'in_progress' && ride.status !== 'arrived_pickup') {
                     const activeDrivers = state.drivers.filter(d => d.status === 'active');
                     let driverOptions = activeDrivers.map(d => `<option value="${d.id}" ${ride.driverId == d.id ? 'selected' : ''}>${d.name}</option>`).join('');
 
                     driverCellHTML = `
-                        <select id="ongoing-driver-select-${ride.id}" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none">
+                        <select id="ongoing-driver-select-${ride.id}" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-xs">
                             <option value="">Selecione...</option>
                             ${driverOptions}
                         </select>
                     `;
 
-                    actionsCellHTML = `<button onclick="updateRideDriver(${ride.id})" class="py-2 px-4 font-semibold rounded-lg button-gradient whitespace-nowrap">Salvar</button>`;
+                    actionsCellHTML += `<button onclick="updateRideDriver(${ride.id})" class="py-1 px-2 text-xs font-semibold rounded-lg button-gradient whitespace-nowrap">Salvar</button>`;
                 }
+                
+                actionsCellHTML += `
+                    <button onclick="adminCompleteRide(${ride.id})" title="Marcar como Finalizada" class="p-1 rounded-lg bg-green-600 hover:bg-green-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    </button>
+                    <button onclick="adminDeleteRide(${ride.id})" title="Excluir Corrida" class="p-1 rounded-lg bg-red-600 hover:bg-red-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                </div>`;
 
 
                 tableHTML += `
@@ -1592,6 +1595,8 @@
                 const passwordInput = document.getElementById('modal-input-driver-password');
                 if (passwordInput.value === driver.password) { 
                     state.currentDriverId = driverId;
+                    localStorage.setItem('sessionType', 'driver');
+                    localStorage.setItem('loggedInDriverId', driverId);
                     document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
                     updateDriverStatusButton();
                     showScreen('driver-screen');
@@ -1759,6 +1764,7 @@
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
                 
+                // Otimização para atualizar o estado localmente sem refazer o fetch de tudo
                 if (eventType === 'INSERT') {
                     if (!state.rides.some(ride => ride.id === newRecord.id)) state.rides.push(newRecord);
                 } else if (eventType === 'UPDATE') {
@@ -1768,8 +1774,8 @@
                     state.rides = state.rides.filter(r => r.id !== oldRecord.id);
                 }
 
+                // Atualiza a tela ativa
                 const activeScreenId = document.querySelector('.screen.active')?.id;
-
                 if (activeScreenId === 'admin-requests-screen') {
                     loadAdminRequests();
                     renderOngoingRidesTable();
@@ -1887,17 +1893,18 @@
             });
         }
 
-        // FUNÇÃO CORRIGIDA PARA EVITAR FALHAS NA TABELA DE REGISTROS
         function translateStatus(status) {
-            // Adicionada verificação para status nulo ou indefinido para evitar erros
             if (!status) {
                 return { text: 'INDEFINIDO', colorClass: 'status-canceled' };
             }
             switch (status) {
+                case 'pending_approval': return { text: 'PEND. APROVAÇÃO', colorClass: 'status-pending_approval' };
+                case 'approved': return { text: 'APROVADA', colorClass: 'status-approved' };
+                case 'rejected': return { text: 'REJEITADA', colorClass: 'status-rejected' };
                 case 'requested': return { text: 'SOLICITADO', colorClass: 'status-requested' };
                 case 'assigned': return { text: 'DESIGNADO', colorClass: 'status-assigned' };
                 case 'accepted': return { text: 'ACEITO', colorClass: 'status-accepted' };
-                case 'arrived_pickup': return { text: 'CHEGUEI NO EMBARQUE', colorClass: 'status-arrived_pickup' };
+                case 'arrived_pickup': return { text: 'NO EMBARQUE', colorClass: 'status-arrived_pickup' };
                 case 'in_progress': return { text: 'EM ANDAMENTO', colorClass: 'status-in_progress' };
                 case 'completed': return { text: 'FINALIZADA', colorClass: 'status-completed' };
                 case 'canceled': return { text: 'CANCELADA', colorClass: 'status-canceled' };
@@ -1907,7 +1914,6 @@
         
         function exportDailyReportNow() {
             if (state.rides.length === 0) {
-                // The calling function will handle the message now.
                 return;
             }
 
@@ -2095,151 +2101,122 @@
         // --- FUNÇÕES PARA REGISTROS ---
         function openRecordsTab() {
             showScreen('admin-records-screen');
-            loadAllRecords(); 
         }
 
         async function loadAllRecords() {
             const tableBody = document.getElementById('all-records-body');
-            tableBody.innerHTML = ''; 
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>';
 
-            if (state.rides.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>';
+            const { data: allRides, error } = await supabaseClient.from('rides').select('*').order('requestTime', { ascending: false });
+            if (error) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>';
+                return;
+            }
+            state.rides = allRides; // Atualiza o estado global com todos os registros
+            
+            if (allRides.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>';
                 return;
             }
 
-            const sortedRides = [...state.rides].sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
-
-            const headerRow = document.querySelector('#all-records-table thead tr');
-            if (!headerRow.querySelector('th[scope="col"]:last-child')?.textContent.includes('Distância')) {
-                const distanceHeader = document.createElement('th');
-                distanceHeader.scope = 'col';
-                distanceHeader.className = 'px-4 py-3';
-                distanceHeader.textContent = 'Distância (km)';
-                headerRow.appendChild(distanceHeader);
-            }
-
-            const rowPromises = sortedRides.map(async (ride) => {
-                let distanceKm = '-'; 
-
-                if (ride.userLocation && ride.userLocation.lat && ride.userLocation.lon && ride.destination) {
-                    try {
-                        const destinationCoords = await geocodeAddress(ride.destination);
-
-                        if (destinationCoords) {
-                            distanceKm = getDistanceFromLatLonInKm(
-                                ride.userLocation.lat, ride.userLocation.lon,
-                                destinationCoords.lat, destinationCoords.lng
-                            ).toFixed(2); 
-                        }
-                    } catch (error) {
-                        console.error(`Could not calculate distance for ride ${ride.id} with destination "${ride.destination}":`, error); 
-                        distanceKm = 'Erro'; 
-                    }
-                } else if (!ride.userLocation || !ride.destination) {
-                    distanceKm = 'N/D'; 
-                }
-
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-700 hover:bg-gray-800/20';
-                row.innerHTML = `
-                    <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleString('pt-BR')}</td>
-                    <td class="px-4 py-3">${ride.userName}</td>
-                    <td class="px-4 py-3">${ride.userCompany || '-'}</td>
-                    <td class="px-4 py-3">${ride.destination}</td>
-                    <td class="px-4 py-3">${ride.driverName || '-'}</td>
-                    <td class="px-4 py-3">
-                        <span class="status-badge ${translateStatus(ride.status).colorClass}">${translateStatus(ride.status).text}</span>
-                    </td>
-                    <td class="px-4 py-3">${distanceKm}</td> 
+            tableBody.innerHTML = allRides.map(ride => {
+                const statusInfo = translateStatus(ride.status);
+                return `
+                    <tr class="border-b border-gray-700 hover:bg-gray-800/20">
+                        <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleString('pt-BR')}</td>
+                        <td class="px-4 py-3">${ride.userName}</td>
+                        <td class="px-4 py-3">${ride.userCompany || '-'}</td>
+                        <td class="px-4 py-3">${ride.destination}</td>
+                        <td class="px-4 py-3">${ride.driverName || '-'}</td>
+                        <td class="px-4 py-3"><span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span></td>
+                    </tr>
                 `;
-                return row; 
-            });
-
-            const rows = await Promise.all(rowPromises);
-            rows.forEach(row => tableBody.appendChild(row));
+            }).join('');
         }
         
         function filterRecordsByDate() {
-            const startDateInput = document.getElementById('records-start-date');
-            const endDateInput = document.getElementById('records-end-date');
+            const startDate = document.getElementById('records-start-date').value;
+            const endDate = document.getElementById('records-end-date').value;
             const tableBody = document.getElementById('all-records-body');
             const rows = tableBody.getElementsByTagName('tr');
 
-            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
-            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
-
-            if (!startDate && !endDate) {
-                loadAllRecords(); 
-                return;
-            }
-
-            const actualEndDate = endDate ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999) : null;
+            const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+            const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
 
             for (let i = 0; i < rows.length; i++) {
-                const cells = rows[i].getElementsByTagName('td');
-                if (cells.length > 0) {
-                    const dateCell = cells[0]; 
-                    const recordDateStr = dateCell.innerText;
+                const dateCell = rows[i].getElementsByTagName('td')[0];
+                if (dateCell) {
+                    const dateParts = dateCell.textContent.split(' ')[0].split('/');
+                    const recordDate = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`).getTime();
                     
-                    const parts = recordDateStr.match(/(\d{2})\/(\d{2})\/(\d{4}), (\d{2}):(\d{2}):(\d{2})/);
-                    let recordDate = null;
-                    if (parts) {
-                        recordDate = new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1]), parseInt(parts[4]), parseInt(parts[5]), parseInt(parts[6]));
-                    }
-
-                    let isVisible = true;
-                    if (startDate && recordDate && recordDate < startDate) {
-                        isVisible = false;
-                    }
-                    if (actualEndDate && recordDate && recordDate > actualEndDate) {
-                        isVisible = false;
-                    }
-
-                    rows[i].style.display = isVisible ? '' : 'none';
+                    let show = true;
+                    if (start && recordDate < start) show = false;
+                    if (end && recordDate > end) show = false;
+                    rows[i].style.display = show ? '' : 'none';
                 }
             }
+        }
+        
+        async function adminCompleteRide(rideId) {
+            if (!confirm('Tem certeza que deseja finalizar esta corrida?')) return;
+            const { error } = await supabaseClient.from('rides').update({ status: 'completed' }).eq('id', rideId);
+            if (error) alert('Não foi possível finalizar a corrida.');
+            else alert('Corrida finalizada com sucesso!');
+        }
+
+        async function adminDeleteRide(rideId) {
+            if (!confirm('ATENÇÃO: Esta ação é irreversível. Deseja realmente excluir esta corrida?')) return;
+            const { error } = await supabaseClient.from('rides').delete().eq('id', rideId);
+            if (error) alert('Não foi possível excluir a corrida.');
+            else alert('Corrida excluída com sucesso!');
         }
         
         // --- FUNÇÃO DE INICIALIZAÇÃO PRINCIPAL ---
         async function initApp() {
-            // Verifica a disponibilidade do Google Maps API e Geocoder ANTES de continuar
             if (typeof google === 'undefined' || !google.maps || !google.maps.Geocoder) {
-                 console.error("Google Maps API ou Geocoder não está disponível. Verifique o carregamento do script e a chave de API.");
-                 // Tenta exibir uma mensagem mais amigável ao usuário se a API falhar no carregamento
-                 document.getElementById('app-container').innerHTML = '<p class="text-red-500 text-center text-lg">Erro ao carregar o mapa. Por favor, verifique sua conexão ou tente mais tarde.</p>';
+                 document.getElementById('app-container').innerHTML = '<p class="text-red-500 text-center text-lg">Erro ao carregar o mapa.</p>';
                  return; 
             }
             
             initAutocomplete(); 
-            loadAppIcon(); 
             await fetchAllData(); 
             setupRealtimeSubscriptions(); 
+            loadAppIcon();
 
-            const loggedInUserId = localStorage.getItem('loggedInUserId');
-            if (loggedInUserId) {
-                state.currentUserId = parseInt(loggedInUserId);
-                const user = state.users.find(u => u.id === state.currentUserId);
-                if (user) {
+            const sessionType = localStorage.getItem('sessionType');
+            if (sessionType === 'admin') {
+                showScreen('admin-screen');
+            } else if (sessionType === 'user') {
+                const userId = localStorage.getItem('loggedInUserId');
+                if (userId && state.users.some(u => u.id == userId)) {
+                    state.currentUserId = parseInt(userId);
                     showScreen('user-screen');
-                    checkUserRideStatus(); 
                 } else {
-                    logoutUser(); 
+                    logout();
+                }
+            } else if (sessionType === 'driver') {
+                const driverId = localStorage.getItem('loggedInDriverId');
+                if (driverId && state.drivers.some(d => d.id == driverId)) {
+                    state.currentDriverId = parseInt(driverId);
+                    const driver = state.drivers.find(d => d.id === state.currentDriverId);
+                    document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
+                    updateDriverStatusButton();
+                    showScreen('driver-screen');
+                } else {
+                    logout();
                 }
             } else {
                 showScreen('initial-screen');
             }
         }
 
-        // Inicializa o autocomplete do Google Places
         function initAutocomplete() {
             const destinationInput = document.getElementById('destination');
-            // Verifica se o input existe e se a API do Google Maps está carregada
             if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                const autocomplete = new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
+                new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
             }
         }
         
-        // Inicializa o mapa para exibir o mapa de calor
         async function initHeatmap() {
             const mapDiv = document.getElementById('heatmap-canvas');
             if (!mapDiv) return;
@@ -2250,41 +2227,23 @@
                 mapTypeId: 'satellite'
             });
 
-            const locationsData = [];
-
-            const geocodePromises = state.users.map(user => {
-                return new Promise((resolve) => {
-                    if (user.address && user.address.trim() !== '') {
-                        geocodeAddress(user.address)
-                            .then(coords => {
-                                if (coords) {
-                                    locationsData.push(new google.maps.LatLng(coords.lat, coords.lng));
-                                }
-                                resolve();
-                            })
-                            .catch(error => {
-                                console.error(`Falha ao geocodificar o endereço "${user.address}" para o mapa de calor: ${error}`);
-                                resolve();
-                            });
-                    } else {
-                        resolve();
-                    }
-                });
-            });
-            await Promise.all(geocodePromises);
+            const geocodePromises = state.users
+                .filter(user => user.address && user.address.trim() !== '')
+                .map(user => geocodeAddress(user.address).catch(e => null));
+            
+            const results = await Promise.all(geocodePromises);
+            const locationsData = results
+                .filter(coords => coords)
+                .map(coords => new google.maps.LatLng(coords.lat, coords.lng));
 
             if (locationsData.length > 0) {
-                if (heatmap) {
-                    heatmap.setMap(null); // Limpa o mapa de calor anterior se existir
-                }
+                if (heatmap) heatmap.setMap(null);
                 heatmap = new google.maps.visualization.HeatmapLayer({
                     data: locationsData,
-                    map: map
+                    map: map,
+                    radius: 20,
+                    opacity: 0.8
                 });
-                heatmap.set('radius', 20);
-                heatmap.set('opacity', 0.8);
-            } else {
-                console.log("Nenhum dado de endereço de usuário encontrado para exibir o mapa de calor.");
             }
         }
 
