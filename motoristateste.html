@@ -103,7 +103,6 @@
     </style>
 </head>
 <body class="text-white min-h-screen p-4">
-    <!-- NOVO: Banner de alerta para permissões bloqueadas -->
     <div id="notification-permission-banner" class="hidden fixed top-0 left-0 right-0 bg-red-600 p-4 text-center z-50">
         <p class="font-semibold">As notificações estão bloqueadas! Ative nas configurações do seu navegador para não perder corridas.</p>
     </div>
@@ -280,8 +279,7 @@
             const notificationTitle = 'Nova Solicitação de Corrida!';
             const destinations = parseDestinations(ride.destination);
             const destinationText = destinations.length > 0 ? destinations.join(' -> ') : 'N/A';
-
-            // --- MODIFICADO: Adiciona um botão de ação à notificação ---
+            
             const notificationOptions = {
                 body: `Destino: ${destinationText}\nToque para ver os detalhes.`,
                 icon: 'images/destino.png',
@@ -295,11 +293,14 @@
 
             const notification = new Notification(notificationTitle, notificationOptions);
             
-            notification.onclick = () => {
+            notification.onclick = (event) => {
+                event.preventDefault(); 
                 window.focus();
-                if (state.currentDriverId) {
+                setTimeout(() => {
+                  if (state.currentDriverId) {
                     showScreen('driver-screen');
-                }
+                  }
+                }, 150);
                 notification.close();
             };
         }
@@ -608,18 +609,26 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const myJobs = state.rides.filter(r => {
-                if (r.driverId !== state.currentDriverId || r.status === 'completed') return false;
+                // *** CORREÇÃO APLICADA AQUI ***
+                // Antes, as corridas completas eram removidas da lista.
+                // Agora, elas permanecem, mostrando um histórico consistente do dia.
+                if (r.driverId !== state.currentDriverId) {
+                    return false;
+                }
+                
                 const isScheduled = r.request_type && r.request_type.trim().toLowerCase() === 'scheduled';
                 const rideDateSource = isScheduled && r.scheduled_datetime ? r.scheduled_datetime : r.requestTime;
                 const rideDate = new Date(rideDateSource);
                 const rideDay = new Date(rideDate.getFullYear(), rideDate.getMonth(), rideDate.getDate());
+
                 if (isScheduled && rideDay >= today) return true;
                 if (!isScheduled && rideDay.getTime() === today.getTime()) return true;
+
                 return false;
             });
 
             const statsDisplay = document.getElementById('driver-stats-display');
-            const actionableJobCount = myJobs.filter(j => j.status !== 'canceled' && j.status !== 'canceled_by_driver').length;
+            const actionableJobCount = myJobs.filter(j => j.status !== 'completed' && j.status !== 'canceled' && j.status !== 'canceled_by_driver').length;
             const timestamp = new Date().toLocaleString('pt-BR');
             statsDisplay.textContent = `${actionableJobCount} solicitações ativas em ${timestamp}`;
 
@@ -650,7 +659,11 @@
                 const displayDateTime = displayDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 const dateLabel = isScheduled ? 'Agendado para:' : 'Solicitado em:';
                 let statusColor = 'text-yellow-300';
-                if (ride.status === 'canceled' || ride.status === 'canceled_by_driver') statusColor = 'text-red-500';
+                if (ride.status === 'canceled' || ride.status === 'canceled_by_driver') {
+                    statusColor = 'text-red-500';
+                } else if (ride.status === 'completed') {
+                    statusColor = 'text-green-400';
+                }
 
                 let originHtml = ride.origin_address ? `<div class="mb-3"><p class="text-xs text-gray-400">Origem:</p><p class="font-normal text-gray-300 break-words">${ride.origin_address}</p></div>` : '';
                 
@@ -754,8 +767,9 @@
             saveRideProgress();
             if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
             driverWatchId = null;
+            // Não volta mais para a tela de seleção, apenas recarrega os jobs
             await fetchAllData();
-            showScreen('driver-selection-screen');
+            loadDriverJobs();
         }
 
         function promptCancelRide(rideId) {
@@ -830,7 +844,6 @@
             }).subscribe();
         }
 
-        // --- NOVO: Função para checar permissão de notificação no início ---
         function checkInitialNotificationPermission() {
             if ('Notification' in window && Notification.permission === 'denied') {
                 document.getElementById('notification-permission-banner').classList.remove('hidden');
@@ -840,7 +853,7 @@
         async function initApp() {
             loadRideProgress();
             loadAppIcon();
-            checkInitialNotificationPermission(); // <-- Chamada da nova função
+            checkInitialNotificationPermission();
             await fetchAllData();
             setupRealtimeSubscriptions();
             
