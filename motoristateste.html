@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+
+
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0d47a1">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
+
+
+
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GARCIA TRANSPORTES - Motorista</title>
@@ -988,6 +1000,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
+
+
+    
+<script type="module" src="/firebase-messaging.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/firebase-messaging-sw.js")
+      .then(() => console.log("Service worker do Firebase registrado!"))
+      .catch(err => console.error("Erro ao registrar SW:", err));
+  }
+</script>
+
+
+
+
+
+
+
 </body>
+
+
 </html>
 
