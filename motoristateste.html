@@ -245,6 +245,7 @@
                     } else {
                         showModal('Você não receberá alertas de corrida com o app minimizado se não permitir as notificações.');
                     }
+                    checkInitialNotificationPermission();
                 });
             }
         }
@@ -608,23 +609,18 @@
             list.innerHTML = '';
             const today = new Date();
             today.setHours(0, 0, 0, 0);
+            
+            // ** LÓGICA DE FILTRAGEM RESTAURADA PARA A VERSÃO ORIGINAL E FUNCIONAL **
             const myJobs = state.rides.filter(r => {
-                // *** CORREÇÃO APLICADA AQUI ***
-                // Antes, as corridas completas eram removidas da lista.
-                // Agora, elas permanecem, mostrando um histórico consistente do dia.
-                if (r.driverId !== state.currentDriverId) {
+                if (r.driverId !== state.currentDriverId) { // Adicionado para garantir que só pegue corridas do motorista logado
                     return false;
                 }
-                
-                const isScheduled = r.request_type && r.request_type.trim().toLowerCase() === 'scheduled';
-                const rideDateSource = isScheduled && r.scheduled_datetime ? r.scheduled_datetime : r.requestTime;
-                const rideDate = new Date(rideDateSource);
-                const rideDay = new Date(rideDate.getFullYear(), rideDate.getMonth(), rideDate.getDate());
-
-                if (isScheduled && rideDay >= today) return true;
-                if (!isScheduled && rideDay.getTime() === today.getTime()) return true;
-
-                return false;
+                // Mostra corridas 'completed' do dia, mas principalmente as que precisam de ação
+                 if (r.status === 'completed') {
+                    const rideDate = new Date(r.requestTime);
+                    return rideDate.toDateString() === today.toDateString();
+                }
+                return r.status !== 'canceled' && r.status !== 'canceled_by_driver';
             });
 
             const statsDisplay = document.getElementById('driver-stats-display');
@@ -642,10 +638,12 @@
             }
 
             myJobs.sort((a, b) => {
-                const isA_Actionable = a.status !== 'canceled' && a.status !== 'canceled_by_driver';
-                const isB_Actionable = b.status !== 'canceled' && b.status !== 'canceled_by_driver';
-                if (isA_Actionable && !isB_Actionable) return -1;
-                if (!isA_Actionable && isB_Actionable) return 1;
+                const statusOrder = { 'assigned': 1, 'accepted': 2, 'arrived_pickup': 3, 'in_progress': 4, 'completed': 5 };
+                const aStatus = statusOrder[a.status] || 99;
+                const bStatus = statusOrder[b.status] || 99;
+                if (aStatus !== bStatus) {
+                    return aStatus - bStatus;
+                }
                 return new Date(b.requestTime) - new Date(a.requestTime);
             });
 
@@ -659,7 +657,7 @@
                 const displayDateTime = displayDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 const dateLabel = isScheduled ? 'Agendado para:' : 'Solicitado em:';
                 let statusColor = 'text-yellow-300';
-                if (ride.status === 'canceled' || ride.status === 'canceled_by_driver') {
+                 if (ride.status === 'canceled' || ride.status === 'canceled_by_driver') {
                     statusColor = 'text-red-500';
                 } else if (ride.status === 'completed') {
                     statusColor = 'text-green-400';
@@ -767,7 +765,6 @@
             saveRideProgress();
             if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
             driverWatchId = null;
-            // Não volta mais para a tela de seleção, apenas recarrega os jobs
             await fetchAllData();
             loadDriverJobs();
         }
@@ -847,6 +844,8 @@
         function checkInitialNotificationPermission() {
             if ('Notification' in window && Notification.permission === 'denied') {
                 document.getElementById('notification-permission-banner').classList.remove('hidden');
+            } else {
+                 document.getElementById('notification-permission-banner').classList.add('hidden');
             }
         }
 
