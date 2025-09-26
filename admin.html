@@ -288,17 +288,25 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                  <div class="card-gradient p-4 rounded-lg w-full">
                     <h3 class="font-semibold mb-2 text-center">Status das Corridas</h3>
-                    <div class="flex justify-around text-center">
+                    <div class="flex justify-around text-center flex-wrap gap-2">
                         <div>
-                            <p class="text-2xl font-bold text-blue-400" id="requested-requests-count">0</p>
+                            <p class="text-2xl font-bold text-orange-400" id="status-agendada-count">0</p>
+                            <p class="text-xs text-gray-300">Agendada</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-blue-400" id="status-solicitado-count">0</p>
                             <p class="text-xs text-gray-300">Solicitado</p>
                         </div>
                         <div>
-                            <p class="text-2xl font-bold text-yellow-300" id="in-progress-requests-count">0</p>
+                            <p class="text-2xl font-bold text-yellow-400" id="status-designado-count">0</p>
+                            <p class="text-xs text-gray-300">Designado</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-purple-400" id="status-em-andamento-count">0</p>
                             <p class="text-xs text-gray-300">Em Andamento</p>
                         </div>
                         <div>
-                            <p class="text-2xl font-bold text-green-400" id="completed-requests-count">0</p>
+                            <p class="text-2xl font-bold text-green-400" id="status-concluidas-count">0</p>
                             <p class="text-xs text-gray-300">Concluídas</p>
                         </div>
                     </div>
@@ -1099,20 +1107,29 @@
             const list = document.getElementById('admin-requests-list');
             list.innerHTML = '';
 
-            const requestedRides = state.rides.filter(r => r.status === 'requested' || r.status === 'approved' || r.status === 'pending_approval');
+            const requestedRides = state.rides.filter(r => r.status === 'requested' || r.status === 'approved' || r.status === 'pending_approval' || r.status === 'scheduled');
+            
+            // --- Cálculos para o painel de status ---
+            const solicitadoCount = state.rides.filter(r => ['requested', 'approved', 'pending_approval'].includes(r.status)).length;
+            const agendadaCount = state.rides.filter(r => r.status === 'scheduled').length;
+            const designadoCount = state.rides.filter(r => r.status === 'assigned').length;
+            const emAndamentoCount = state.rides.filter(r => ['accepted', 'arrived_pickup', 'in_progress'].includes(r.status)).length;
+            const concluidasCount = state.rides.filter(r => r.status === 'completed').length;
+            
+            // --- Atualiza os contadores no painel ---
+            document.getElementById('status-agendada-count').textContent = agendadaCount;
+            document.getElementById('status-solicitado-count').textContent = solicitadoCount;
+            document.getElementById('status-designado-count').textContent = designadoCount;
+            document.getElementById('status-em-andamento-count').textContent = emAndamentoCount;
+            document.getElementById('status-concluidas-count').textContent = concluidasCount;
 
-            const inProgressRides = state.rides.filter(r => ['assigned', 'accepted', 'arrived_pickup', 'in_progress'].includes(r.status));
-            const completedRides = state.rides.filter(r => r.status === 'completed');
             const activeDriversCount = state.drivers.filter(d => d.status === 'active').length;
             const totalDriversCount = state.drivers.length;
 
-            document.getElementById('requested-requests-count').textContent = requestedRides.length;
-            document.getElementById('in-progress-requests-count').textContent = inProgressRides.length;
-            document.getElementById('completed-requests-count').textContent = completedRides.length;
             document.getElementById('total-drivers-count').textContent = totalDriversCount;
             document.getElementById('active-drivers-count').textContent = activeDriversCount;
             document.getElementById('inactive-drivers-count').textContent = totalDriversCount - activeDriversCount;
-
+            
             renderDriverStatusChart(activeDriversCount, totalDriversCount - activeDriversCount);
 
             if (requestedRides.length === 0) {
@@ -2392,4 +2409,5 @@
    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
 </body>
 </html>
+
 
