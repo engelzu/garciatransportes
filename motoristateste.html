@@ -103,6 +103,11 @@
     </style>
 </head>
 <body class="text-white min-h-screen p-4">
+    <!-- NOVO: Banner de alerta para permissões bloqueadas -->
+    <div id="notification-permission-banner" class="hidden fixed top-0 left-0 right-0 bg-red-600 p-4 text-center z-50">
+        <p class="font-semibold">As notificações estão bloqueadas! Ative nas configurações do seu navegador para não perder corridas.</p>
+    </div>
+
     <div id="app-container" class="w-full mx-auto max-w-md center-content-initial">
         <div id="initial-screen" class="screen active text-center">
             <img src="images/motorista.png" alt="Motorista Icon" class="w-32 h-32 mx-auto mb-4 object-contain">
@@ -232,8 +237,6 @@
         const ringtone = document.getElementById('ringtone');
         const silentAudio = document.getElementById('silent-audio');
 
-        // --- CORREÇÃO: Lógica do Service Worker removida para evitar erro de protocolo 'blob:' ---
-
         function requestNotificationPermission() {
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission().then(permission => {
@@ -247,7 +250,6 @@
             }
         }
         
-        // --- CORREÇÃO: Função de teste revertida para o método padrão do navegador ---
         function testNotification() {
             if (!('Notification' in window)) {
                 showModal('Este navegador não suporta notificações.');
@@ -269,7 +271,6 @@
             }
         }
         
-        // --- CORREÇÃO: Notificação de nova corrida revertida para o método padrão ---
         function showNewRideNotification(ride) {
             startRinging();
             if (!('Notification' in window) || Notification.permission !== 'granted') {
@@ -280,12 +281,16 @@
             const destinations = parseDestinations(ride.destination);
             const destinationText = destinations.length > 0 ? destinations.join(' -> ') : 'N/A';
 
+            // --- MODIFICADO: Adiciona um botão de ação à notificação ---
             const notificationOptions = {
                 body: `Destino: ${destinationText}\nToque para ver os detalhes.`,
                 icon: 'images/destino.png',
                 tag: `ride-${ride.id}`,
                 requireInteraction: true,
-                vibrate: [400, 200, 400]
+                vibrate: [400, 200, 400],
+                actions: [
+                    { action: 'open_app', title: 'Ver Corrida' }
+                ]
             };
 
             const notification = new Notification(notificationTitle, notificationOptions);
@@ -825,10 +830,17 @@
             }).subscribe();
         }
 
+        // --- NOVO: Função para checar permissão de notificação no início ---
+        function checkInitialNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'denied') {
+                document.getElementById('notification-permission-banner').classList.remove('hidden');
+            }
+        }
+
         async function initApp() {
             loadRideProgress();
             loadAppIcon();
-            // CORREÇÃO: Chamada para registrar o Service Worker foi removida.
+            checkInitialNotificationPermission(); // <-- Chamada da nova função
             await fetchAllData();
             setupRealtimeSubscriptions();
             
