@@ -132,7 +132,6 @@
             <p id="driver-name-display" class="text-center text-yellow-300 mb-1"></p>
             <p id="driver-stats-display" class="text-center text-red-500 font-semibold text-sm mb-6"></p>
             
-            <!-- Bloco de Status do Motorista -->
             <div class="card-gradient p-3 rounded-lg mb-4">
                 <div class="flex items-center justify-between">
                     <span class="font-semibold text-lg text-white">Meu Status</span>
@@ -144,11 +143,13 @@
                         </label>
                     </div>
                 </div>
-                 <!-- NOVO: Mensagem de feedback sobre a tela ativa -->
                 <p id="wake-lock-status-message" class="text-xs text-center text-gray-400 mt-2"></p>
             </div>
-            
-            <!-- REMOVIDO: O botão manual de "MANTER TELA ATIVA" foi retirado -->
+
+            <!-- NOVO: Botão para testar notificações -->
+            <div class="mb-4 text-center">
+                <button onclick="testNotification()" class="w-full py-2 px-4 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 border border-white">Testar Notificação</button>
+            </div>
 
             <button id="silence-btn" onclick="stopRinging()" class="hidden w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900 border border-white">Silenciar Alerta</button>
             <div id="driver-jobs-list" class="space-y-4"></div>
@@ -162,7 +163,6 @@
         </div>
     </div>
 
-    <!-- Modais (sem alterações) -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <p id="modal-message" class="mb-4 text-lg text-white"></p>
@@ -200,7 +200,6 @@
     <audio id="silent-audio" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="></audio>
 
     <script>
-        // --- CONFIGURAÇÃO INICIAL E DADOS MOCADOS ---
         let driverWatchId = null;
         let ringInterval = null;
         let tempDriverId = null; 
@@ -227,26 +226,48 @@
             localStorage.setItem('rideProgress', JSON.stringify(rideProgress));
         }
 
-        // --- CONFIGURAÇÃO DO SUPABASE ---
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- LÓGICA DE NOTIFICAÇÕES E ÁUDIO ---
         const ringtone = document.getElementById('ringtone');
         const silentAudio = document.getElementById('silent-audio');
 
         function requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission !== 'denied') {
+            if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission().then(permission => {
                     if (permission === 'granted') {
                         console.log('Permissão para notificações concedida.');
+                        showModal('Notificações ativadas com sucesso!');
+                    } else {
+                        showModal('Você não receberá alertas de corrida com o app minimizado se não permitir as notificações.');
                     }
                 });
             }
         }
 
-        // --- MODIFICADO: Função de notificação melhorada ---
+        // --- NOVO: Função para testar notificações ---
+        function testNotification() {
+            if (!('Notification' in window)) {
+                showModal('Este navegador não suporta notificações.');
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                const notification = new Notification('Teste de Notificação', {
+                    body: 'Se você vê e sente esta notificação, está tudo certo!',
+                    icon: 'images/destino.png',
+                    vibrate: [400, 200, 400],
+                    requireInteraction: true,
+                });
+                notification.onclick = () => { window.focus(); notification.close(); };
+            } else if (Notification.permission === 'denied') {
+                showModal('As notificações estão bloqueadas. Por favor, verifique as configurações do seu navegador e do seu celular.');
+            } else {
+                showModal('Por favor, permita as notificações quando solicitado para receber alertas de corrida.');
+                requestNotificationPermission();
+            }
+        }
+
         function showNewRideNotification(ride) {
             startRinging();
             if (!('Notification' in window) || Notification.permission !== 'granted') {
@@ -254,25 +275,21 @@
                 return;
             }
             const notificationTitle = 'Nova Solicitação de Corrida!';
-            // Limpa o destino para melhor visualização na notificação
             const destinations = parseDestinations(ride.destination);
             const destinationText = destinations.length > 0 ? destinations.join(' -> ') : 'N/A';
 
             const notificationOptions = {
                 body: `Destino: ${destinationText}\nToque para ver os detalhes.`,
-                icon: 'images/destino.png', // Ícone da notificação
-                tag: `ride-${ride.id}`, // Agrupa notificações da mesma corrida
-                requireInteraction: true, // Mantém a notificação até que o usuário interaja
-                vibrate: [400, 200, 400] // Padrão de vibração: vibra, pausa, vibra
+                icon: 'images/destino.png',
+                tag: `ride-${ride.id}`,
+                requireInteraction: true,
+                vibrate: [400, 200, 400]
             };
 
             const notification = new Notification(notificationTitle, notificationOptions);
             
             notification.onclick = () => {
-                // Esta função foca na janela/aba do aplicativo quando a notificação é clicada.
-                // Em muitos dispositivos móveis, isso trará o app para a frente.
                 window.focus();
-                // Garante que o usuário seja levado para a tela correta
                 if (state.currentDriverId) {
                     showScreen('driver-screen');
                 }
@@ -331,7 +348,6 @@
             document.getElementById('silence-btn').classList.add('hidden');
         }
 
-        // --- CORRIGIDO: LÓGICA PARA MANTER O ECRÃ E APP ATIVOS ---
         const wakeLockMessageEl = document.getElementById('wake-lock-status-message');
 
         const manageWakeLock = async (action) => {
@@ -339,7 +355,6 @@
             const isDriverActive = driver && driver.status === 'active';
 
             if (action === 'acquire' && isDriverActive) {
-                // Tenta ativar o Wake Lock (recurso principal)
                 try {
                     if ('wakeLock' in navigator && !wakeLock) {
                         wakeLock = await navigator.wakeLock.request('screen');
@@ -364,25 +379,21 @@
                     }
                 }
 
-                // Ativa o áudio silencioso (recurso de fallback), independentemente do sucesso do Wake Lock
                 if (audioUnlocked) {
                     silentAudio.play().catch(e => console.error("Erro ao tocar áudio silencioso (fallback):", e));
                 }
 
             } else if (action === 'release') {
-                // Libera o Wake Lock
                 if (wakeLock) {
                     await wakeLock.release();
                     wakeLock = null;
                     console.log('Wake Lock (manter ecrã ativo) libertado.');
                 }
-                // Para o áudio silencioso
                 silentAudio.pause();
                 wakeLockMessageEl.textContent = '';
             }
         };
 
-        // --- LÓGICA DE MODAL ---
         function showModal(message, onConfirm, showCancel = false, content = {}) {
             document.getElementById('modal-message').textContent = message;
             const confirmBtn = document.getElementById('modal-confirm');
@@ -422,7 +433,6 @@
             document.getElementById('export-modal').classList.remove('flex');
         }
 
-        // --- NAVEGAÇÃO ENTRE TELAS ---
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
@@ -440,7 +450,6 @@
             }
         }
 
-        // --- LÓGICA DO MOTORISTA ---
         function populateDriverSelection() {
             const list = document.getElementById('driver-list-selection');
             const timestampEl = document.getElementById('driver-selection-timestamp');
@@ -463,6 +472,7 @@
             });
         }
 
+        // --- MODIFICADO: Lógica de login melhorada ---
         function selectDriver(driverId) {
             tempDriverId = driverId;
             const driver = state.drivers.find(d => d.id === driverId);
@@ -473,6 +483,10 @@
             const onConfirm = () => {
                 const passwordInput = document.getElementById('modal-input-driver-password');
                 if (passwordInput.value.trim() === driver.password.trim()) {
+                    if ('Notification' in window && Notification.permission === 'denied') {
+                        showModal('Notificações bloqueadas. Ative nas configurações do navegador para não perder corridas.');
+                    }
+                    
                     state.currentDriverId = driverId;
                     localStorage.setItem('loggedInDriverId', driverId);
                     requestNotificationPermission();
@@ -537,48 +551,32 @@
         }
         
         function parseDestinations(destinationString) {
-            if (!destinationString || typeof destinationString !== 'string') {
-                return [];
-            }
+            if (!destinationString || typeof destinationString !== 'string') return [];
             const str = destinationString.trim();
             if (str.startsWith('[') && str.endsWith(']')) {
                 try {
                     const parsed = JSON.parse(str);
-                    if (Array.isArray(parsed)) {
-                        return parsed.map(d => String(d).trim()).filter(Boolean);
-                    }
+                    if (Array.isArray(parsed)) return parsed.map(d => String(d).trim()).filter(Boolean);
                 } catch (e) {
-                    console.warn('Não foi possível interpretar o destino como JSON, tentando extração manual.', str);
                     const content = str.substring(1, str.length - 1); 
                     const parts = content.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
-                    if (parts.length > 0) {
-                        return parts.map(part => part.replace(/"/g, '').trim()).filter(Boolean);
-                    }
+                    if (parts.length > 0) return parts.map(part => part.replace(/"/g, '').trim()).filter(Boolean);
                 }
             }
-            if (str.includes(';')) {
-                return str.split(';').map(d => d.trim()).filter(Boolean);
-            }
+            if (str.includes(';')) return str.split(';').map(d => d.trim()).filter(Boolean);
             return [str];
         }
 
         function openMapToDestination(rideId) {
             const ride = state.rides.find(r => r.id === rideId);
-            if (!ride) {
-                showModal("Não foi possível encontrar os dados da corrida.");
-                return;
-            }
-            const origin = (ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) 
-                ? `&origin=${ride.userLocation.lat},${ride.userLocation.lon}` 
-                : '';
+            if (!ride) return;
+            const origin = (ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) ? `&origin=${ride.userLocation.lat},${ride.userLocation.lon}` : '';
             const destinations = parseDestinations(ride.destination);
             if (destinations.length > 0) {
                 const destinationPoints = destinations.map(d => encodeURIComponent(d));
                 const finalDestination = destinationPoints.pop();
                 let mapsUrl = `https://www.google.com/maps/dir/?api=1${origin}&destination=${finalDestination}`;
-                if (destinationPoints.length > 0) {
-                    mapsUrl += `&waypoints=${destinationPoints.join('|')}`;
-                }
+                if (destinationPoints.length > 0) mapsUrl += `&waypoints=${destinationPoints.join('|')}`;
                 window.open(mapsUrl, '_blank');
             } else {
                 showModal("Nenhum destino definido para esta corrida.");
@@ -586,9 +584,7 @@
         }
 
         function openMapToPickup(rideId) {
-            if (!mapOpenedForRideIds.includes(rideId)) {
-                mapOpenedForRideIds.push(rideId);
-            }
+            if (!mapOpenedForRideIds.includes(rideId)) mapOpenedForRideIds.push(rideId);
             const ride = state.rides.find(r => r.id === rideId);
             if (ride && ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) {
                 const { lat, lon } = ride.userLocation;
@@ -606,9 +602,7 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const myJobs = state.rides.filter(r => {
-                if (r.driverId !== state.currentDriverId || r.status === 'completed') {
-                    return false;
-                }
+                if (r.driverId !== state.currentDriverId || r.status === 'completed') return false;
                 const isScheduled = r.request_type && r.request_type.trim().toLowerCase() === 'scheduled';
                 const rideDateSource = isScheduled && r.scheduled_datetime ? r.scheduled_datetime : r.requestTime;
                 const rideDate = new Date(rideDateSource);
@@ -650,16 +644,11 @@
                 const displayDateTime = displayDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 const dateLabel = isScheduled ? 'Agendado para:' : 'Solicitado em:';
                 let statusColor = 'text-yellow-300';
-                if (ride.status === 'canceled' || ride.status === 'canceled_by_driver') {
-                    statusColor = 'text-red-500';
-                }
+                if (ride.status === 'canceled' || ride.status === 'canceled_by_driver') statusColor = 'text-red-500';
 
-                let originHtml = '';
-                if (ride.origin_address) {
-                    originHtml = `<div class="mb-3"><p class="text-xs text-gray-400">Origem:</p><p class="font-normal text-gray-300 break-words">${ride.origin_address}</p></div>`;
-                }
-
-                let destinationsHtml = '';
+                let originHtml = ride.origin_address ? `<div class="mb-3"><p class="text-xs text-gray-400">Origem:</p><p class="font-normal text-gray-300 break-words">${ride.origin_address}</p></div>` : '';
+                
+                let destinationsHtml;
                 const destinations = parseDestinations(ride.destination);
                 if (destinations.length > 1) {
                     const stops = destinations.slice(0, -1);
@@ -682,47 +671,24 @@
                         <div><p class="text-xs text-gray-400 mb-1">TIPO</p><p class="text-sm font-semibold ${typeColor}">${typeText}</p></div>
                         <div><p class="text-xs text-gray-400 mb-1">STATUS</p><p class="text-sm font-semibold ${statusColor}">${translateStatus(ride.status)}</p></div>
                     </div>`;
+                
                 let rideSpecificContent = '';
-                if (ride.status === 'accepted') {
-                    if (ride.driverCurrentLocation && ride.userLocation) {
-                        const distance = getDistanceFromLatLonInKm(ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon, ride.userLocation.lat, ride.userLocation.lon);
-                        rideSpecificContent = `<p class="text-sm text-blue-300 mt-2 text-center">Distância até o usuário: ${distance.toFixed(2)} km</p>`;
-                    } else {
-                        rideSpecificContent = `<p class="text-sm text-gray-400 mt-2 text-center">Calculando distância...</p>`;
-                    }
+                if (ride.status === 'accepted' && ride.driverCurrentLocation && ride.userLocation) {
+                    const distance = getDistanceFromLatLonInKm(ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon, ride.userLocation.lat, ride.userLocation.lon);
+                    rideSpecificContent = `<p class="text-sm text-blue-300 mt-2 text-center">Distância até o usuário: ${distance.toFixed(2)} km</p>`;
                 }
+                
                 let buttonsContent = '';
-                if (ride.status === 'assigned' || ride.status === 'accepted' || ride.status === 'arrived_pickup') {
+                if (['assigned', 'accepted', 'arrived_pickup'].includes(ride.status)) {
                     buttonsContent = '<div class="mt-4 space-y-2">';
-                    if (ride.status === 'assigned') {
-                        if (isScheduled) {
-                            buttonsContent += `<button onclick="acceptScheduledRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR AGENDAMENTO</button>`;
-                        } else {
-                            buttonsContent += `<button onclick="acceptRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR CORRIDA</button>`;
-                        }
-                    }
-                    if (ride.status === 'accepted') {
-                        if (isScheduled) {
-                            if (mapOpenedForRideIds.includes(ride.id)) {
-                                buttonsContent += `<button onclick="arriveAtPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
-                                buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
-                            } else {
-                                buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
-                            }
-                        } else {
-                            buttonsContent += `<button onclick="arriveAtPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
-                            buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
-                        }
-                    }
-                    if (ride.status === 'arrived_pickup') {
-                        buttonsContent += `<button onclick="startTrip(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM</button>`;
-                        buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">VER ROTA NO MAPA</button>`;
-                    }
+                    if (ride.status === 'assigned') buttonsContent += `<button onclick="${isScheduled ? 'acceptScheduledRide' : 'acceptRide'}(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR ${isScheduled ? 'AGENDAMENTO' : 'CORRIDA'}</button>`;
+                    if (ride.status === 'accepted') buttonsContent += `<button onclick="arriveAtPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button><button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
+                    if (ride.status === 'arrived_pickup') buttonsContent += `<button onclick="startTrip(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM</button><button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">VER ROTA NO MAPA</button>`;
                     buttonsContent += `<button onclick="promptCancelRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 border border-white">CANCELAR</button></div>`;
                 } else if (ride.status === 'in_progress') {
-                    buttonsContent = '<div class="mt-4 space-y-2">';
                     const destinations = parseDestinations(ride.destination);
                     const currentStopIndex = rideProgress[ride.id] || 0;
+                    buttonsContent = '<div class="mt-4 space-y-2">';
                     if (destinations.length > 1 && currentStopIndex < destinations.length - 1) {
                         buttonsContent += `<button onclick="advanceToNextStop(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CONFIRMAR CHEGADA NA PARADA ${currentStopIndex + 1}</button>`;
                     } else {
@@ -749,14 +715,8 @@
         
         async function acceptScheduledRide(rideId) {
             stopRinging();
-            const { error } = await supabaseClient.from('rides').update({
-                status: 'accepted',
-                acceptTime: new Date().toISOString()
-            }).eq('id', rideId);
-            if (error) {
-                console.error("Erro ao aceitar agendamento:", error);
-                showModal("Não foi possível aceitar o agendamento.");
-            }
+            const { error } = await supabaseClient.from('rides').update({ status: 'accepted', acceptTime: new Date().toISOString() }).eq('id', rideId);
+            if (error) showModal("Não foi possível aceitar o agendamento.");
         }
 
         async function arriveAtPickup(rideId) {
@@ -765,23 +725,18 @@
         }
 
         async function startTrip(rideId) {
-            const ride = state.rides.find(r => r.id === rideId);
-            if (ride) {
-                const { error } = await supabaseClient.from('rides').update({ status: 'in_progress' }).eq('id', rideId);
-                if (error) return showModal("Não foi possível iniciar a viagem.");
-                rideProgress[rideId] = 0;
-                saveRideProgress();
-                if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
-                driverWatchId = null;
-                openMapToDestination(rideId);
-            }
+            const { error } = await supabaseClient.from('rides').update({ status: 'in_progress' }).eq('id', rideId);
+            if (error) return showModal("Não foi possível iniciar a viagem.");
+            rideProgress[rideId] = 0;
+            saveRideProgress();
+            if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
+            driverWatchId = null;
+            openMapToDestination(rideId);
         }
         
         async function advanceToNextStop(rideId) {
-            const ride = state.rides.find(r => r.id === rideId);
-            if (!ride) return showModal("Corrida não encontrada.");
-            const currentStopIndex = rideProgress[ride.id] || 0;
-            rideProgress[ride.id] = currentStopIndex + 1;
+            const currentStopIndex = rideProgress[rideId] || 0;
+            rideProgress[rideId] = currentStopIndex + 1;
             saveRideProgress();
             loadDriverJobs();
         }
@@ -789,10 +744,8 @@
         async function completeRide(rideId) {
             const { error } = await supabaseClient.from('rides').update({ status: 'completed' }).eq('id', rideId);
             if (error) return showModal("Não foi possível finalizar a corrida.");
-            if(rideProgress[rideId]) {
-                delete rideProgress[rideId];
-                saveRideProgress();
-            }
+            if(rideProgress[rideId]) delete rideProgress[rideId];
+            saveRideProgress();
             if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
             driverWatchId = null;
             await fetchAllData();
@@ -800,8 +753,7 @@
         }
 
         function promptCancelRide(rideId) {
-            const onConfirm = () => cancelRideByDriver(rideId);
-            showModal("Tem certeza que deseja cancelar?", onConfirm, true);
+            showModal("Tem certeza que deseja cancelar?", () => cancelRideByDriver(rideId), true);
             document.getElementById('modal-confirm').textContent = 'SIM';
             document.getElementById('modal-cancel').textContent = 'NÃO';
         }
@@ -817,7 +769,7 @@
             if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
             driverWatchId = navigator.geolocation.watchPosition(async (position) => {
                 const driverLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
-                const currentRide = state.rides.find(r => r.id === rideId && r.status !== 'completed' && r.status !== 'canceled' && r.status !== 'in_progress');
+                const currentRide = state.rides.find(r => r.id === rideId && r.status === 'accepted');
                 if (currentRide) {
                     await supabaseClient.from('rides').update({ driverCurrentLocation: driverLocation }).eq('id', rideId);
                 } else {
@@ -829,14 +781,11 @@
 
         function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
             const R = 6371;
-            const dLat = deg2rad(lat2 - lat1);
-            const dLon = deg2rad(lon2 - lon1);
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
+            const dLat = (lat2 - lat1) * (Math.PI / 180);
+            const dLon = (lon2 - lon1) * (Math.PI / 180);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
         }
-
-        function deg2rad(deg) { return deg * (Math.PI / 180); }
 
         async function fetchAllData() {
             const { data: drivers, error: dError } = await supabaseClient.from('drivers').select('*');
@@ -861,27 +810,17 @@
                         if (!hasAssignedJob) stopRinging();
                     }
                     const activeScreenId = document.querySelector('.screen.active')?.id;
-                    if (activeScreenId === 'driver-screen') {
-                        loadDriverJobs();
-                    } else if (activeScreenId === 'driver-selection-screen') {
-                        populateDriverSelection();
-                    }
+                    if (activeScreenId === 'driver-screen') loadDriverJobs();
+                    else if (activeScreenId === 'driver-selection-screen') populateDriverSelection();
                 }
             )
-            .subscribe((status, err) => {
-                if (status === 'SUBSCRIBED') console.log('Successfully subscribed to real-time rides channel!');
-                if (status === 'CHANNEL_ERROR') console.error('Failed to subscribe to rides channel. Error:', err);
-                if (status === 'TIMED_OUT') console.warn('Rides channel subscription timed out.');
-            });
+            .subscribe();
 
             supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, async () => {
                 await fetchAllData();
-                if (document.querySelector('.screen.active')?.id === 'driver-selection-screen') {
-                    populateDriverSelection();
-                }
-                if (document.querySelector('.screen.active')?.id === 'driver-screen') {
-                    updateDriverStatusButton();
-                }
+                const activeScreenId = document.querySelector('.screen.active')?.id;
+                if (activeScreenId === 'driver-selection-screen') populateDriverSelection();
+                else if (activeScreenId === 'driver-screen') updateDriverStatusButton();
             }).subscribe();
         }
 
@@ -944,50 +883,38 @@
             const doc = new jsPDF();
             const startDateInput = document.getElementById('start-date').value;
             const endDateInput = document.getElementById('end-date').value;
-            if (!startDateInput || !endDateInput) {
-                showModal("Por favor, selecione a data inicial e a data final.");
-                return;
-            }
+            if (!startDateInput || !endDateInput) return showModal("Por favor, selecione a data inicial e a data final.");
+            
             const startDate = new Date(startDateInput + 'T00:00:00');
             const endDate = new Date(endDateInput + 'T23:59:59');
-            if (startDate > endDate) {
-                showModal("A data inicial não pode ser posterior à data final.");
-                return;
-            }
+            if (startDate > endDate) return showModal("A data inicial não pode ser posterior à data final.");
+            
             const ridesToExport = state.rides.filter(r => {
                 if (r.driverId !== state.currentDriverId) return false;
                 const rideDate = new Date(r.requestTime);
                 return rideDate >= startDate && rideDate <= endDate;
             });
-            if (ridesToExport.length === 0) {
-                showModal("Nenhum histórico de corrida encontrado para o período selecionado.");
-                return;
-            }
+            if (ridesToExport.length === 0) return showModal("Nenhum histórico de corrida encontrado para o período selecionado.");
+
             const driver = state.drivers.find(d => d.id === state.currentDriverId);
             const driverName = driver ? driver.name : 'Motorista';
             const period = `${startDate.toLocaleDateString('pt-BR')} a ${endDate.toLocaleDateString('pt-BR')}`;
+            
             doc.setFontSize(18);
             doc.text('Relatório de Corridas', 14, 22);
             doc.setFontSize(11);
             doc.text(`Motorista: ${driverName}`, 14, 30);
             doc.text(`Período: ${period}`, 14, 36);
+            
             const tableColumn = ["Data", "Usuário", "Destino", "Status"];
-            const tableRows = [];
-            ridesToExport.forEach(ride => {
-                const rideDate = new Date(ride.requestTime).toLocaleString('pt-BR');
-                const rideData = [
-                    rideDate,
-                    ride.userName || 'N/A',
-                    ride.destination,
-                    translateStatus(ride.status)
-                ];
-                tableRows.push(rideData);
-            });
-            doc.autoTable({
-                head: [tableColumn],
-                body: tableRows,
-                startY: 40
-            });
+            const tableRows = ridesToExport.map(ride => [
+                new Date(ride.requestTime).toLocaleString('pt-BR'),
+                ride.userName || 'N/A',
+                ride.destination,
+                translateStatus(ride.status)
+            ]);
+            
+            doc.autoTable({ head: [tableColumn], body: tableRows, startY: 40 });
             doc.save(`relatorio_corridas_${driverName.replace(/\s/g, '_')}.pdf`);
             closeExportModal();
         }
