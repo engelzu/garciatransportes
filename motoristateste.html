@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GARCIA TRANSPORTES - Motorista</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: black; /* Fundo preto */
+        }
+        .button-gradient {
+            background: linear-gradient(to right, #6d28d9, #4f46e5);
+            border: 1px solid white; /* Contorno branco nos botões */
+            color: white; /* Garante que o texto seja branco */
+        }
+        .button-gradient:hover {
+            background: linear-gradient(to right, #4f46e5, #6d28d9);
+        }
+        .button-initial-screen {
+            background-color: black;
+            border: 2px solid white;
+            color: white;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+            transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .button-initial-screen:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 16px rgba(255, 255, 255, 0.7);
+        }
+        .card-gradient {
+             background: linear-gradient(135deg, #1f2937, #374151);
+        }
+        .screen {
+            display: none; /* Todas as telas escondidas por padrão */
+        }
+        .screen.active {
+            display: block; /* Exibe a tela ativa */
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #6d28d9;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ef4444;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #22c55e;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        .center-content-initial {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh; /* Garante que o conteúdo ocupe uma parte visível da tela */
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen p-4">
+    <div id="app-container" class="w-full mx-auto max-w-md center-content-initial">
+        <div id="initial-screen" class="screen active text-center">
+            <img src="images/motorista.png" alt="Motorista Icon" class="w-32 h-32 mx-auto mb-4 object-contain">
+            <div class="flex justify-center items-center gap-4 mb-2">
+                <div id="app-icon-container" class="h-12 w-12">
+                    <img src="images/destino.png" alt="App Icon" class="h-12 w-12 object-contain">
+                </div>
+                <h1 class="text-4xl sm:text-5xl font-bold text-white">GARCIA TRANSPORTES</h1>
+            </div>
+            <div class="space-y-4">
+                <button onclick="showScreen('driver-selection-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-initial-screen">
+                    ÁREA DO MOTORISTA
+                </button>
+            </div>
+        </div>
+        
+        <div id="driver-selection-screen" class="screen">
+            <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
+            <h2 class="text-3xl font-bold mb-1 text-center text-white">Selecionar Motorista</h2>
+            <p id="driver-selection-timestamp" class="text-center text-gray-300 text-sm mb-4"></p>
+            <div id="driver-list-selection" class="space-y-3"></div>
+        </div>
+
+        <div id="driver-screen" class="screen">
+            <button onclick="logoutDriver()" class="mb-4 text-yellow-300">← Sair</button>
+            <h2 class="text-3xl font-bold mb-2 text-center text-white">Minhas Corridas</h2>
+            <p id="driver-name-display" class="text-center text-yellow-300 mb-1"></p>
+            <p id="driver-stats-display" class="text-center text-red-500 font-semibold text-sm mb-6"></p>
+            
+            <!-- Bloco de Status do Motorista -->
+            <div class="card-gradient p-3 rounded-lg mb-4">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-lg text-white">Meu Status</span>
+                    <div class="flex items-center gap-3">
+                        <span id="driver-status-label" class="font-bold text-white"></span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="driver-status-toggle" onchange="toggleDriverStatus()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                 <!-- NOVO: Mensagem de feedback sobre a tela ativa -->
+                <p id="wake-lock-status-message" class="text-xs text-center text-gray-400 mt-2"></p>
+            </div>
+            
+            <!-- REMOVIDO: O botão manual de "MANTER TELA ATIVA" foi retirado -->
+
+            <button id="silence-btn" onclick="stopRinging()" class="hidden w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900 border border-white">Silenciar Alerta</button>
+            <div id="driver-jobs-list" class="space-y-4"></div>
+            
+            <div class="card-gradient p-4 rounded-lg mt-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-semibold text-xl text-white">Exportar Histórico</h3>
+                    <button onclick="showExportModal()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">Exportar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modais (sem alterações) -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
+            <p id="modal-message" class="mb-4 text-lg text-white"></p>
+            <div id="modal-input-container" class="hidden mb-4 space-y-2">
+                <input type="password" id="modal-input-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-white" placeholder="Senha do Motorista">
+            </div>
+            <div id="modal-buttons" class="flex justify-center gap-4">
+                <button id="modal-cancel" onclick="closeModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600 border border-white">Cancelar</button>
+                <button id="modal-confirm" class="py-2 px-8 font-semibold rounded-lg button-gradient">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="export-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="font-semibold text-xl text-white mb-4 text-center">Exportar Histórico para PDF</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="start-date" class="block text-sm font-medium text-gray-300">Data Inicial</label>
+                    <input type="date" id="start-date" class="w-full p-2 mt-1 rounded-lg bg-gray-800 border border-gray-600 text-white" style="color-scheme: dark;">
+                </div>
+                <div>
+                    <label for="end-date" class="block text-sm font-medium text-gray-300">Data Final</label>
+                    <input type="date" id="end-date" class="w-full p-2 mt-1 rounded-lg bg-gray-800 border border-gray-600 text-white" style="color-scheme: dark;">
+                </div>
+            </div>
+            <div class="flex justify-center gap-4 mt-6">
+                <button onclick="closeExportModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600 border border-white">Cancelar</button>
+                <button onclick="exportRidesToPdf()" class="py-2 px-8 font-semibold rounded-lg button-gradient">Gerar PDF</button>
+            </div>
+        </div>
+    </div>
+    
+    <audio id="ringtone" preload="auto" src="SOM/somchamada.mp3"></audio>
+    <audio id="silent-audio" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="></audio>
+
+    <script>
+        // --- CONFIGURAÇÃO INICIAL E DADOS MOCADOS ---
+        let driverWatchId = null;
+        let ringInterval = null;
+        let tempDriverId = null; 
+        let audioUnlocked = false; 
+        let wakeLock = null; 
+        let mapOpenedForRideIds = []; 
+
+        let state = {
+            rides: [],
+            drivers: [],
+            currentDriverId: null,
+            appIcon: 'images/destino.png',
+        };
+        
+        let rideProgress = {}; 
+        function loadRideProgress() {
+            const storedProgress = localStorage.getItem('rideProgress');
+            if (storedProgress) {
+                rideProgress = JSON.parse(storedProgress);
+            }
+        }
+
+        function saveRideProgress() {
+            localStorage.setItem('rideProgress', JSON.stringify(rideProgress));
+        }
+
+        // --- CONFIGURAÇÃO DO SUPABASE ---
+        const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- LÓGICA DE NOTIFICAÇÕES E ÁUDIO ---
+        const ringtone = document.getElementById('ringtone');
+        const silentAudio = document.getElementById('silent-audio');
+
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log('Permissão para notificações concedida.');
+                    }
+                });
+            }
+        }
+
+        function showNewRideNotification(ride) {
+            startRinging();
+            if (!('Notification' in window) || Notification.permission !== 'granted') {
+                console.warn('As notificações Pop-up estão bloqueadas.');
+                return;
+            }
+            const notificationTitle = 'Nova Solicitação de Corrida!';
+            const notificationOptions = {
+                body: `Destino: ${ride.destination}`,
+                icon: 'images/destino.png',
+                tag: `ride-${ride.id}`
+            };
+            const notification = new Notification(notificationTitle, notificationOptions);
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+            };
+        }
+
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            const unlockPromise = Promise.all([ringtone, silentAudio].map(audio => {
+                return new Promise((resolve) => {
+                    audio.muted = true;
+                    audio.play().then(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.muted = false;
+                        resolve(true);
+                    }).catch(() => {
+                        audio.muted = false;
+                        resolve(false);
+                    });
+                });
+            }));
+
+            unlockPromise.then(() => {
+                audioUnlocked = true;
+                console.log("Áudio desbloqueado pelo utilizador.");
+                document.body.removeEventListener('click', unlockAudio);
+                document.body.removeEventListener('touchstart', unlockAudio);
+            });
+        }
+
+        document.body.addEventListener('click', unlockAudio);
+        document.body.addEventListener('touchstart', unlockAudio);
+
+        function playRingSound() {
+            if (!audioUnlocked) return;
+            ringtone.currentTime = 0;
+            ringtone.play().catch(e => console.error("Erro ao tocar som:", e));
+        }
+
+        function startRinging() {
+            stopRinging(); 
+            playRingSound(); 
+            ringInterval = setInterval(playRingSound, 6000);
+            document.getElementById('silence-btn').classList.remove('hidden');
+        }
+
+        function stopRinging() {
+            if (ringInterval) {
+                clearInterval(ringInterval);
+                ringInterval = null;
+            }
+            ringtone.pause();
+            ringtone.currentTime = 0;
+            document.getElementById('silence-btn').classList.add('hidden');
+        }
+
+        // --- CORRIGIDO: LÓGICA PARA MANTER O ECRÃ E APP ATIVOS ---
+        const wakeLockMessageEl = document.getElementById('wake-lock-status-message');
+
+        const manageWakeLock = async (action) => {
+            const driver = state.drivers.find(d => d.id === state.currentDriverId);
+            const isDriverActive = driver && driver.status === 'active';
+
+            if (action === 'acquire' && isDriverActive) {
+                // Tenta ativar o Wake Lock (recurso principal)
+                try {
+                    if ('wakeLock' in navigator && !wakeLock) {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        console.log('Wake Lock (manter ecrã ativo) ativado.');
+                        wakeLockMessageEl.textContent = 'Tela mantida ativa para receber corridas.';
+                        
+                        wakeLock.addEventListener('release', () => { 
+                            wakeLock = null; 
+                            const currentDriver = state.drivers.find(d => d.id === state.currentDriverId);
+                            if (currentDriver && currentDriver.status === 'active') {
+                                console.log('Wake Lock libertado pelo navegador, tentando readquirir...');
+                                manageWakeLock('acquire');
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error(`Erro ao ativar Wake Lock: ${err.name}, ${err.message}`);
+                    if (err.name === 'NotAllowedError') {
+                         wakeLockMessageEl.textContent = 'Não foi possível manter a tela sempre ativa (permissão negada).';
+                    } else {
+                         wakeLockMessageEl.textContent = 'Falha ao manter a tela sempre ativa.';
+                    }
+                }
+
+                // Ativa o áudio silencioso (recurso de fallback), independentemente do sucesso do Wake Lock
+                if (audioUnlocked) {
+                    silentAudio.play().catch(e => console.error("Erro ao tocar áudio silencioso (fallback):", e));
+                }
+
+            } else if (action === 'release') {
+                // Libera o Wake Lock
+                if (wakeLock) {
+                    await wakeLock.release();
+                    wakeLock = null;
+                    console.log('Wake Lock (manter ecrã ativo) libertado.');
+                }
+                // Para o áudio silencioso
+                silentAudio.pause();
+                wakeLockMessageEl.textContent = '';
+            }
+        };
+
+        // --- LÓGICA DE MODAL ---
+        function showModal(message, onConfirm, showCancel = false, content = {}) {
+            document.getElementById('modal-message').textContent = message;
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+            const inputContainer = document.getElementById('modal-input-container');
+            Array.from(inputContainer.children).forEach(child => child.style.display = 'none');
+            if (content.type === 'driver-password') {
+                inputContainer.classList.remove('hidden');
+                document.getElementById('modal-input-driver-password').style.display = 'block';
+                document.getElementById('modal-input-driver-password').value = '';
+            } else {
+                 inputContainer.classList.add('hidden');
+            }
+            confirmBtn.onclick = onConfirm;
+            cancelBtn.style.display = showCancel ? 'inline-block' : 'none';
+            confirmBtn.textContent = showCancel ? 'Confirmar' : 'OK';
+            if (!showCancel) confirmBtn.onclick = closeModal;
+            const modal = document.getElementById('modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('modal-input-driver-password').value = '';
+        }
+        
+        function showExportModal() {
+            document.getElementById('export-modal').classList.remove('hidden');
+            document.getElementById('export-modal').classList.add('flex');
+        }
+
+        function closeExportModal() {
+            document.getElementById('export-modal').classList.add('hidden');
+            document.getElementById('export-modal').classList.remove('flex');
+        }
+
+        // --- NAVEGAÇÃO ENTRE TELAS ---
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            stopRinging();
+            const appContainer = document.getElementById('app-container');
+            if (screenId === 'initial-screen') {
+                appContainer.classList.add('center-content-initial');
+            } else {
+                appContainer.classList.remove('center-content-initial');
+            }
+            if (screenId === 'driver-selection-screen') populateDriverSelection();
+            if (screenId === 'driver-screen') {
+                loadDriverJobs();
+                updateDriverStatusButton();
+            }
+        }
+
+        // --- LÓGICA DO MOTORISTA ---
+        function populateDriverSelection() {
+            const list = document.getElementById('driver-list-selection');
+            const timestampEl = document.getElementById('driver-selection-timestamp');
+            list.innerHTML = '';
+            const timestamp = new Date().toLocaleString('pt-BR');
+            timestampEl.textContent = `Status atualizado em ${timestamp}`;
+            state.drivers.sort((a, b) => a.name.localeCompare(b.name));
+            state.drivers.forEach(driver => {
+                const isDriverBusy = state.rides.some(ride => ride.driverId === driver.id && ride.status !== 'completed' && ride.status !== 'canceled');
+                const button = document.createElement('button');
+                button.className = 'w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg transform hover:scale-105 transition-transform flex justify-between items-center border border-white';
+                button.onclick = () => selectDriver(driver.id);
+                button.innerHTML = `
+                    <span class="text-white">${driver.name}</span>
+                    <span class="text-sm font-bold py-1 px-3 rounded-full ${driver.status === 'active' && !isDriverBusy ? 'bg-green-500 text-white' : 'bg-red-600 text-white'}">
+                        ${driver.status === 'active' && !isDriverBusy ? 'Livre' : 'Ocupado'}
+                    </span>
+                `;
+                list.appendChild(button);
+            });
+        }
+
+        function selectDriver(driverId) {
+            tempDriverId = driverId;
+            const driver = state.drivers.find(d => d.id === driverId);
+            if (!driver) {
+                showModal('Motorista não encontrado.');
+                return;
+            }
+            const onConfirm = () => {
+                const passwordInput = document.getElementById('modal-input-driver-password');
+                if (passwordInput.value.trim() === driver.password.trim()) {
+                    state.currentDriverId = driverId;
+                    localStorage.setItem('loggedInDriverId', driverId);
+                    requestNotificationPermission();
+                    document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
+                    showScreen('driver-screen');
+                    closeModal();
+                } else {
+                    document.getElementById('modal-message').textContent = "Senha Incorreta!";
+                    passwordInput.value = '';
+                }
+            };
+            showModal(`Login para ${driver.name}`, onConfirm, true, { type: 'driver-password' });
+        }
+
+        async function logoutDriver() {
+            await manageWakeLock('release');
+            state.currentDriverId = null;
+            localStorage.removeItem('loggedInDriverId');
+            if (driverWatchId) {
+                navigator.geolocation.clearWatch(driverWatchId);
+                driverWatchId = null;
+            }
+            document.getElementById('app-container').classList.remove('center-content-initial');
+            showScreen('initial-screen');
+        }
+
+        async function updateDriverStatusButton() {
+            if (!state.currentDriverId) return;
+            const driver = state.drivers.find(d => d.id === state.currentDriverId);
+            if (driver) {
+                const statusLabel = document.getElementById('driver-status-label');
+                const statusToggle = document.getElementById('driver-status-toggle');
+                if (driver.status === 'active') {
+                    statusLabel.textContent = 'Ativo';
+                    statusToggle.checked = true;
+                    manageWakeLock('acquire');
+                } else {
+                    statusLabel.textContent = 'Inativo';
+                    statusToggle.checked = false;
+                    manageWakeLock('release');
+                }
+            }
+        }
+
+        async function toggleDriverStatus() {
+            if (!state.currentDriverId) return;
+            const statusToggle = document.getElementById('driver-status-toggle');
+            const newStatus = statusToggle.checked ? 'active' : 'inactive';
+            const { error } = await supabaseClient
+                .from('drivers')
+                .update({ status: newStatus })
+                .eq('id', state.currentDriverId);
+            if (error) {
+                console.error("Erro ao atualizar status:", error);
+                showModal("Não foi possível atualizar seu status.");
+                statusToggle.checked = !statusToggle.checked;
+            } else {
+                const driverIndex = state.drivers.findIndex(d => d.id === state.currentDriverId);
+                if (driverIndex !== -1) state.drivers[driverIndex].status = newStatus;
+                await updateDriverStatusButton();
+            }
+        }
+        
+        function parseDestinations(destinationString) {
+            if (!destinationString || typeof destinationString !== 'string') {
+                return [];
+            }
+            const str = destinationString.trim();
+            if (str.startsWith('[') && str.endsWith(']')) {
+                try {
+                    const parsed = JSON.parse(str);
+                    if (Array.isArray(parsed)) {
+                        return parsed.map(d => String(d).trim()).filter(Boolean);
+                    }
+                } catch (e) {
+                    console.warn('Não foi possível interpretar o destino como JSON, tentando extração manual.', str);
+                    const content = str.substring(1, str.length - 1); 
+                    const parts = content.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                    if (parts.length > 0) {
+                        return parts.map(part => part.replace(/"/g, '').trim()).filter(Boolean);
+                    }
+                }
+            }
+            if (str.includes(';')) {
+                return str.split(';').map(d => d.trim()).filter(Boolean);
+            }
+            return [str];
+        }
+
+        function openMapToDestination(rideId) {
+            const ride = state.rides.find(r => r.id === rideId);
+            if (!ride) {
+                showModal("Não foi possível encontrar os dados da corrida.");
+                return;
+            }
+            const origin = (ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) 
+                ? `&origin=${ride.userLocation.lat},${ride.userLocation.lon}` 
+                : '';
+            const destinations = parseDestinations(ride.destination);
+            if (destinations.length > 0) {
+                const destinationPoints = destinations.map(d => encodeURIComponent(d));
+                const finalDestination = destinationPoints.pop();
+                let mapsUrl = `https://www.google.com/maps/dir/?api=1${origin}&destination=${finalDestination}`;
+                if (destinationPoints.length > 0) {
+                    mapsUrl += `&waypoints=${destinationPoints.join('|')}`;
+                }
+                window.open(mapsUrl, '_blank');
+            } else {
+                showModal("Nenhum destino definido para esta corrida.");
+            }
+        }
+
+        function openMapToPickup(rideId) {
+            if (!mapOpenedForRideIds.includes(rideId)) {
+                mapOpenedForRideIds.push(rideId);
+            }
+            const ride = state.rides.find(r => r.id === rideId);
+            if (ride && ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) {
+                const { lat, lon } = ride.userLocation;
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank');
+            } else {
+                showModal("Não foi possível obter a localização do usuário para navegação.");
+            }
+            loadDriverJobs();
+        }
+
+        function loadDriverJobs() {
+            if (!state.currentDriverId) return;
+            const list = document.getElementById('driver-jobs-list');
+            list.innerHTML = '';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const myJobs = state.rides.filter(r => {
+                if (r.driverId !== state.currentDriverId || r.status === 'completed') {
+                    return false;
+                }
+                const isScheduled = r.request_type && r.request_type.trim().toLowerCase() === 'scheduled';
+                const rideDateSource = isScheduled && r.scheduled_datetime ? r.scheduled_datetime : r.requestTime;
+                const rideDate = new Date(rideDateSource);
+                const rideDay = new Date(rideDate.getFullYear(), rideDate.getMonth(), rideDate.getDate());
+                if (isScheduled && rideDay >= today) return true;
+                if (!isScheduled && rideDay.getTime() === today.getTime()) return true;
+                return false;
+            });
+
+            const statsDisplay = document.getElementById('driver-stats-display');
+            const actionableJobCount = myJobs.filter(j => j.status !== 'canceled' && j.status !== 'canceled_by_driver').length;
+            const timestamp = new Date().toLocaleString('pt-BR');
+            statsDisplay.textContent = `${actionableJobCount} solicitações ativas em ${timestamp}`;
+
+            if (myJobs.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-400">Nenhuma corrida para você no momento.</p>';
+                if (driverWatchId) {
+                    navigator.geolocation.clearWatch(driverWatchId);
+                    driverWatchId = null;
+                }
+                return;
+            }
+
+            myJobs.sort((a, b) => {
+                const isA_Actionable = a.status !== 'canceled' && a.status !== 'canceled_by_driver';
+                const isB_Actionable = b.status !== 'canceled' && b.status !== 'canceled_by_driver';
+                if (isA_Actionable && !isB_Actionable) return -1;
+                if (!isA_Actionable && isB_Actionable) return 1;
+                return new Date(b.requestTime) - new Date(a.requestTime);
+            });
+
+            myJobs.forEach(ride => {
+                const card = document.createElement('div');
+                card.className = 'card-gradient p-4 rounded-lg shadow-md border border-white';
+                const isScheduled = ride.request_type && ride.request_type.trim().toLowerCase() === 'scheduled';
+                const typeText = isScheduled ? 'Agendada' : 'Imediata';
+                const typeColor = isScheduled ? 'text-orange-400' : 'text-blue-400';
+                const displayDate = isScheduled && ride.scheduled_datetime ? new Date(ride.scheduled_datetime) : new Date(ride.requestTime);
+                const displayDateTime = displayDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const dateLabel = isScheduled ? 'Agendado para:' : 'Solicitado em:';
+                let statusColor = 'text-yellow-300';
+                if (ride.status === 'canceled' || ride.status === 'canceled_by_driver') {
+                    statusColor = 'text-red-500';
+                }
+
+                let originHtml = '';
+                if (ride.origin_address) {
+                    originHtml = `<div class="mb-3"><p class="text-xs text-gray-400">Origem:</p><p class="font-normal text-gray-300 break-words">${ride.origin_address}</p></div>`;
+                }
+
+                let destinationsHtml = '';
+                const destinations = parseDestinations(ride.destination);
+                if (destinations.length > 1) {
+                    const stops = destinations.slice(0, -1);
+                    const finalDestination = destinations[destinations.length - 1];
+                    let stopsHtml = stops.map((stop, index) => `<div class="mb-1"><p class="text-xs text-gray-400">${stops.length > 1 ? `Ponto de Parada ${index + 1}` : 'Ponto de Parada'}:</p><p class="font-normal text-gray-300 break-words">${stop}</p></div>`).join('');
+                    destinationsHtml = `${stopsHtml}<div><p class="text-xs text-gray-400">Destino Final:</p><p class="font-semibold text-white break-words">${finalDestination}</p></div>`;
+                } else if (destinations.length === 1) {
+                    destinationsHtml = `<p class="text-xs text-gray-400">Destino:</p><p class="font-normal text-gray-300 break-words">${destinations[0]}</p>`;
+                } else {
+                    destinationsHtml = `<p class="text-xs text-gray-400">Destino:</p><p class="font-normal text-gray-300 break-words">N/A</p>`;
+                }
+
+                let content = `
+                    <div class="mb-2"><p class="text-xs text-gray-400">${dateLabel}</p><p class="font-semibold text-white">${displayDateTime}</p></div>
+                    ${originHtml}
+                    <div class="mb-3 space-y-2">${destinationsHtml}</div>
+                    ${ride.observation ? `<div class="mb-3"><p class="text-xs text-gray-400">Observação:</p><p class="font-normal text-yellow-300 break-words">${ride.observation}</p></div>` : ''}
+                    <p class="text-sm text-gray-300 mb-3">Solicitado por: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
+                    <div class="mt-3 pt-3 border-t border-gray-600 flex justify-around items-center text-center">
+                        <div><p class="text-xs text-gray-400 mb-1">TIPO</p><p class="text-sm font-semibold ${typeColor}">${typeText}</p></div>
+                        <div><p class="text-xs text-gray-400 mb-1">STATUS</p><p class="text-sm font-semibold ${statusColor}">${translateStatus(ride.status)}</p></div>
+                    </div>`;
+                let rideSpecificContent = '';
+                if (ride.status === 'accepted') {
+                    if (ride.driverCurrentLocation && ride.userLocation) {
+                        const distance = getDistanceFromLatLonInKm(ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon, ride.userLocation.lat, ride.userLocation.lon);
+                        rideSpecificContent = `<p class="text-sm text-blue-300 mt-2 text-center">Distância até o usuário: ${distance.toFixed(2)} km</p>`;
+                    } else {
+                        rideSpecificContent = `<p class="text-sm text-gray-400 mt-2 text-center">Calculando distância...</p>`;
+                    }
+                }
+                let buttonsContent = '';
+                if (ride.status === 'assigned' || ride.status === 'accepted' || ride.status === 'arrived_pickup') {
+                    buttonsContent = '<div class="mt-4 space-y-2">';
+                    if (ride.status === 'assigned') {
+                        if (isScheduled) {
+                            buttonsContent += `<button onclick="acceptScheduledRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR AGENDAMENTO</button>`;
+                        } else {
+                            buttonsContent += `<button onclick="acceptRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">ACEITAR CORRIDA</button>`;
+                        }
+                    }
+                    if (ride.status === 'accepted') {
+                        if (isScheduled) {
+                            if (mapOpenedForRideIds.includes(ride.id)) {
+                                buttonsContent += `<button onclick="arriveAtPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
+                                buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
+                            } else {
+                                buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
+                            }
+                        } else {
+                            buttonsContent += `<button onclick="arriveAtPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CHEGUEI NO LOCAL DE EMBARQUE</button>`;
+                            buttonsContent += `<button onclick="openMapToPickup(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">MAPA (EMBARQUE)</button>`;
+                        }
+                    }
+                    if (ride.status === 'arrived_pickup') {
+                        buttonsContent += `<button onclick="startTrip(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">INICIAR VIAGEM</button>`;
+                        buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">VER ROTA NO MAPA</button>`;
+                    }
+                    buttonsContent += `<button onclick="promptCancelRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 border border-white">CANCELAR</button></div>`;
+                } else if (ride.status === 'in_progress') {
+                    buttonsContent = '<div class="mt-4 space-y-2">';
+                    const destinations = parseDestinations(ride.destination);
+                    const currentStopIndex = rideProgress[ride.id] || 0;
+                    if (destinations.length > 1 && currentStopIndex < destinations.length - 1) {
+                        buttonsContent += `<button onclick="advanceToNextStop(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">CONFIRMAR CHEGADA NA PARADA ${currentStopIndex + 1}</button>`;
+                    } else {
+                        buttonsContent += `<button onclick="completeRide(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 border border-white">FINALIZAR CORRIDA</button>`;
+                    }
+                    buttonsContent += `<button onclick="openMapToDestination(${ride.id})" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">VER ROTA NO MAPA</button></div>`;
+                }
+                card.innerHTML = content + rideSpecificContent + buttonsContent;
+                list.appendChild(card);
+            });
+        }
+
+        async function acceptRide(rideId) {
+            stopRinging();
+            if (!navigator.geolocation) return showModal("Geolocalização não é suportada.");
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const driverLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
+                const { error } = await supabaseClient.from('rides').update({ status: 'accepted', acceptTime: new Date().toISOString(), driverCurrentLocation: driverLocation }).eq('id', rideId);
+                if (error) return showModal("Não foi possível aceitar a corrida.");
+                startDriverTracking(rideId);
+                openMapToPickup(rideId);
+            }, () => showModal('Não foi possível obter sua localização.'), { enableHighAccuracy: true });
+        }
+        
+        async function acceptScheduledRide(rideId) {
+            stopRinging();
+            const { error } = await supabaseClient.from('rides').update({
+                status: 'accepted',
+                acceptTime: new Date().toISOString()
+            }).eq('id', rideId);
+            if (error) {
+                console.error("Erro ao aceitar agendamento:", error);
+                showModal("Não foi possível aceitar o agendamento.");
+            }
+        }
+
+        async function arriveAtPickup(rideId) {
+            const { error } = await supabaseClient.from('rides').update({ status: 'arrived_pickup' }).eq('id', rideId);
+            if (error) showModal("Não foi possível marcar como 'chegou no local'.");
+        }
+
+        async function startTrip(rideId) {
+            const ride = state.rides.find(r => r.id === rideId);
+            if (ride) {
+                const { error } = await supabaseClient.from('rides').update({ status: 'in_progress' }).eq('id', rideId);
+                if (error) return showModal("Não foi possível iniciar a viagem.");
+                rideProgress[rideId] = 0;
+                saveRideProgress();
+                if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
+                driverWatchId = null;
+                openMapToDestination(rideId);
+            }
+        }
+        
+        async function advanceToNextStop(rideId) {
+            const ride = state.rides.find(r => r.id === rideId);
+            if (!ride) return showModal("Corrida não encontrada.");
+            const currentStopIndex = rideProgress[ride.id] || 0;
+            rideProgress[ride.id] = currentStopIndex + 1;
+            saveRideProgress();
+            loadDriverJobs();
+        }
+
+        async function completeRide(rideId) {
+            const { error } = await supabaseClient.from('rides').update({ status: 'completed' }).eq('id', rideId);
+            if (error) return showModal("Não foi possível finalizar a corrida.");
+            if(rideProgress[rideId]) {
+                delete rideProgress[rideId];
+                saveRideProgress();
+            }
+            if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
+            driverWatchId = null;
+            await fetchAllData();
+            showScreen('driver-selection-screen');
+        }
+
+        function promptCancelRide(rideId) {
+            const onConfirm = () => cancelRideByDriver(rideId);
+            showModal("Tem certeza que deseja cancelar?", onConfirm, true);
+            document.getElementById('modal-confirm').textContent = 'SIM';
+            document.getElementById('modal-cancel').textContent = 'NÃO';
+        }
+
+        async function cancelRideByDriver(rideId) {
+            closeModal();
+            const { error } = await supabaseClient.from('rides').update({ status: 'canceled_by_driver' }).eq('id', rideId);
+            if (error) showModal("Não foi possível cancelar a corrida.");
+        }
+
+        function startDriverTracking(rideId) {
+            if (!navigator.geolocation) return;
+            if (driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
+            driverWatchId = navigator.geolocation.watchPosition(async (position) => {
+                const driverLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
+                const currentRide = state.rides.find(r => r.id === rideId && r.status !== 'completed' && r.status !== 'canceled' && r.status !== 'in_progress');
+                if (currentRide) {
+                    await supabaseClient.from('rides').update({ driverCurrentLocation: driverLocation }).eq('id', rideId);
+                } else {
+                    navigator.geolocation.clearWatch(driverWatchId);
+                    driverWatchId = null;
+                }
+            }, null, { enableHighAccuracy: true });
+        }
+
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function deg2rad(deg) { return deg * (Math.PI / 180); }
+
+        async function fetchAllData() {
+            const { data: drivers, error: dError } = await supabaseClient.from('drivers').select('*');
+            if (dError) console.error('Erro a buscar motoristas:', dError); else state.drivers = drivers;
+            const cols = 'id, origin_address, destination, status, driverId, userName, userCompany, requestTime, userLocation, driverCurrentLocation, request_type, scheduled_datetime, observation';
+            const { data: rides, error: rError } = await supabaseClient.from('rides').select(cols);
+            if (rError) console.error('Erro a buscar corridas:', rError); else state.rides = rides;
+        }
+
+        function setupRealtimeSubscriptions() {
+            const ridesChannel = supabaseClient.channel('public:rides');
+            ridesChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, 
+                async (payload) => {
+                    await fetchAllData(); 
+                    const newRecord = payload.new;
+                    const oldRecord = payload.old;
+                    if (state.currentDriverId && newRecord && newRecord.driverId === state.currentDriverId && newRecord.status === 'assigned' && (!oldRecord || oldRecord.status !== 'assigned')) {
+                        showNewRideNotification(newRecord);
+                    }
+                    if (state.currentDriverId) {
+                        const hasAssignedJob = state.rides.some(r => r.driverId === state.currentDriverId && r.status === 'assigned');
+                        if (!hasAssignedJob) stopRinging();
+                    }
+                    const activeScreenId = document.querySelector('.screen.active')?.id;
+                    if (activeScreenId === 'driver-screen') {
+                        loadDriverJobs();
+                    } else if (activeScreenId === 'driver-selection-screen') {
+                        populateDriverSelection();
+                    }
+                }
+            )
+            .subscribe((status, err) => {
+                if (status === 'SUBSCRIBED') console.log('Successfully subscribed to real-time rides channel!');
+                if (status === 'CHANNEL_ERROR') console.error('Failed to subscribe to rides channel. Error:', err);
+                if (status === 'TIMED_OUT') console.warn('Rides channel subscription timed out.');
+            });
+
+            supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, async () => {
+                await fetchAllData();
+                if (document.querySelector('.screen.active')?.id === 'driver-selection-screen') {
+                    populateDriverSelection();
+                }
+                if (document.querySelector('.screen.active')?.id === 'driver-screen') {
+                    updateDriverStatusButton();
+                }
+            }).subscribe();
+        }
+
+        async function initApp() {
+            loadRideProgress();
+            loadAppIcon();
+            await fetchAllData();
+            setupRealtimeSubscriptions();
+            
+            document.addEventListener('visibilitychange', async () => {
+                if (document.visibilityState === 'visible') {
+                    console.log("App visível. A sincronizar e a verificar o wake lock.");
+                    await manageWakeLock('acquire');
+                    await fetchAllData();
+                    const activeScreen = document.querySelector('.screen.active');
+                    if (activeScreen?.id === 'driver-screen') loadDriverJobs();
+                    else if (activeScreen?.id === 'driver-selection-screen') populateDriverSelection();
+                }
+            });
+
+            const loggedInDriverId = localStorage.getItem('loggedInDriverId');
+            if (loggedInDriverId) {
+                state.currentDriverId = parseInt(loggedInDriverId);
+                const driver = state.drivers.find(d => d.id === state.currentDriverId);
+                if (driver) {
+                    document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
+                    showScreen('driver-screen');
+                } else {
+                    localStorage.removeItem('loggedInDriverId');
+                    showScreen('initial-screen');
+                }
+            } else {
+                showScreen('initial-screen');
+            }
+        }
+
+        function loadAppIcon() {
+            const iconContainer = document.getElementById('app-icon-container');
+            iconContainer.innerHTML = '';
+            if (state.appIcon) {
+                const img = document.createElement('img');
+                img.src = state.appIcon;
+                img.className = 'h-12 w-12 object-contain';
+                img.alt = 'App Icon';
+                iconContainer.appendChild(img);
+            }
+        }
+
+        function translateStatus(status) {
+            const statuses = {
+                'assigned': 'DESIGNADO', 'accepted': 'ACEITO', 'arrived_pickup': 'CHEGOU NO EMBARQUE',
+                'in_progress': 'EM ANDAMENTO', 'completed': 'FINALIZADA', 'canceled': 'CANCELADA',
+                'canceled_by_driver': 'CANCELADO PELO MOTORISTA'
+            };
+            return statuses[status] || status.toUpperCase();
+        }
+        
+        function exportRidesToPdf() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const startDateInput = document.getElementById('start-date').value;
+            const endDateInput = document.getElementById('end-date').value;
+            if (!startDateInput || !endDateInput) {
+                showModal("Por favor, selecione a data inicial e a data final.");
+                return;
+            }
+            const startDate = new Date(startDateInput + 'T00:00:00');
+            const endDate = new Date(endDateInput + 'T23:59:59');
+            if (startDate > endDate) {
+                showModal("A data inicial não pode ser posterior à data final.");
+                return;
+            }
+            const ridesToExport = state.rides.filter(r => {
+                if (r.driverId !== state.currentDriverId) return false;
+                const rideDate = new Date(r.requestTime);
+                return rideDate >= startDate && rideDate <= endDate;
+            });
+            if (ridesToExport.length === 0) {
+                showModal("Nenhum histórico de corrida encontrado para o período selecionado.");
+                return;
+            }
+            const driver = state.drivers.find(d => d.id === state.currentDriverId);
+            const driverName = driver ? driver.name : 'Motorista';
+            const period = `${startDate.toLocaleDateString('pt-BR')} a ${endDate.toLocaleDateString('pt-BR')}`;
+            doc.setFontSize(18);
+            doc.text('Relatório de Corridas', 14, 22);
+            doc.setFontSize(11);
+            doc.text(`Motorista: ${driverName}`, 14, 30);
+            doc.text(`Período: ${period}`, 14, 36);
+            const tableColumn = ["Data", "Usuário", "Destino", "Status"];
+            const tableRows = [];
+            ridesToExport.forEach(ride => {
+                const rideDate = new Date(ride.requestTime).toLocaleString('pt-BR');
+                const rideData = [
+                    rideDate,
+                    ride.userName || 'N/A',
+                    ride.destination,
+                    translateStatus(ride.status)
+                ];
+                tableRows.push(rideData);
+            });
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 40
+            });
+            doc.save(`relatorio_corridas_${driverName.replace(/\s/g, '_')}.pdf`);
+            closeExportModal();
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
+</body>
+</html>
+
+
