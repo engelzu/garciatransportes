@@ -364,6 +364,8 @@
                     <input type="text" id="new-driver-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Nome Completo">
                     <input type="tel" id="new-driver-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Telefone">
                     <input type="text" id="new-driver-plate" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Placa do Carro">
+                    <input type="text" id="new-driver-model" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Modelo do Carro">
+                    <input type="text" id="new-driver-color" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Cor do Carro">
                     <input type="password" id="new-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2" placeholder="Senha">
                     <button onclick="addDriver()" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient">Adicionar</button>
                 </div>
@@ -506,6 +508,8 @@
                 <input type="text" id="modal-input-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Nome">
                 <input type="tel" id="modal-input-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Telefone">
                 <input type="text" id="modal-input-plate" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Placa do Carro">
+                <input type="text" id="modal-input-model" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Modelo do Carro">
+                <input type="text" id="modal-input-color" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Cor do Carro">
                 <input type="password" id="modal-input-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Nova Senha (deixe em branco para manter)">
                 <select id="modal-input-status" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none">
                     <option value="active">Ativo</option>
@@ -700,11 +704,15 @@
                     document.getElementById('modal-input-name').style.display = 'block';
                     document.getElementById('modal-input-phone').style.display = 'block';
                     document.getElementById('modal-input-plate').style.display = 'block';
+                    document.getElementById('modal-input-model').style.display = 'block';
+                    document.getElementById('modal-input-color').style.display = 'block';
                     document.getElementById('modal-input-password').style.display = 'block'; 
                     document.getElementById('modal-input-status').style.display = 'block';
                     document.getElementById('modal-input-name').value = content.name;
                     document.getElementById('modal-input-phone').value = content.phone;
                     document.getElementById('modal-input-plate').value = content.plate;
+                    document.getElementById('modal-input-model').value = content.car_model || '';
+                    document.getElementById('modal-input-color').value = content.car_color || '';
                     document.getElementById('modal-input-status').value = content.status;
                 } else if (content.type === 'edit-user') {
                     document.getElementById('modal-input-matricula').style.display = 'block';
@@ -1445,6 +1453,7 @@
                             <div>
                                 <div>${driver.name}</div>
                                 <div class="text-xs text-gray-400">${driver.phone}</div>
+                                <div class="text-xs text-gray-500">${driver.car_model || ''} - ${driver.car_color || ''}</div>
                             </div>
                         </div>
                     </td>
@@ -1464,13 +1473,32 @@
             const nameInput = document.getElementById('new-driver-name');
             const phoneInput = document.getElementById('new-driver-phone');
             const plateInput = document.getElementById('new-driver-plate');
+            const modelInput = document.getElementById('new-driver-model');
+            const colorInput = document.getElementById('new-driver-color');
             const passwordInput = document.getElementById('new-driver-password');
-            const name = nameInput.value.trim(); const phone = phoneInput.value.trim();
-            const plate = plateInput.value.trim(); const password = passwordInput.value.trim();
-            if (!name || !phone || !plate || !password) { showModal('Todos os campos são obrigatórios.'); return; }
-            const { error } = await supabaseClient.from('drivers').insert([{ name, phone, plate, password, status: 'inactive' }]);
-            if (error) { console.error('Error adding driver:', error); showModal('Erro ao adicionar motorista.'); } 
-            else { nameInput.value = phoneInput.value = plateInput.value = passwordInput.value = ''; showModal('Motorista adicionado com sucesso!'); }
+            
+            const name = nameInput.value.trim(); 
+            const phone = phoneInput.value.trim();
+            const plate = plateInput.value.trim();
+            const model = modelInput.value.trim();
+            const color = colorInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (!name || !phone || !plate || !password || !model || !color) { 
+                showModal('Todos os campos são obrigatórios.'); 
+                return; 
+            }
+            const { error } = await supabaseClient.from('drivers').insert([{ 
+                name, phone, plate, password, status: 'inactive', car_model: model, car_color: color 
+            }]);
+
+            if (error) { 
+                console.error('Error adding driver:', error); 
+                showModal('Erro ao adicionar motorista.'); 
+            } else { 
+                nameInput.value = phoneInput.value = plateInput.value = passwordInput.value = modelInput.value = colorInput.value = ''; 
+                showModal('Motorista adicionado com sucesso!'); 
+            }
         }
 
         function editDriver(driverId) {
@@ -1480,17 +1508,41 @@
                 const newName = document.getElementById('modal-input-name').value.trim();
                 const newPhone = document.getElementById('modal-input-phone').value.trim();
                 const newPlate = document.getElementById('modal-input-plate').value.trim();
+                const newModel = document.getElementById('modal-input-model').value.trim();
+                const newColor = document.getElementById('modal-input-color').value.trim();
                 const newPassword = document.getElementById('modal-input-password').value.trim();
                 const newStatus = document.getElementById('modal-input-status').value;
-                if (newName && newPhone && newPlate) {
-                    const updateData = { name: newName, phone: newPhone, plate: newPlate, status: newStatus };
+
+                if (newName && newPhone && newPlate && newModel && newColor) {
+                    const updateData = { 
+                        name: newName, 
+                        phone: newPhone, 
+                        plate: newPlate, 
+                        status: newStatus,
+                        car_model: newModel,
+                        car_color: newColor
+                    };
                     if (newPassword) updateData.password = newPassword;
                     const { error } = await supabaseClient.from('drivers').update(updateData).eq('id', driverId);
-                    if (error) { console.error('Error updating driver:', error); showModal('Erro ao atualizar motorista.'); } 
-                    else { closeModal(); }
-                } else { showModal('Nome, Telefone e Placa são obrigatórios.'); }
+                    if (error) { 
+                        console.error('Error updating driver:', error); 
+                        showModal('Erro ao atualizar motorista.'); 
+                    } else { 
+                        closeModal(); 
+                    }
+                } else { 
+                    showModal('Nome, Telefone, Placa, Modelo e Cor são obrigatórios.'); 
+                }
             };
-            showModal('Editar dados do motorista:', onConfirm, true, { type: 'edit-driver', name: driver.name, phone: driver.phone, plate: driver.plate, status: driver.status });
+            showModal('Editar dados do motorista:', onConfirm, true, { 
+                type: 'edit-driver', 
+                name: driver.name, 
+                phone: driver.phone, 
+                plate: driver.plate, 
+                car_model: driver.car_model,
+                car_color: driver.car_color,
+                status: driver.status 
+            });
         }
 
         function promptDeleteDriver(driverId) {
@@ -2409,5 +2461,3 @@
    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
 </body>
 </html>
-
-
