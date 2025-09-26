@@ -12,12 +12,12 @@
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: black; /* Fundo preto */
+            background-color: black;
         }
         .button-gradient {
             background: linear-gradient(to right, #6d28d9, #4f46e5);
-            border: 1px solid white; /* Contorno branco nos botões */
-            color: white; /* Garante que o texto seja branco */
+            border: 1px solid white;
+            color: white;
         }
         .button-gradient:hover {
             background: linear-gradient(to right, #4f46e5, #6d28d9);
@@ -37,10 +37,10 @@
              background: linear-gradient(135deg, #1f2937, #374151);
         }
         .screen {
-            display: none; /* Todas as telas escondidas por padrão */
+            display: none;
         }
         .screen.active {
-            display: block; /* Exibe a tela ativa */
+            display: block;
         }
         .loader {
             border: 4px solid #f3f3f3;
@@ -98,7 +98,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 80vh; /* Garante que o conteúdo ocupe uma parte visível da tela */
+            min-height: 80vh;
         }
     </style>
 </head>
@@ -146,7 +146,6 @@
                 <p id="wake-lock-status-message" class="text-xs text-center text-gray-400 mt-2"></p>
             </div>
 
-            <!-- NOVO: Botão para testar notificações -->
             <div class="mb-4 text-center">
                 <button onclick="testNotification()" class="w-full py-2 px-4 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 border border-white">Testar Notificação</button>
             </div>
@@ -233,6 +232,8 @@
         const ringtone = document.getElementById('ringtone');
         const silentAudio = document.getElementById('silent-audio');
 
+        // --- CORREÇÃO: Lógica do Service Worker removida para evitar erro de protocolo 'blob:' ---
+
         function requestNotificationPermission() {
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission().then(permission => {
@@ -245,8 +246,8 @@
                 });
             }
         }
-
-        // --- NOVO: Função para testar notificações ---
+        
+        // --- CORREÇÃO: Função de teste revertida para o método padrão do navegador ---
         function testNotification() {
             if (!('Notification' in window)) {
                 showModal('Este navegador não suporta notificações.');
@@ -267,7 +268,8 @@
                 requestNotificationPermission();
             }
         }
-
+        
+        // --- CORREÇÃO: Notificação de nova corrida revertida para o método padrão ---
         function showNewRideNotification(ride) {
             startRinging();
             if (!('Notification' in window) || Notification.permission !== 'granted') {
@@ -472,7 +474,6 @@
             });
         }
 
-        // --- MODIFICADO: Lógica de login melhorada ---
         function selectDriver(driverId) {
             tempDriverId = driverId;
             const driver = state.drivers.find(d => d.id === driverId);
@@ -827,6 +828,7 @@
         async function initApp() {
             loadRideProgress();
             loadAppIcon();
+            // CORREÇÃO: Chamada para registrar o Service Worker foi removida.
             await fetchAllData();
             setupRealtimeSubscriptions();
             
