@@ -1,21 +1,30 @@
 {
-  "name": "Garcia Transportes",
-  "short_name": "Garcia",
-  "start_url": "/motoristateste.html",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0d47a1",
-  "orientation": "portrait",
-  "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+"name": "Garcia Transportes",
+"short_name": "Garcia",
+"start_url": "/motoristateste.html",
+"display": "standalone",
+"background_color": "#ffffff",
+"theme_color": "#0d47a1",
+"orientation": "portrait",
+"icons": [
+{
+"src": "/icon-192.png",
+"sizes": "192x192",
+"type": "image/png"
+},
+{
+"src": "/icon-512.png",
+"sizes": "512x512",
+"type": "image/png"
+}
+],
+"shortcuts": [
+{
+"name": "Visualização Passageiro",
+"short_name": "Passageiro",
+"description": "Acessar a interface de busca e solicitação de viagens.",
+"url": "/passageiro.html",
+"icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+}
+]
 }
