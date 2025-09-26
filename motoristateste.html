@@ -239,13 +239,15 @@
         const ringtone = document.getElementById('ringtone');
         const silentAudio = document.getElementById('silent-audio');
 
-        // --- CORREÇÃO: Service Worker agora inclui um 'fetch handler' para ser instalável ---
+        // --- Service Worker agora inclui um 'fetch handler' para ser instalável ---
         const swCode = `
             self.addEventListener('install', event => {
                 self.skipWaiting();
             });
 
             self.addEventListener('fetch', event => {
+                // Estratégia simples: apenas busca na rede.
+                // Isso é suficiente para o Chrome considerar o PWA instalável.
                 event.respondWith(fetch(event.request));
             });
 
