@@ -246,6 +246,7 @@
             }
         }
 
+        // --- MODIFICADO: Função de notificação melhorada ---
         function showNewRideNotification(ride) {
             startRinging();
             if (!('Notification' in window) || Notification.permission !== 'granted') {
@@ -253,14 +254,28 @@
                 return;
             }
             const notificationTitle = 'Nova Solicitação de Corrida!';
+            // Limpa o destino para melhor visualização na notificação
+            const destinations = parseDestinations(ride.destination);
+            const destinationText = destinations.length > 0 ? destinations.join(' -> ') : 'N/A';
+
             const notificationOptions = {
-                body: `Destino: ${ride.destination}`,
-                icon: 'images/destino.png',
-                tag: `ride-${ride.id}`
+                body: `Destino: ${destinationText}\nToque para ver os detalhes.`,
+                icon: 'images/destino.png', // Ícone da notificação
+                tag: `ride-${ride.id}`, // Agrupa notificações da mesma corrida
+                requireInteraction: true, // Mantém a notificação até que o usuário interaja
+                vibrate: [400, 200, 400] // Padrão de vibração: vibra, pausa, vibra
             };
+
             const notification = new Notification(notificationTitle, notificationOptions);
+            
             notification.onclick = () => {
+                // Esta função foca na janela/aba do aplicativo quando a notificação é clicada.
+                // Em muitos dispositivos móveis, isso trará o app para a frente.
                 window.focus();
+                // Garante que o usuário seja levado para a tela correta
+                if (state.currentDriverId) {
+                    showScreen('driver-screen');
+                }
                 notification.close();
             };
         }
@@ -982,5 +997,4 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
 </body>
 </html>
-
 
