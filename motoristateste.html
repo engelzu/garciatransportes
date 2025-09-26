@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GARCIA TRANSPORTES - Motorista</title>
+    <!-- NOVO: Manifesto para transformar o site em um aplicativo instalável (PWA) -->
+    <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Motorista%20Garcia%22%2C%22short_name%22%3A%22Motorista%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23000000%22%2C%22theme_color%22%3A%22%23000000%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22images/motorista.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image/png%22%7D%2C%7B%22src%22%3A%22images/motorista.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image/png%22%7D%5D%7D">
+    <meta name="theme-color" content="#000000">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -236,11 +239,44 @@
         const ringtone = document.getElementById('ringtone');
         const silentAudio = document.getElementById('silent-audio');
 
+        // --- LÓGICA DO SERVICE WORKER PARA NOTIFICAÇÕES EM SEGUNDO PLANO ---
+        const swCode = `
+            self.addEventListener('notificationclick', event => {
+                event.notification.close();
+                event.waitUntil(
+                    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+                        if (clientList.length > 0) {
+                            let client = clientList[0];
+                            for (let i = 0; i < clientList.length; i++) {
+                                if (clientList[i].focused) {
+                                    client = clientList[i];
+                                }
+                            }
+                            return client.focus();
+                        }
+                        return clients.openWindow('.');
+                    })
+                );
+            });
+        `;
+
+        async function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const blob = new Blob([swCode], { type: 'application/javascript' });
+                    const swUrl = URL.createObjectURL(blob);
+                    const registration = await navigator.serviceWorker.register(swUrl);
+                    console.log('Service Worker registrado com sucesso:', registration);
+                } catch (error) {
+                    console.error('Falha ao registrar o Service Worker:', error);
+                }
+            }
+        }
+        
         function requestNotificationPermission() {
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission().then(permission => {
                     if (permission === 'granted') {
-                        console.log('Permissão para notificações concedida.');
                         showModal('Notificações ativadas com sucesso!');
                     } else {
                         showModal('Você não receberá alertas de corrida com o app minimizado se não permitir as notificações.');
@@ -250,40 +286,45 @@
             }
         }
         
-        function testNotification() {
-            if (!('Notification' in window)) {
+        async function testNotification() {
+            if (!('serviceWorker' in navigator) || !('Notification' in window)) {
                 showModal('Este navegador não suporta notificações.');
                 return;
             }
             if (Notification.permission === 'granted') {
-                const notification = new Notification('Teste de Notificação', {
-                    body: 'Se você vê e sente esta notificação, está tudo certo!',
-                    icon: 'images/destino.png',
-                    vibrate: [400, 200, 400],
-                    requireInteraction: true,
-                });
-                notification.onclick = () => { window.focus(); notification.close(); };
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    registration.showNotification('Teste de Notificação', {
+                        body: 'Se você vê e sente esta notificação, está tudo certo!',
+                        icon: 'images/motorista.png',
+                        vibrate: [400, 200, 400],
+                        requireInteraction: true,
+                    });
+                } catch(e) {
+                    showModal("Falha ao enviar notificação de teste. Verifique as permissões.")
+                    console.error("Erro no teste de notificação:", e)
+                }
             } else if (Notification.permission === 'denied') {
-                showModal('As notificações estão bloqueadas. Por favor, verifique as configurações do seu navegador e do seu celular.');
+                showModal('As notificações estão bloqueadas. Por favor, verifique as configurações do seu celular.');
             } else {
                 showModal('Por favor, permita as notificações quando solicitado para receber alertas de corrida.');
                 requestNotificationPermission();
             }
         }
         
-        function showNewRideNotification(ride) {
+        async function showNewRideNotification(ride) {
             startRinging();
-            if (!('Notification' in window) || Notification.permission !== 'granted') {
-                console.warn('As notificações Pop-up estão bloqueadas.');
+            if (!('serviceWorker' in navigator) || !('Notification' in window) || Notification.permission !== 'granted') {
+                console.warn('As notificações Pop-up estão bloqueadas ou Service Worker não é suportado.');
                 return;
             }
             const notificationTitle = 'Nova Solicitação de Corrida!';
             const destinations = parseDestinations(ride.destination);
             const destinationText = destinations.length > 0 ? destinations.join(' -> ') : 'N/A';
-            
+
             const notificationOptions = {
                 body: `Destino: ${destinationText}\nToque para ver os detalhes.`,
-                icon: 'images/destino.png',
+                icon: 'images/motorista.png',
                 tag: `ride-${ride.id}`,
                 requireInteraction: true,
                 vibrate: [400, 200, 400],
@@ -291,19 +332,13 @@
                     { action: 'open_app', title: 'Ver Corrida' }
                 ]
             };
-
-            const notification = new Notification(notificationTitle, notificationOptions);
             
-            notification.onclick = (event) => {
-                event.preventDefault(); 
-                window.focus();
-                setTimeout(() => {
-                  if (state.currentDriverId) {
-                    showScreen('driver-screen');
-                  }
-                }, 150);
-                notification.close();
-            };
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                registration.showNotification(notificationTitle, notificationOptions);
+            } catch (e) {
+                console.error("Falha ao mostrar notificação via Service Worker:", e);
+            }
         }
 
         function unlockAudio() {
@@ -610,12 +645,10 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
-            // ** LÓGICA DE FILTRAGEM RESTAURADA PARA A VERSÃO ORIGINAL E FUNCIONAL **
             const myJobs = state.rides.filter(r => {
-                if (r.driverId !== state.currentDriverId) { // Adicionado para garantir que só pegue corridas do motorista logado
+                if (r.driverId !== state.currentDriverId) {
                     return false;
                 }
-                // Mostra corridas 'completed' do dia, mas principalmente as que precisam de ação
                  if (r.status === 'completed') {
                     const rideDate = new Date(r.requestTime);
                     return rideDate.toDateString() === today.toDateString();
@@ -852,6 +885,7 @@
         async function initApp() {
             loadRideProgress();
             loadAppIcon();
+            registerServiceWorker(); // <-- REGISTRA O SERVICE WORKER
             checkInitialNotificationPermission();
             await fetchAllData();
             setupRealtimeSubscriptions();
