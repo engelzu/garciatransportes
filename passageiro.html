@@ -504,7 +504,7 @@
                 scheduledDateTime = null;
                 isProcessingRequest = false;
 
-                checkUserRideStatus(); 
+                await checkUserRideStatus(); 
                 showScreen('user-screen');
             } else {
                 errorEl.textContent = 'Matrícula ou senha incorreta!';
@@ -548,7 +548,7 @@
             }
         }
 
-        function showScreen(screenId) {
+        async function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             const activeScreen = document.getElementById(screenId);
             if (activeScreen) {
@@ -561,7 +561,7 @@
 
             if (screenId === 'user-screen' && state.currentUser) {
                 updateUserScreenView(); 
-                checkUserRideStatus();
+                await checkUserRideStatus();
             } else if (state.userStatusInterval) {
                 clearInterval(state.userStatusInterval);
                 state.userStatusInterval = null;
@@ -612,9 +612,21 @@
 
             } catch (error) {
                 let userMessage = "Não foi possível obter sua localização. Verifique as permissões do navegador.";
-                if (error.code === 1) userMessage = "Você negou a permissão de localização.";
+                if (error && error.code) {
+                    switch (error.code) {
+                        case 1: // PERMISSION_DENIED
+                            userMessage = "Você negou a permissão de localização.";
+                            break;
+                        case 2: // POSITION_UNAVAILABLE
+                            userMessage = "Informações de localização não estão disponíveis no momento.";
+                            break;
+                        case 3: // TIMEOUT
+                            userMessage = "A solicitação para obter a localização expirou.";
+                            break;
+                    }
+                }
                 showModal('modal', userMessage);
-                console.error('Erro ao obter localização:', error);
+                console.error('Erro detalhado ao obter localização:', error);
                 originInput.value = '';
                 originInput.disabled = false;
             }
@@ -712,13 +724,12 @@
                     throw new Error('Usuário não encontrado. Por favor, faça login novamente.');
                 }
 
-                // *** ALTERAÇÃO APLICADA AQUI ***
                 let newRideData = {
                     origin_address: originAddress,
                     destination: JSON.stringify(destinations),
                     observation: observation,
                     passenger_count: parseInt(passengerCount),
-                    status: 'pending_approval', // Alterado de 'requested'
+                    status: 'pending_approval',
                     userId: currentUser.id,
                     userName: currentUser.name,
                     userCompany: currentUser.company,
@@ -727,10 +738,9 @@
                     request_type: selectedRequestType
                 };
 
-                // *** ALTERAÇÃO APLICADA AQUI ***
                 if (selectedRequestType === 'scheduled' && scheduledDateTime) {
                     newRideData.scheduled_datetime = scheduledDateTime;
-                    newRideData.status = 'pending_approval'; // Alterado de 'scheduled'
+                    newRideData.status = 'pending_approval';
                 }
 
                 const { data, error } = await supabaseClient.from('rides').insert([newRideData]).select().single();
@@ -751,7 +761,7 @@
                 selectedRequestType = '';
                 scheduledDateTime = null;
 
-                checkUserRideStatus(); 
+                await checkUserRideStatus(); 
 
             } catch (error) {
                 console.error("Erro detalhado no processo de solicitação:", error);
@@ -784,7 +794,7 @@
 
                 requestForm.classList.add('hidden');
                 userStatusDiv.classList.remove('hidden');
-                updateUserStatusMessage(activeRide);
+                await updateUserStatusMessage(activeRide);
                 
                 if (activeRide.status === 'arrived_pickup') {
                     chegueiImage.classList.remove('hidden');
@@ -821,14 +831,14 @@
                 if (!state.currentUserRideId) {
                     clearInterval(state.userStatusInterval); 
                     state.userStatusInterval = null;
-                    checkUserRideStatus(); 
+                    await checkUserRideStatus(); 
                     return;
                 }
                 
                 const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
                 
                 if (myRide && !['completed', 'canceled', 'rejected'].includes(myRide.status)) {
-                   updateUserStatusMessage(myRide); 
+                   await updateUserStatusMessage(myRide); 
                 } else {
                     clearInterval(state.userStatusInterval);
                     state.userStatusInterval = null;
@@ -851,7 +861,7 @@
             }
         }
 
-        function updateUserStatusMessage(ride) {
+        async function updateUserStatusMessage(ride) {
             const statusMessageEl = document.getElementById('user-status-message');
             const chegueiImage = document.getElementById('cheguei-image');
             const allIcons = document.querySelectorAll('#user-status [id^="status-icon-"]');
@@ -870,6 +880,45 @@
 
             let message = '';
             let scheduleInfo = '';
+            let driverInfo = ''; 
+
+            if (ride.driverId && ['assigned', 'accepted', 'arrived_pickup', 'in_progress'].includes(ride.status)) {
+                const { data: driver, error } = await supabaseClient
+                    .from('drivers')
+                    .select('name, plate, car_model, car_color')
+                    .eq('id', ride.driverId)
+                    .single();
+
+                if (error) {
+                    console.error('Error fetching driver details:', error);
+                }
+
+                if (driver) {
+                     driverInfo = `
+                        <div class="mt-4 p-3 bg-gray-800 rounded-lg text-left border border-gray-600">
+                            <p class="font-semibold text-base mb-3 text-cyan-400">Motorista a caminho: <span class="text-white font-bold text-lg">${ride.driverName || driver.name || 'N/A'}</span></p>
+                            <div class="flex justify-between items-center">
+                                <div class="space-y-1">
+                                    <p class="text-lg"><strong>Modelo:</strong> ${driver.car_model || 'N/A'}</p>
+                                </div>
+                                <div class="border-2 border-gray-400 rounded-lg py-1 px-3 flex flex-col items-center justify-center">
+                                    <span class="text-base font-semibold">${(driver.car_color || 'N/A').toUpperCase()}</span>
+                                    <div class="flex items-baseline space-x-2">
+                                        <span class="text-base font-bold">PLACA</span>
+                                        <span class="text-2xl font-bold tracking-wider">${driver.plate || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (ride.driverName) {
+                    driverInfo = `
+                        <div class="mt-4 p-3 bg-gray-800 rounded-lg text-left text-sm border border-gray-600">
+                           <p class="font-semibold text-base mb-2 text-cyan-400">Motorista a caminho: <span class="text-white font-bold text-lg">${ride.driverName}</span></p>
+                        </div>
+                    `;
+                }
+            }
             
             if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
                 const scheduledDate = new Date(ride.scheduled_datetime);
@@ -892,16 +941,16 @@
                     getIcon('searching').classList.remove('hidden');
                     break;
                 case 'assigned':
-                    message = `Motorista ${ride.driverName || 'designado'} foi notificado. Aguardando aceite...`;
+                    message = `Motorista designado foi notificado. Aguardando aceite...`;
                     getIcon('searching').classList.remove('hidden');
                     break;
                 case 'accepted':
-                    message = `Motorista ${ride.driverName || 'designado'} está a caminho!`;
+                    message = `Seu motorista está a caminho!`;
                     getIcon('en-route').innerHTML = `<img src="images/aceitou.png" alt="Motorista Aceitou" class="h-20 w-20 mx-auto">`;
                     getIcon('en-route').classList.remove('hidden');
                     break;
                 case 'arrived_pickup':
-                    message = `Seu motorista, ${ride.driverName || 'designado'}, chegou!`;
+                    message = `Seu motorista chegou!`;
                     chegueiImage.classList.remove('hidden');
                     if (arrivalSound) {
                         arrivalSound.play().catch(e => console.warn("A reprodução automática de áudio foi bloqueada pelo navegador.", e));
@@ -923,7 +972,7 @@
                     break;
             }
 
-            statusMessageEl.innerHTML = message + scheduleInfo;
+            statusMessageEl.innerHTML = message + scheduleInfo + driverInfo; 
             
             if (ride.request_type === 'scheduled' && ['pending_approval', 'approved', 'scheduled', 'assigned', 'accepted'].includes(ride.status)) {
                 editScheduleBtn.classList.remove('hidden');
@@ -996,7 +1045,7 @@
                 if (state.currentUser) {
                     document.getElementById('user-welcome-message').textContent = `Olá, ${state.currentUser.name}!`;
                     setupRealtimeSubscriptions();
-                    showScreen('user-screen');
+                    await showScreen('user-screen');
                 } else {
                     logoutUser();
                 }
@@ -1133,7 +1182,7 @@
                 `;
                 tbody.appendChild(row);
             });
-            table.appendChild(table);
+            table.appendChild(tbody); 
             historyContainer.appendChild(table); 
         }
 
@@ -1276,3 +1325,4 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places" async defer></script>
 </body>
 </html>
+
