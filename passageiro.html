@@ -896,9 +896,10 @@
                 if (driver) {
                      driverInfo = `
                         <div class="mt-4 p-3 bg-gray-800 rounded-lg text-left border border-gray-600">
-                            <p class="font-semibold text-base mb-3 text-cyan-400">Motorista a caminho: <span class="text-white font-bold text-lg">${ride.driverName || driver.name || 'N/A'}</span></p>
+                            <p class="font-semibold text-center text-lg mb-3 text-cyan-400">Motorista a caminho</p>
+                            <p class="text-center text-xl font-bold mb-3">${ride.driverName || driver.name || 'N/A'}</p>
                             <div class="flex justify-between items-center">
-                                <div class="space-y-1">
+                                <div class="space-y-1 text-center flex-1">
                                     <p class="text-lg"><strong>Modelo:</strong> ${driver.car_model || 'N/A'}</p>
                                 </div>
                                 <div class="border-2 border-gray-400 rounded-lg py-1 px-3 flex flex-col items-center justify-center">
@@ -914,7 +915,8 @@
                 } else if (ride.driverName) {
                     driverInfo = `
                         <div class="mt-4 p-3 bg-gray-800 rounded-lg text-left text-sm border border-gray-600">
-                           <p class="font-semibold text-base mb-2 text-cyan-400">Motorista a caminho: <span class="text-white font-bold text-lg">${ride.driverName}</span></p>
+                           <p class="font-semibold text-center text-lg mb-2 text-cyan-400">Motorista a caminho</p>
+                           <p class="text-center text-xl font-bold">${ride.driverName}</p>
                         </div>
                     `;
                 }
