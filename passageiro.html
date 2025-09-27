@@ -805,7 +805,12 @@
                 startUserStatusCheck(); 
             } else {
                 if(activeRide && activeRide.status === 'rejected'){
-                     showModal('modal', 'Sua solicitação de corrida não foi aprovada pela sua empresa.');
+                    const seenRejectedId = localStorage.getItem('seenRejectedRideId');
+                    if (String(activeRide.id) !== seenRejectedId) {
+                        showModal('modal', 'Sua solicitação de corrida não foi aprovada pela sua empresa.', () => {
+                            localStorage.setItem('seenRejectedRideId', activeRide.id);
+                        });
+                    }
                 }
                 state.currentUserRideId = null;
                 localStorage.removeItem('currentUserRideId');
@@ -1327,4 +1332,3 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places" async defer></script>
 </body>
 </html>
-
