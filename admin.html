@@ -1117,6 +1117,8 @@
 
             const requestedRides = state.rides.filter(r => r.status === 'requested' || r.status === 'approved' || r.status === 'pending_approval' || r.status === 'scheduled');
             
+            requestedRides.sort((a, b) => new Date((a.request_type === 'scheduled' && a.scheduled_datetime) || a.requestTime) - new Date((b.request_type === 'scheduled' && b.scheduled_datetime) || b.requestTime));
+
             // --- Cálculos para o painel de status ---
             const solicitadoCount = state.rides.filter(r => ['requested', 'approved', 'pending_approval'].includes(r.status)).length;
             const agendadaCount = state.rides.filter(r => r.status === 'scheduled').length;
@@ -1302,7 +1304,7 @@
                     <tbody>
             `;
         
-            ridesWithDistance.sort((a, b) => new Date(a.requestTime) - new Date(b.requestTime));
+            ridesWithDistance.sort((a, b) => new Date((a.request_type === 'scheduled' && a.scheduled_datetime) || a.requestTime) - new Date((b.request_type === 'scheduled' && b.scheduled_datetime) || b.requestTime));
         
             ridesWithDistance.forEach(ride => {
                 const rideUser = state.users.find(u => u.id === ride.userId);
