@@ -1150,39 +1150,30 @@
                     const card = document.createElement('div');
                     card.className = 'card-gradient p-4 rounded-lg shadow-md';
 
+                    const originAddress = cleanAddressString(ride.origin_address);
                     const destinationAddress = cleanAddressString(ride.destination);
-                    let distanceInfo = '';
+                    let distanceInfo = `<p class="text-sm text-gray-500">Distância: Dados insuficientes</p>`;
 
-                    let location = ride.userLocation;
-                    if (typeof location === 'string') {
+                    if (originAddress && destinationAddress) {
                         try {
-                           location = JSON.parse(location);
-                        } catch(e) {
-                           console.error("Falha ao analisar userLocation:", ride.userLocation);
-                           location = null;
-                        }
-                    }
+                            const [originCoords, destCoords] = await Promise.all([
+                                geocodeAddress(originAddress),
+                                geocodeAddress(destinationAddress)
+                            ]);
 
-                    if (location && typeof location.lat === 'number' && typeof location.lon === 'number' && destinationAddress) {
-                        try {
-                            const destinationCoords = await geocodeAddress(destinationAddress);
-                            if (destinationCoords) {
+                            if (originCoords && destCoords) {
                                 const distanceKm = getDistanceFromLatLonInKm(
-                                    location.lat,
-                                    location.lon,
-                                    destinationCoords.lat,
-                                    destinationCoords.lng
+                                    originCoords.lat, originCoords.lng,
+                                    destCoords.lat, destCoords.lng
                                 ).toFixed(1);
                                 distanceInfo = `<p class="font-semibold">Distância: <span class="font-normal">${distanceKm} km</span></p>`;
                             } else {
-                                distanceInfo = `<p class="text-sm text-red-400">Distância: Destino inválido</p>`;
+                                distanceInfo = `<p class="text-sm text-red-400">Distância: Endereço inválido</p>`;
                             }
                         } catch (error) {
-                            console.error(`Falha ao calcular distância para o destino "${destinationAddress}":`, error);
+                            console.error(`Falha ao calcular distância:`, error);
                             distanceInfo = `<p class="text-sm text-red-400">Distância: Erro ao calcular</p>`;
                         }
-                    } else {
-                        distanceInfo = `<p class="text-sm text-gray-500">Distância: Dados insuficientes</p>`;
                     }
 
                     let rideTypeInfo = '';
@@ -1254,31 +1245,24 @@
 
             const ridesWithDistancePromises = ongoingRides.map(async (ride) => {
                 let distanceKm = 'N/D';
+                const originAddress = cleanAddressString(ride.origin_address);
                 const destinationAddress = cleanAddressString(ride.destination);
 
-                let location = ride.userLocation;
-                if (typeof location === 'string') {
+                if (originAddress && destinationAddress) {
                     try {
-                        location = JSON.parse(location);
-                    } catch(e) {
-                        console.error("Falha ao analisar userLocation:", ride.userLocation);
-                        location = null;
-                    }
-                }
+                        const [originCoords, destCoords] = await Promise.all([
+                            geocodeAddress(originAddress),
+                            geocodeAddress(destinationAddress)
+                        ]);
 
-                if (location && typeof location.lat === 'number' && typeof location.lon === 'number' && destinationAddress) {
-                    try {
-                        const destinationCoords = await geocodeAddress(destinationAddress);
-                        if (destinationCoords) {
+                        if (originCoords && destCoords) {
                             distanceKm = getDistanceFromLatLonInKm(
-                                location.lat,
-                                location.lon,
-                                destinationCoords.lat,
-                                destinationCoords.lng
+                                originCoords.lat, originCoords.lng,
+                                destCoords.lat, destCoords.lng
                             ).toFixed(1);
                         }
                     } catch (error) {
-                        console.error(`Falha ao calcular distância para o destino "${destinationAddress}":`, error);
+                        console.error(`Falha ao calcular distância para a corrida ${ride.id}:`, error);
                         distanceKm = 'Erro';
                     }
                 }
@@ -2303,26 +2287,27 @@
             }
 
             const rowPromises = data.map(async (ride) => {
-                let distanceKm = 'N/D'; 
+                let distanceKm = 'N/D';
+                const originAddress = cleanAddressString(ride.origin_address);
                 const destinationAddress = cleanAddressString(ride.destination);
 
-                let location = ride.userLocation;
-                if (typeof location === 'string') {
+                if (originAddress && destinationAddress) {
                     try {
-                        location = JSON.parse(location);
-                    } catch(e) {
-                        console.error("Falha ao analisar userLocation:", ride.userLocation);
-                        location = null;
-                    }
-                }
+                        const [originCoords, destCoords] = await Promise.all([
+                            geocodeAddress(originAddress),
+                            geocodeAddress(destinationAddress)
+                        ]);
 
-                if (location && typeof location.lat === 'number' && typeof location.lon === 'number' && destinationAddress) {
-                    try {
-                        const destCoords = await geocodeAddress(destinationAddress);
-                        if(destCoords) {
-                            distanceKm = getDistanceFromLatLonInKm(location.lat, location.lon, destCoords.lat, destCoords.lng).toFixed(2); 
+                        if (originCoords && destCoords) {
+                            distanceKm = getDistanceFromLatLonInKm(
+                                originCoords.lat, originCoords.lng,
+                                destCoords.lat, destCoords.lng
+                            ).toFixed(2);
                         }
-                    } catch (e) { distanceKm = 'Erro'; }
+                    } catch (e) {
+                        console.error(`Erro ao calcular distância para a corrida ${ride.id}:`, e);
+                        distanceKm = 'Erro';
+                    }
                 }
 
                 const statusInfo = translateStatus(ride.status);
