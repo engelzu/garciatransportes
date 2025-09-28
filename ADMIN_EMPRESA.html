@@ -105,12 +105,14 @@
         <div id="company-management-screen" class="screen">
             <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Gerenciar Empresas</h2><button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button></div>
             <div class="card-gradient p-4 rounded-lg mb-6">
-                <h3 class="text-lg font-semibold mb-2">Adicionar/Editar Empresa</h3>
+                <h3 id="company-form-title" class="text-lg font-semibold mb-2">Adicionar Empresa</h3>
+                <input type="hidden" id="editing-company-id">
                 <div class="flex gap-2 mb-2">
                     <input type="text" id="new-company-name" placeholder="Nome da Empresa" class="w-full p-2 rounded-lg">
                     <input type="text" id="new-company-password" placeholder="Senha" class="w-full p-2 rounded-lg">
                 </div>
                 <button onclick="addOrUpdateCompany()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar</button>
+                <button id="cancel-edit-btn" onclick="cancelEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
             </div>
             <div id="company-list-container" class="space-y-3"></div>
         </div>
@@ -463,13 +465,7 @@
                 alert('Erro ao aprovar a corrida: ' + error.message);
             } else {
                 alert('Corrida aprovada com sucesso!');
-                const card = document.getElementById(`ride-card-${rideId}`);
-                if(card) card.remove();
-
-                const container = document.getElementById('pending-rides-container');
-                if (!container.hasChildNodes() || container.children.length === 0) {
-                    container.innerHTML = '<p class="text-center text-gray-400">Nenhuma solicitação pendente no momento.</p>';
-                }
+                loadPendingRides(); // Recarrega a lista
             }
         }
 
@@ -485,13 +481,7 @@
                 alert('Erro ao rejeitar a corrida: ' + error.message);
             } else {
                 alert('Corrida não aceita.');
-                const card = document.getElementById(`ride-card-${rideId}`);
-                if(card) card.remove();
-                
-                const container = document.getElementById('pending-rides-container');
-                if (!container.hasChildNodes() || container.children.length === 0) {
-                    container.innerHTML = '<p class="text-center text-gray-400">Nenhuma solicitação pendente no momento.</p>';
-                }
+                loadPendingRides(); // Recarrega a lista
             }
         }
         
@@ -526,9 +516,88 @@
 
         document.addEventListener('DOMContentLoaded', initApp);
 
-        async function loadCompanyManagement() { const container = document.getElementById('company-list-container'); container.innerHTML = '<p>Carregando...</p>'; const { data, error } = await supabaseClient.from('companies').select('*').order('name'); if (error) { container.innerHTML = '<p>Erro ao carregar.</p>'; console.error(error); return; } container.innerHTML = data.map(c => `<div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center"><div><p class="font-semibold text-lg">${c.name}</p><p class="text-sm text-gray-400">Senha: ${c.password}</p></div><button onclick="deleteCompany(${c.id},'${c.name}')" class="py-1 px-3 font-semibold rounded-lg bg-red-600 hover:bg-red-700">X</button></div>`).join(''); }
-        async function addOrUpdateCompany() { const name = document.getElementById('new-company-name').value.trim(); const password = document.getElementById('new-company-password').value.trim(); if(!name || !password) return alert('Nome e Senha são obrigatórios.'); const { error } = await supabaseClient.from('companies').upsert({ name, password }, { onConflict: 'name' }); if(error) { alert('Erro ao salvar empresa.'); console.error(error); } else { document.getElementById('new-company-name').value = ''; document.getElementById('new-company-password').value = ''; await populateLoginCompanies(); await loadCompanyManagement(); } }
-        async function deleteCompany(id, name) { if (!confirm(`Excluir a empresa "${name}"?`)) return; const { error } = await supabaseClient.from('companies').delete().eq('id', id); if (error) { alert('Erro ao excluir.'); } else { await populateLoginCompanies(); await loadCompanyManagement(); } }
+        // --- COMPANY CRUD FUNCTIONS ---
+
+        async function loadCompanyManagement() {
+            const container = document.getElementById('company-list-container');
+            container.innerHTML = '<p>Carregando...</p>';
+            const { data, error } = await supabaseClient.from('companies').select('*').order('name');
+            if (error) {
+                container.innerHTML = '<p>Erro ao carregar.</p>';
+                console.error(error);
+                return;
+            }
+            container.innerHTML = data.map(c => `
+                <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold text-lg">${c.name}</p>
+                        <p class="text-sm text-gray-400">Senha: ${c.password}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editCompany(${c.id},'${c.name}','${c.password}')" class="py-1 px-3 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Editar</button>
+                        <button onclick="deleteCompany(${c.id},'${c.name}')" class="py-1 px-3 font-semibold rounded-lg bg-red-600 hover:bg-red-700">X</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editCompany(id, name, password) {
+            document.getElementById('editing-company-id').value = id;
+            document.getElementById('new-company-name').value = name;
+            document.getElementById('new-company-password').value = password;
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            document.getElementById('company-form-title').textContent = 'Editar Empresa';
+            window.scrollTo(0, 0); // Rola para o topo para ver o formulário
+        }
+
+        function cancelEdit() {
+            document.getElementById('editing-company-id').value = '';
+            document.getElementById('new-company-name').value = '';
+            document.getElementById('new-company-password').value = '';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            document.getElementById('company-form-title').textContent = 'Adicionar Empresa';
+        }
+
+        async function addOrUpdateCompany() {
+            const id = document.getElementById('editing-company-id').value;
+            const name = document.getElementById('new-company-name').value.trim();
+            const password = document.getElementById('new-company-password').value.trim();
+            if (!name || !password) return alert('Nome e Senha são obrigatórios.');
+
+            let result;
+            if (id) {
+                // UPDATE
+                result = await supabaseClient.from('companies').update({ name, password }).eq('id', id);
+            } else {
+                // CREATE (with upsert to prevent duplicates by name on creation)
+                result = await supabaseClient.from('companies').upsert({ name, password }, { onConflict: 'name' });
+            }
+            
+            const { error } = result;
+
+            if (error) {
+                alert('Erro ao salvar empresa: ' + error.message);
+                console.error(error);
+            } else {
+                cancelEdit(); // Limpa o formulário e reseta o estado de edição
+                await populateLoginCompanies();
+                await loadCompanyManagement();
+            }
+        }
+
+        async function deleteCompany(id, name) {
+            if (!confirm(`Tem certeza que deseja excluir a empresa "${name}"? Esta ação não pode ser desfeita.`)) return;
+            
+            const { error } = await supabaseClient.from('companies').delete().eq('id', id);
+            
+            if (error) {
+                alert('Erro ao excluir empresa: ' + error.message);
+            } else {
+                alert(`Empresa "${name}" excluída com sucesso.`);
+                await populateLoginCompanies(); // Atualiza o dropdown de login
+                await loadCompanyManagement(); // Atualiza a lista de empresas
+            }
+        }
     </script>
 </body>
 </html>
