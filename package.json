@@ -1,0 +1,12 @@
+{
+  "name": "garcia-transportes-api",
+  "version": "1.0.0",
+  "description": "API para cálculo de distância",
+  "main": "api/get-distance.js",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.1"
+  }
+}
