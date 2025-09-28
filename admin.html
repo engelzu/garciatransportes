@@ -129,7 +129,7 @@
         .status-pending_approval { background-color: #a16207; color: #ffffff; } /* Yellow-700 */
         .status-approved { background-color: #0d9488; color: #ffffff; } /* Teal-600 */
         .status-rejected { background-color: #991b1b; color: #ffffff; } /* Red-800 */
-        
+
         #initial-screen button[onclick="showScreen('user-login-screen')"],
         #initial-screen button[onclick="showScreen('driver-selection-screen')"] {
             display: none;
@@ -149,7 +149,7 @@
                 <div id="app-icon-container" class="h-12 w-12"></div>
                 <h1 class="text-4xl sm:text-5xl font-bold text-black">GARCIA TRANSPORTE</h1>
             </div>
-            
+
             <p class="mb-12 text-gray-800">Sua viagem segura e rápida.</p>
             <div class="space-y-4 max-w-md mx-auto">
                 <button onclick="showScreen('admin-login-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
@@ -172,7 +172,7 @@
                 </button>
             </div>
         </div>
-        
+
         <div id="admin-login-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Login Administrador</h2>
@@ -214,11 +214,11 @@
              <div class="max-w-md mx-auto">
                 <button onclick="logout()" class="mb-4 text-yellow-300">← Sair</button>
                 <h2 class="text-3xl font-bold mb-6 text-center">Área do Usuário</h2>
-                
+
                 <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6">
                     <h3 class="font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
                     <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-300 font-semibold"></p>
-                    
+
                     <div class="mb-4">
                         <label for="origin" class="block mb-2 text-sm font-medium">Qual a sua origem?</label>
                         <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço de partida completo">
@@ -228,7 +228,7 @@
                         <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
                         <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço completo">
                     </div>
-                
+
                     <div class="flex items-center mb-4">
                         <input id="schedule-toggle" type="checkbox" onchange="document.getElementById('schedule-datetime-container').classList.toggle('hidden')" class="h-4 w-4 rounded border-gray-300 text-yellow-300 focus:ring-yellow-300">
                         <label for="schedule-toggle" class="ml-2 block text-sm text-gray-300">Agendar para mais tarde?</label>
@@ -237,7 +237,7 @@
                         <label for="schedule-datetime" class="block mb-2 text-sm font-medium">Data e Hora do Agendamento</label>
                         <input type="datetime-local" id="schedule-datetime" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none">
                     </div>
-                
+
                     <button onclick="requestRide()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg transform hover:scale-105 transition-transform">
                         SOLICITAR TAXI
                     </button>
@@ -279,13 +279,13 @@
                 <a href="https://dashboard-with-supabase.lumi.ing" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg text-center">DASHBOARD</a>
             </div>
         </div>
-        
+
         <div id="admin-requests-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="promptToGoBack()" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
                 <div class="w-32"></div> </div>
-            
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                  <div class="card-gradient p-4 rounded-lg w-full">
                     <h3 class="font-semibold mb-2 text-center">Status das Corridas</h3>
@@ -318,7 +318,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="card-gradient p-6 rounded-lg w-full lg:col-span-2">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <div>
@@ -355,7 +355,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="admin-driver-crud-screen" class="screen">
             <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Cadastro de Motoristas</h2>
@@ -380,7 +380,7 @@
         <div id="admin-user-crud-screen" class="screen">
             <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Cadastro de Usuários</h2>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="space-y-6">
                     <div class="card-gradient p-4 rounded-lg">
@@ -529,36 +529,39 @@
     </div>
 
     <script>
-        // --- FUNÇÕES AUXILIARES IMPORTANTES ---
-        // A chave API do Google Maps para o Distance Matrix API
-        const GOOGLE_MAPS_API_KEY_DISTANCE = 'AIzaSyADSCUHjzyFUwjfcui_lk6vDSQ3PU0bu7g';
+        // A chave API do Google Maps para o Distance Matrix API agora será usada no lado do servidor.
+        // A função getDrivingDistance fará uma chamada para a sua própria API no Vercel.
 
-        // Função para limpar a string de endereço (remove colchetes e aspas)
-        function cleanAddressString(address) {
-            if (typeof address !== 'string') return '';
-            // Remove a formatação específica `["..."]`
-            return address.replace(/^\["|"\]$/g, '').trim();
-        }
-
-        // Nova função para calcular a distância de carro usando a API Google Maps Distance Matrix
         async function getDrivingDistance(origin, destination) {
-            const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&key=${GOOGLE_MAPS_API_KEY_DISTANCE}`;
-            
+            // Remove a chamada direta para a API do Google
+            // e faz uma chamada para a sua API no Vercel
+            const url = `/api/get-distance?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}`;
+
             try {
                 const response = await fetch(url);
                 const data = await response.json();
-                
+
                 if (data.status === 'OK' && data.rows[0].elements[0].status === 'OK') {
                     const distanceInMeters = data.rows[0].elements[0].distance.value;
                     return distanceInMeters / 1000; // Converte metros para km
                 } else {
-                    console.error('Erro na API Google Maps:', data.status, data.error_message);
+                    console.error('Erro na API Vercel:', data.status, data.error_message);
                     return null;
                 }
             } catch (error) {
                 console.error('Erro ao buscar a distância:', error);
                 return null;
             }
+        }
+
+
+        // --- FUNÇÕES AUXILIARES IMPORTANTES ---
+
+        // Função para limpar a string de endereço (remove colchetes e aspas)
+        function cleanAddressString(address) {
+            if (typeof address !== 'string') return '';
+            // Remove a formatação específica `["..."]`
+            return address.replace(/^\["|"\]$/g, '').trim();
         }
 
         // Função auxiliar para geocodificar um endereço usando a API do Google Maps
@@ -570,7 +573,7 @@
 
             return new Promise((resolve, reject) => {
                 const geocoder = new google.maps.Geocoder();
-                
+
                 // Primeira tentativa com o endereço original
                 geocoder.geocode({ 'address': address, 'region': 'br' }, (results, status) => {
                     console.log(`Geocoding status for "${address}": ${status}`);
@@ -681,7 +684,7 @@
             stopRingingAdmin(); 
             playAdminRingSound(); 
             adminRingInterval = setInterval(playAdminRingSound, 6000);
-            
+
             // Adicionado botão de silenciar ao DOM para poder ser usado
             const silenceBtnContainer = document.querySelector('#admin-requests-screen .lg\\:col-span-1');
             if (silenceBtnContainer && !document.getElementById('admin-silence-btn')) {
@@ -714,7 +717,7 @@
             const confirmBtn = document.getElementById('modal-confirm');
             const cancelBtn = document.getElementById('modal-cancel');
             const inputContainer = document.getElementById('modal-input-container');
-            
+
             Array.from(inputContainer.children).forEach(child => {
                 if (child.tagName === 'INPUT' || child.tagName === 'SELECT') {
                     child.style.display = 'none';
@@ -758,14 +761,14 @@
             } else {
                  inputContainer.classList.add('hidden'); 
             }
-            
+
             confirmBtn.onclick = onConfirm;
             cancelBtn.style.display = showCancel ? 'inline-block' : 'none';
             confirmBtn.textContent = showCancel ? 'Confirmar' : 'OK';
             if (!showCancel) {
                 confirmBtn.onclick = closeModal;
             }
-            
+
             const modal = document.getElementById('modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex'); 
@@ -782,7 +785,7 @@
                 }
             });
         }
-        
+
         // --- FUNÇÕES DE LOGIN E SESSÃO ---
         function logout() {
             state.currentUserId = null;
@@ -817,7 +820,7 @@
                 .eq('matricula', matricula)
                 .eq('password', password)
                 .single();
-            
+
             if (error && error.code !== 'PGRST116') {
                 console.error('Erro no Supabase ao tentar login:', error);
                 errorEl.textContent = 'Erro de comunicação com o servidor. Por favor, tente novamente.';
@@ -838,14 +841,14 @@
                 errorEl.classList.remove('hidden');
             }
         }
-        
+
         // --- NAVEGAÇÃO ENTRE TELAS ---
         function showScreen(screenId) {
             const body = document.body;
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
             stopRingingAdmin(); // Para a sirene do admin ao trocar de tela
-            
+
             if(clockInterval) clearInterval(clockInterval);
 
             const fullHeightScreens = ['admin-requests-screen', 'admin-driver-crud-screen', 'admin-user-crud-screen', 'admin-heatmap-screen', 'admin-records-screen'];
@@ -881,7 +884,7 @@
                 document.getElementById('records-end-date').value = '';
             }
         }
-        
+
         function startDigitalClock(elementId) {
             const clockElement = document.getElementById(elementId);
             if (!clockElement) return;
@@ -897,7 +900,7 @@
         function promptToGoBack() {
             const confirmBtn = document.getElementById('modal-confirm');
             const cancelBtn = document.getElementById('modal-cancel');
-            
+
             cancelBtn.textContent = 'Apenas Voltar';
             cancelBtn.onclick = () => {
                 closeModal();
@@ -926,7 +929,7 @@
         }
 
         // --- LÓGICA DO USUÁRIO ---
-        
+
         async function requestRide() {
             const origin = document.getElementById('origin').value;
             const destination = document.getElementById('destination').value;
@@ -934,11 +937,11 @@
                 showModal('Por favor, insira a origem e o destino.');
                 return;
             }
-        
+
             const isScheduled = document.getElementById('schedule-toggle').checked;
             const scheduledTimeValue = document.getElementById('schedule-datetime').value;
             let scheduledTime = null;
-        
+
             if (isScheduled) {
                 if (!scheduledTimeValue) {
                     showModal('Por favor, selecione a data e hora para o agendamento.');
@@ -950,16 +953,16 @@
                     return;
                 }
             }
-        
+
             document.getElementById('user-request-form').classList.add('hidden');
             document.getElementById('user-status').classList.remove('hidden');
             document.getElementById('user-status-message').textContent = 'Validando endereço de origem...';
-        
+
             try {
                 const originCoords = await geocodeAddress(origin);
                 const userLocation = { lat: originCoords.lat, lon: originCoords.lng };
                 const currentUser = state.users.find(u => u.id === state.currentUserId);
-        
+
                 const newRide = {
                     destination: destination,
                     origin_address: origin,
@@ -972,9 +975,9 @@
                     request_type: isScheduled ? 'scheduled' : 'immediate', 
                     scheduled_datetime: scheduledTime 
                 };
-        
+
                 const { data, error } = await supabaseClient.from('rides').insert([newRide]).select().single();
-        
+
                 if (error) {
                     console.error("Erro ao solicitar corrida:", error);
                     showModal("Não foi possível solicitar a corrida. Verifique os endereços.");
@@ -982,11 +985,11 @@
                     document.getElementById('user-status').classList.add('hidden');
                     return;
                 }
-        
+
                 state.currentUserRideId = data.id;
                 document.getElementById('user-status-message').textContent = 'Aguardando um motorista aceitar...';
                 startUserStatusCheck();
-        
+
             } catch (error) {
                 console.error("Erro ao geocodificar o endereço de origem:", error);
                 showModal('Não foi possível encontrar o endereço de origem. Por favor, verifique e tente novamente.');
@@ -1031,7 +1034,7 @@
                 }
             }, 5000);
         }
-        
+
         function updateUserStatusMessage(ride) {
             const searchingIconContainer = document.getElementById('status-icon-searching');
             const enRouteIconContainer = document.getElementById('status-icon-en-route');
@@ -1140,7 +1143,7 @@
             list.innerHTML = '';
 
             const requestedRides = state.rides.filter(r => r.status === 'requested' || r.status === 'approved' || r.status === 'pending_approval' || r.status === 'scheduled');
-            
+
             requestedRides.sort((a, b) => new Date((a.request_type === 'scheduled' && a.scheduled_datetime) || a.requestTime) - new Date((b.request_type === 'scheduled' && b.scheduled_datetime) || b.requestTime));
 
             // --- Cálculos para o painel de status ---
@@ -1149,7 +1152,7 @@
             const designadoCount = state.rides.filter(r => r.status === 'assigned').length;
             const emAndamentoCount = state.rides.filter(r => ['accepted', 'arrived_pickup', 'in_progress'].includes(r.status)).length;
             const concluidasCount = state.rides.filter(r => r.status === 'completed').length;
-            
+
             // --- Atualiza os contadores no painel ---
             document.getElementById('status-agendada-count').textContent = agendadaCount;
             document.getElementById('status-solicitado-count').textContent = solicitadoCount;
@@ -1163,7 +1166,7 @@
             document.getElementById('total-drivers-count').textContent = totalDriversCount;
             document.getElementById('active-drivers-count').textContent = activeDriversCount;
             document.getElementById('inactive-drivers-count').textContent = totalDriversCount - activeDriversCount;
-            
+
             renderDriverStatusChart(activeDriversCount, totalDriversCount - activeDriversCount);
 
             if (requestedRides.length === 0) {
@@ -1241,13 +1244,13 @@
                 };
             }
         }
-        
+
         async function renderOngoingRidesTable() {
             const tableContainer = document.getElementById('admin-ongoing-rides-table');
             tableContainer.innerHTML = '<div class="loader mx-auto"></div>';
-            
+
             const ongoingRides = state.rides.filter(r => !['requested', 'approved', 'pending_approval', 'rejected', 'completed', 'canceled'].includes(r.status));
-        
+
             if (ongoingRides.length === 0) {
                 tableContainer.innerHTML = '<p class="text-center text-gray-400">Nenhuma corrida em andamento no momento.</p>';
                 return;
@@ -1270,7 +1273,7 @@
             });
 
             const ridesWithDistance = await Promise.all(ridesWithDistancePromises);
-            
+
             let tableHTML = `
                 <table class="w-full text-sm text-left">
                     <thead class="text-xs text-gray-300 uppercase bg-gray-900/30">
@@ -1288,9 +1291,9 @@
                     </thead>
                     <tbody>
             `;
-        
+
             ridesWithDistance.sort((a, b) => new Date((a.request_type === 'scheduled' && a.scheduled_datetime) || a.requestTime) - new Date((b.request_type === 'scheduled' && b.scheduled_datetime) || b.requestTime));
-        
+
             ridesWithDistance.forEach(ride => {
                 const rideUser = state.users.find(u => u.id === ride.userId);
                 const originAddress = ride.origin_address ? ride.origin_address : 'Origem não informada';
@@ -1310,7 +1313,7 @@
                 } else {
                     dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', options);
                 }
-                
+
                 let driverCellHTML = ride.driverName || 'N/A';
                 let actionsCellHTML = `<div class="flex items-center gap-2">`;
 
@@ -1327,7 +1330,7 @@
 
                     actionsCellHTML += `<button onclick="updateRideDriver(${ride.id})" class="py-1 px-2 text-xs font-semibold rounded-lg button-gradient whitespace-nowrap">Salvar</button>`;
                 }
-                
+
                 actionsCellHTML += `
                     <button onclick="adminCompleteRide(${ride.id})" title="Marcar como Finalizada" class="p-1 rounded-lg bg-green-600 hover:bg-green-700">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
@@ -1354,15 +1357,15 @@
                     </tr>
                 `;
             });
-        
+
             tableHTML += `</tbody></table>`;
             tableContainer.innerHTML = tableHTML;
         }
-        
+
         async function updateRideDriver(rideId) {
             const selectElement = document.getElementById(`ongoing-driver-select-${rideId}`);
             if (!selectElement) return;
-            
+
             const selectedDriverId = selectElement.value;
 
             if (!selectedDriverId) {
@@ -1375,7 +1378,7 @@
                 showModal("Motorista selecionado não encontrado.");
                 return;
             }
-            
+
             const { error } = await supabaseClient
                 .from('rides')
                 .update({ 
@@ -1384,7 +1387,7 @@
                     driverName: driver.name 
                 })
                 .eq('id', rideId);
-                
+
             if (error) {
                 console.error("Erro ao atualizar motorista da corrida:", error);
                 showModal("Não foi possível atualizar o motorista.");
@@ -1407,7 +1410,7 @@
                 showModal("Não foi possível designar o motorista.");
             }
         }
-        
+
         // --- ADMIN CRUD MOTORISTAS ---
         function renderDriverCrudList() {
             const listContainer = document.getElementById('driver-crud-list');
@@ -1463,14 +1466,14 @@
             const modelInput = document.getElementById('new-driver-model');
             const colorInput = document.getElementById('new-driver-color');
             const passwordInput = document.getElementById('new-driver-password');
-            
+
             const name = nameInput.value.trim(); 
             const phone = phoneInput.value.trim();
             const plate = plateInput.value.trim();
             const model = modelInput.value.trim();
             const color = colorInput.value.trim();
             const password = passwordInput.value.trim();
-            
+
             if (!name || !phone || !plate || !password || !model || !color) { 
                 showModal('Todos os campos são obrigatórios.'); 
                 return; 
@@ -1570,7 +1573,7 @@
                     const usersJson = XLSX.utils.sheet_to_json(worksheet);
 
                     if (usersJson.length === 0) { showModal("O arquivo Excel está vazio."); return; }
-                    
+
                     const header = Object.keys(usersJson[0]);
                     const expectedHeader = ['matricula', 'nome', 'senha', 'empresa', 'endereco', 'telefone'];
                     if (JSON.stringify(header.sort()) !== JSON.stringify(expectedHeader.sort())) {
@@ -1612,7 +1615,7 @@
         function renderUserCrudList() {
             const listContainer = document.getElementById('user-crud-list');
             listContainer.innerHTML = ''; 
-            
+
             const userCountEl = document.getElementById('user-count');
             if (userCountEl) {
                 userCountEl.textContent = state.users.length;
@@ -1843,7 +1846,7 @@
                 }
             }
         }
-        
+
         async function arriveAtPickup(rideId) {
             const { error } = await supabaseClient.from('rides').update({ status: 'arrived_pickup' }).eq('id', rideId);
             if (error) {
@@ -1851,7 +1854,7 @@
                 showModal("Não foi possível marcar como 'chegou no local'.");
             }
         }
-        
+
         async function startTrip(rideId) {
             const ride = state.rides.find(r => r.id === rideId);
             if (ride) {
@@ -1928,9 +1931,9 @@
                     if (document.querySelector('.screen.active')?.id === 'admin-user-crud-screen') renderUserCrudList();
                  });
             }).subscribe();
-            
+
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
-                
+
                 if (localStorage.getItem('sessionType') === 'admin') {
                     // Toca o alarme quando uma nova corrida é INSERIDA com status 'requested'
                     if (payload.eventType === 'INSERT' && payload.new.status === 'requested') {
@@ -2010,7 +2013,7 @@
                 countEl.textContent = `Motoristas disponíveis agora: ${availableDrivers.length}`;
             }
         }
-        
+
         const customDataLabels = {
             id: 'customDataLabels',
             afterDraw(chart, args, options) {
@@ -2021,7 +2024,7 @@
 
                 const centerX = chart.getDatasetMeta(0).data[0].x;
                 const centerY = chart.getDatasetMeta(0).data[0].y;
-                
+
                 ctx.save();
                 ctx.font = 'bold 40px Poppins';
                 ctx.fillStyle = 'white';
@@ -2078,7 +2081,7 @@
                 default: return { text: status.toUpperCase(), colorClass: '' }; 
             }
         }
-        
+
         function exportDailyReportNow() {
             if (state.rides.length === 0) {
                 return;
@@ -2094,7 +2097,7 @@
                 'Data do Aceite': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A',
                 'Status': translateStatus(ride.status).text
             }));
-            
+
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -2273,14 +2276,14 @@
         async function loadAllRecords() {
             const tableBody = document.getElementById('all-records-body');
             tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>';
-            
+
             const { data, error } = await supabaseClient.from('rides').select('*').order('requestTime', { ascending: false });
             if (error) {
                 tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>';
                 return;
             }
             state.rides = data;
-            
+
             if (data.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>';
                 return;
@@ -2313,10 +2316,10 @@
                     </tr>
                 `;
             });
-            
+
             tableBody.innerHTML = (await Promise.all(rowPromises)).join('');
         }
-        
+
         function filterRecordsByDate() {
             const startDate = document.getElementById('records-start-date').value;
             const endDate = document.getElementById('records-end-date').value;
@@ -2325,14 +2328,14 @@
 
             const start = startDate ? new Date(startDate).getTime() : null;
             const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-            
+
             rows.forEach(row => {
                 const dateCell = row.cells[0];
                 if (dateCell) {
                     const [date, time] = dateCell.textContent.split(', ');
                     const [day, month, year] = date.split('/');
                     const recordDate = new Date(`${year}-${month}-${day}T${time}`).getTime();
-                    
+
                     let show = true;
                     if (start && recordDate < start) show = false;
                     if (end && recordDate > end) show = false;
@@ -2340,7 +2343,7 @@
                 }
             });
         }
-        
+
         async function adminCompleteRide(rideId) {
             if (!confirm('Tem certeza que deseja finalizar esta corrida?')) return;
             const { error } = await supabaseClient.from('rides').update({ status: 'completed' }).eq('id', rideId);
@@ -2354,14 +2357,14 @@
             if (error) alert('Não foi possível excluir a corrida.');
             else alert('Corrida excluída com sucesso!');
         }
-        
+
         // --- FUNÇÃO DE INICIALIZAÇÃO PRINCIPAL ---
         async function initApp() {
             if (typeof google === 'undefined' || !google.maps || !google.maps.Geocoder) {
                  document.getElementById('app-container').innerHTML = '<p class="text-red-500 text-center text-lg">Erro ao carregar o mapa.</p>';
                  return; 
             }
-            
+
             initAutocomplete(); 
             await fetchAllData(); 
             setupRealtimeSubscriptions(); 
@@ -2404,7 +2407,7 @@
                 new google.maps.places.Autocomplete(originInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
             }
         }
-        
+
         async function initHeatmap() {
             const mapDiv = document.getElementById('heatmap-canvas');
             if (!mapDiv) return;
@@ -2418,7 +2421,7 @@
             const geocodePromises = state.users
                 .filter(user => user.address && user.address.trim() !== '')
                 .map(user => geocodeAddress(user.address).catch(e => null));
-            
+
             const results = await Promise.all(geocodePromises);
             const locationsData = results
                 .filter(coords => coords)
