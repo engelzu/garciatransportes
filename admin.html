@@ -530,12 +530,35 @@
 
     <script>
         // --- FUNÇÕES AUXILIARES IMPORTANTES ---
+        // A chave API do Google Maps para o Distance Matrix API
+        const GOOGLE_MAPS_API_KEY_DISTANCE = 'AIzaSyC5eK52cy-8v3ltu8XsPcETsP-rXKlHmyI';
 
         // Função para limpar a string de endereço (remove colchetes e aspas)
         function cleanAddressString(address) {
             if (typeof address !== 'string') return '';
             // Remove a formatação específica `["..."]`
             return address.replace(/^\["|"\]$/g, '').trim();
+        }
+
+        // Nova função para calcular a distância de carro usando a API Google Maps Distance Matrix
+        async function getDrivingDistance(origin, destination) {
+            const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&key=${GOOGLE_MAPS_API_KEY_DISTANCE}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === 'OK' && data.rows[0].elements[0].status === 'OK') {
+                    const distanceInMeters = data.rows[0].elements[0].distance.value;
+                    return distanceInMeters / 1000; // Converte metros para km
+                } else {
+                    console.error('Erro na API Google Maps:', data.status, data.error_message);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Erro ao buscar a distância:', error);
+                return null;
+            }
         }
 
         // Função auxiliar para geocodificar um endereço usando a API do Google Maps
@@ -1152,28 +1175,15 @@
 
                     const originAddress = cleanAddressString(ride.origin_address);
                     const destinationAddress = cleanAddressString(ride.destination);
-                    let distanceInfo = `<p class="text-sm text-gray-500">Distância: Dados insuficientes</p>`;
+                    let distanceInfo = `<p class="text-sm text-gray-500">Distância: Calculando...</p>`;
 
                     if (originAddress && destinationAddress) {
-                        try {
-                            const [originCoords, destCoords] = await Promise.all([
-                                geocodeAddress(originAddress),
-                                geocodeAddress(destinationAddress)
-                            ]);
-
-                            if (originCoords && destCoords) {
-                                const distanceKm = getDistanceFromLatLonInKm(
-                                    originCoords.lat, originCoords.lng,
-                                    destCoords.lat, destCoords.lng
-                                ).toFixed(1);
-                                distanceInfo = `<p class="font-semibold">Distância: <span class="font-normal">${distanceKm} km</span></p>`;
-                            } else {
-                                distanceInfo = `<p class="text-sm text-red-400">Distância: Endereço inválido</p>`;
-                            }
-                        } catch (error) {
-                            console.error(`Falha ao calcular distância:`, error);
+                         const distance = await getDrivingDistance(originAddress, destinationAddress);
+                         if (distance !== null) {
+                            distanceInfo = `<p class="font-semibold">Distância: <span class="font-normal">${distance.toFixed(1)} km</span></p>`;
+                         } else {
                             distanceInfo = `<p class="text-sm text-red-400">Distância: Erro ao calcular</p>`;
-                        }
+                         }
                     }
 
                     let rideTypeInfo = '';
@@ -1249,20 +1259,10 @@
                 const destinationAddress = cleanAddressString(ride.destination);
 
                 if (originAddress && destinationAddress) {
-                    try {
-                        const [originCoords, destCoords] = await Promise.all([
-                            geocodeAddress(originAddress),
-                            geocodeAddress(destinationAddress)
-                        ]);
-
-                        if (originCoords && destCoords) {
-                            distanceKm = getDistanceFromLatLonInKm(
-                                originCoords.lat, originCoords.lng,
-                                destCoords.lat, destCoords.lng
-                            ).toFixed(1);
-                        }
-                    } catch (error) {
-                        console.error(`Falha ao calcular distância para a corrida ${ride.id}:`, error);
+                    const distance = await getDrivingDistance(originAddress, destinationAddress);
+                    if (distance !== null) {
+                        distanceKm = distance.toFixed(1);
+                    } else {
                         distanceKm = 'Erro';
                     }
                 }
@@ -2292,20 +2292,10 @@
                 const destinationAddress = cleanAddressString(ride.destination);
 
                 if (originAddress && destinationAddress) {
-                    try {
-                        const [originCoords, destCoords] = await Promise.all([
-                            geocodeAddress(originAddress),
-                            geocodeAddress(destinationAddress)
-                        ]);
-
-                        if (originCoords && destCoords) {
-                            distanceKm = getDistanceFromLatLonInKm(
-                                originCoords.lat, originCoords.lng,
-                                destCoords.lat, destCoords.lng
-                            ).toFixed(2);
-                        }
-                    } catch (e) {
-                        console.error(`Erro ao calcular distância para a corrida ${ride.id}:`, e);
+                    const distance = await getDrivingDistance(originAddress, destinationAddress);
+                    if (distance !== null) {
+                        distanceKm = distance.toFixed(2);
+                    } else {
                         distanceKm = 'Erro';
                     }
                 }
