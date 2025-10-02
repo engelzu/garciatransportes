@@ -146,6 +146,9 @@
         let state = { loggedInCompany: null, allUsers: [] };
         let adminSelectedRequestType = '';
         let adminScheduledDateTime = null;
+        let originalCollaboratorAddress = '';
+        // --- ALTERAÇÃO: Flag para evitar loop de atualizações ---
+        let isProgrammaticallyUpdating = false;
 
         function initializeGoogleMaps() {
             if (document.getElementById('google-maps-script-tag')) return;
@@ -164,9 +167,29 @@
                 });
             }
         }
+        
+        function resetAdminForm() {
+            document.getElementById('collaborator-select').value = '';
+            document.getElementById('admin-ride-details').classList.add('hidden');
+            document.getElementById('admin-origin').value = '';
+            document.getElementById('admin-passenger-count').value = '1';
+            document.getElementById('admin-destinations-container').innerHTML = '';
+            document.getElementById('admin-observation').value = '';
+            originalCollaboratorAddress = '';
+            document.getElementById('admin-origin').oninput = null;
+        }
 
-        function showScreen(screenId) { document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active')); document.getElementById(screenId)?.classList.add('active'); }
-        function logout() { state.loggedInCompany = null; document.getElementById('company-password-input').value = ''; showScreen('company-login-screen'); }
+        function showScreen(screenId) { 
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active')); 
+            document.getElementById(screenId)?.classList.add('active'); 
+        }
+        
+        function logout() { 
+            state.loggedInCompany = null; 
+            document.getElementById('company-password-input').value = ''; 
+            resetAdminForm();
+            showScreen('company-login-screen'); 
+        }
 
         async function promptSuperAdminLogin() {
             const password = prompt("Para acessar o gerenciamento, digite a senha mestra:");
@@ -206,9 +229,9 @@
 
         async function setupAdminScreen() {
             document.getElementById('admin-welcome-message').textContent = `Bem-vindo, ${state.loggedInCompany.name}!`;
+            resetAdminForm(); 
             showAdminSubScreen('request-ride-screen');
 
-            // --- ALTERAÇÃO 1: Adicionado 'address' na busca dos usuários ---
             const { data: users, error: usersError } = await supabaseClient.from('users').select('id, name, company, address');
             if (usersError) { console.error("Erro ao buscar usuários:", usersError); return; }
             state.allUsers = users;
@@ -227,31 +250,51 @@
             document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
         }
 
-        // --- ALTERAÇÃO 2: Função modificada para preencher endereço e mostrar pop-up ---
         function handleCollaboratorChange(event) {
             const rideDetails = document.getElementById('admin-ride-details');
             const selectedUserId = event.target.value;
             const showDetails = !!selectedUserId;
             
             rideDetails.classList.toggle('hidden', !showDetails);
+            
+            document.getElementById('admin-origin').oninput = null;
 
             if (showDetails) {
-                // Preenche a origem com o endereço do colaborador
                 const selectedUser = state.allUsers.find(user => user.id == selectedUserId);
-                if (selectedUser && selectedUser.address) {
-                    document.getElementById('admin-origin').value = selectedUser.address;
-                    // Mostra o pop-up de confirmação
+                
+                originalCollaboratorAddress = (selectedUser && selectedUser.address) ? selectedUser.address : '';
+                document.getElementById('admin-origin').value = originalCollaboratorAddress;
+                
+                if (originalCollaboratorAddress) {
                     confirm("ORIGEM RESIDÊNCIA do COLABORADOR, EDITE ou MARQUE OK");
-                } else {
-                    // Limpa o campo se o usuário não tiver endereço
-                    document.getElementById('admin-origin').value = '';
                 }
+
+                // --- ALTERAÇÃO: Listener da ORIGEM agora usa a flag ---
+                document.getElementById('admin-origin').oninput = (e) => {
+                    if (isProgrammaticallyUpdating) return; 
+                    
+                    const originInput = e.target;
+                    const destinationInput = document.getElementById('admin-destination-1');
+
+                    if (destinationInput) {
+                        isProgrammaticallyUpdating = true;
+                        if (originInput.value.trim() !== originalCollaboratorAddress.trim()) {
+                            destinationInput.value = originalCollaboratorAddress;
+                        } else {
+                            destinationInput.value = '';
+                        }
+                        isProgrammaticallyUpdating = false;
+                    }
+                };
 
                 initAutocomplete(document.getElementById('admin-origin'));
                 adminUpdateDestinationFields(document.getElementById('admin-passenger-count').value);
+            } else {
+                 resetAdminForm();
             }
         }
 
+        // --- ALTERAÇÃO: Adicionado listener para o DESTINO 1 ---
         function adminUpdateDestinationFields(passengerCount) {
             const container = document.getElementById('admin-destinations-container');
             container.innerHTML = '';
@@ -259,8 +302,22 @@
                 const labelText = i === 1 ? 'Destino Passageiro 1 <span class="text-red-400">(Obrigatório)</span>' : `Destino Passageiro ${i}`;
                 container.innerHTML += `<div class="mb-4"><label class="block mb-2 text-sm font-medium">${labelText}</label><input type="text" id="admin-destination-${i}" class="w-full p-3 rounded-lg" placeholder="Digite o endereço completo"></div>`;
             }
+
+            // Adiciona o listener de autocomplete para todos os campos de destino
             for (let i = 1; i <= passengerCount; i++) {
                 initAutocomplete(document.getElementById(`admin-destination-${i}`));
+            }
+            
+            // Adiciona a nova lógica APENAS para o primeiro destino
+            const destination1Input = document.getElementById('admin-destination-1');
+            if(destination1Input) {
+                destination1Input.oninput = (e) => {
+                    if (isProgrammaticallyUpdating) return;
+
+                    isProgrammaticallyUpdating = true;
+                    document.getElementById('admin-origin').value = originalCollaboratorAddress;
+                    isProgrammaticallyUpdating = false;
+                }
             }
         }
         
@@ -333,8 +390,8 @@
                 alert('Erro ao solicitar corrida: ' + error.message);
             } else {
                 alert(`Corrida para ${collaborator.name} solicitada com sucesso!`);
-                document.getElementById('collaborator-select').value = '';
-                handleCollaboratorChange({ target: { value: '' } });
+                resetAdminForm();
+                document.getElementById('admin-ride-details').classList.add('hidden');
             }
 
             adminSelectedRequestType = '';
