@@ -139,7 +139,7 @@
     <script>
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
-        const GOOGLE_MAPS_API_KEY = 'AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg';
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyADSCUHjzyFUwjfcui_lk6vDSQ3PU0bu7g';
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
@@ -208,7 +208,8 @@
             document.getElementById('admin-welcome-message').textContent = `Bem-vindo, ${state.loggedInCompany.name}!`;
             showAdminSubScreen('request-ride-screen');
 
-            const { data: users, error: usersError } = await supabaseClient.from('users').select('id, name, company');
+            // --- ALTERAÇÃO 1: Adicionado 'address' na busca dos usuários ---
+            const { data: users, error: usersError } = await supabaseClient.from('users').select('id, name, company, address');
             if (usersError) { console.error("Erro ao buscar usuários:", usersError); return; }
             state.allUsers = users;
 
@@ -226,12 +227,26 @@
             document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
         }
 
+        // --- ALTERAÇÃO 2: Função modificada para preencher endereço e mostrar pop-up ---
         function handleCollaboratorChange(event) {
             const rideDetails = document.getElementById('admin-ride-details');
-            const showDetails = !!event.target.value;
+            const selectedUserId = event.target.value;
+            const showDetails = !!selectedUserId;
+            
             rideDetails.classList.toggle('hidden', !showDetails);
 
             if (showDetails) {
+                // Preenche a origem com o endereço do colaborador
+                const selectedUser = state.allUsers.find(user => user.id == selectedUserId);
+                if (selectedUser && selectedUser.address) {
+                    document.getElementById('admin-origin').value = selectedUser.address;
+                    // Mostra o pop-up de confirmação
+                    confirm("ORIGEM RESIDÊNCIA do COLABORADOR, EDITE ou MARQUE OK");
+                } else {
+                    // Limpa o campo se o usuário não tiver endereço
+                    document.getElementById('admin-origin').value = '';
+                }
+
                 initAutocomplete(document.getElementById('admin-origin'));
                 adminUpdateDestinationFields(document.getElementById('admin-passenger-count').value);
             }
