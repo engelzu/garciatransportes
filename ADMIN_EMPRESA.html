@@ -147,8 +147,7 @@
         let adminSelectedRequestType = '';
         let adminScheduledDateTime = null;
         let originalCollaboratorAddress = '';
-        // --- ALTERAÇÃO: Flag para evitar loop de atualizações ---
-        let isProgrammaticallyUpdating = false;
+        // --- ALTERAÇÃO: Flag removida pois não é mais necessária ---
 
         function initializeGoogleMaps() {
             if (document.getElementById('google-maps-script-tag')) return;
@@ -250,6 +249,7 @@
             document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
         }
 
+        // --- ALTERAÇÃO: Função simplificada ---
         function handleCollaboratorChange(event) {
             const rideDetails = document.getElementById('admin-ride-details');
             const selectedUserId = event.target.value;
@@ -257,6 +257,7 @@
             
             rideDetails.classList.toggle('hidden', !showDetails);
             
+            // Limpa qualquer listener antigo
             document.getElementById('admin-origin').oninput = null;
 
             if (showDetails) {
@@ -268,24 +269,8 @@
                 if (originalCollaboratorAddress) {
                     confirm("ORIGEM RESIDÊNCIA do COLABORADOR, EDITE ou MARQUE OK");
                 }
-
-                // --- ALTERAÇÃO: Listener da ORIGEM agora usa a flag ---
-                document.getElementById('admin-origin').oninput = (e) => {
-                    if (isProgrammaticallyUpdating) return; 
-                    
-                    const originInput = e.target;
-                    const destinationInput = document.getElementById('admin-destination-1');
-
-                    if (destinationInput) {
-                        isProgrammaticallyUpdating = true;
-                        if (originInput.value.trim() !== originalCollaboratorAddress.trim()) {
-                            destinationInput.value = originalCollaboratorAddress;
-                        } else {
-                            destinationInput.value = '';
-                        }
-                        isProgrammaticallyUpdating = false;
-                    }
-                };
+                
+                // --- Lógica de preenchimento automático do destino foi REMOVIDA daqui ---
 
                 initAutocomplete(document.getElementById('admin-origin'));
                 adminUpdateDestinationFields(document.getElementById('admin-passenger-count').value);
@@ -294,7 +279,7 @@
             }
         }
 
-        // --- ALTERAÇÃO: Adicionado listener para o DESTINO 1 ---
+        // --- ALTERAÇÃO: Função simplificada ---
         function adminUpdateDestinationFields(passengerCount) {
             const container = document.getElementById('admin-destinations-container');
             container.innerHTML = '';
@@ -303,22 +288,11 @@
                 container.innerHTML += `<div class="mb-4"><label class="block mb-2 text-sm font-medium">${labelText}</label><input type="text" id="admin-destination-${i}" class="w-full p-3 rounded-lg" placeholder="Digite o endereço completo"></div>`;
             }
 
-            // Adiciona o listener de autocomplete para todos os campos de destino
             for (let i = 1; i <= passengerCount; i++) {
                 initAutocomplete(document.getElementById(`admin-destination-${i}`));
             }
             
-            // Adiciona a nova lógica APENAS para o primeiro destino
-            const destination1Input = document.getElementById('admin-destination-1');
-            if(destination1Input) {
-                destination1Input.oninput = (e) => {
-                    if (isProgrammaticallyUpdating) return;
-
-                    isProgrammaticallyUpdating = true;
-                    document.getElementById('admin-origin').value = originalCollaboratorAddress;
-                    isProgrammaticallyUpdating = false;
-                }
-            }
+            // --- Lógica de listener para o destino foi REMOVIDA daqui ---
         }
         
         function openAdminScheduleModal() {
