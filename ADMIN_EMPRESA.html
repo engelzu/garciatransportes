@@ -51,14 +51,14 @@
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                 </svg>
             </div>
-            
+           
             <h2 class="text-3xl font-bold mb-6 text-center">Login da Empresa</h2>
             <div class="mb-4"><label for="company-login-select" class="block mb-2 text-sm font-medium">Empresa</label><select id="company-login-select" class="w-full p-3 rounded-lg"></select></div>
             <div class="mb-4"><label for="company-password-input" class="block mb-2 text-sm font-medium">Senha da Empresa</label><input type="password" id="company-password-input" class="w-full p-3 rounded-lg" placeholder="Digite a senha"></div>
             <button onclick="verifyCompanyPassword()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
             <p id="company-login-error" class="text-red-500 text-center mt-4 hidden">Senha da empresa incorreta!</p>
         </div>
-        
+       
         <div id="admin-screen" class="screen">
             <div class="flex justify-between items-center mb-6">
                 <p id="admin-welcome-message" class="text-lg text-gray-300"></p>
@@ -117,7 +117,7 @@
             <div id="company-list-container" class="space-y-3"></div>
         </div>
     </div>
-    
+   
     <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <h3 class="text-2xl font-bold mb-4">Agendar Corrida</h3>
@@ -140,9 +140,9 @@
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const GOOGLE_MAPS_API_KEY = 'AIzaSyADSCUHjzyFUwjfcui_lk6vDSQ3PU0bu7g';
-        
+       
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
+       
         let state = { loggedInCompany: null, allUsers: [] };
         let adminSelectedRequestType = '';
         let adminScheduledDateTime = null;
@@ -166,7 +166,7 @@
                 });
             }
         }
-        
+       
         function resetAdminForm() {
             document.getElementById('collaborator-select').value = '';
             document.getElementById('admin-ride-details').classList.add('hidden');
@@ -182,7 +182,7 @@
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active')); 
             document.getElementById(screenId)?.classList.add('active'); 
         }
-        
+       
         function logout() { 
             state.loggedInCompany = null; 
             document.getElementById('company-password-input').value = ''; 
@@ -213,9 +213,9 @@
                 errorEl.classList.remove('hidden');
                 return;
             }
-            
+           
             const { data, error } = await supabaseClient.from('companies').select('*').eq('name', companyName).eq('password', password).single();
-            
+           
             if (error || !data) {
                 errorEl.textContent = 'Senha da empresa incorreta!';
                 errorEl.classList.remove('hidden');
@@ -239,12 +239,15 @@
             const loggedInCompanyName = state.loggedInCompany.name;
             const collaborators = state.allUsers.filter(user => user.company === loggedInCompanyName);
 
+            // --- ALTERAÇÃO ADICIONADA: Ordena a lista de colaboradores ---
+            collaborators.sort((a, b) => a.name.localeCompare(b.name));
+
             collaboratorSelect.innerHTML = '<option value="">-- Selecione o Colaborador --</option>';
             collaborators.forEach(user => {
                 collaboratorSelect.innerHTML += `<option value="${user.id}">${user.name}</option>`;
             });
             collaboratorSelect.disabled = false;
-            
+           
             document.getElementById('collaborator-select').addEventListener('change', handleCollaboratorChange);
             document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
         }
@@ -254,22 +257,22 @@
             const rideDetails = document.getElementById('admin-ride-details');
             const selectedUserId = event.target.value;
             const showDetails = !!selectedUserId;
-            
+           
             rideDetails.classList.toggle('hidden', !showDetails);
-            
+           
             // Limpa qualquer listener antigo
             document.getElementById('admin-origin').oninput = null;
 
             if (showDetails) {
                 const selectedUser = state.allUsers.find(user => user.id == selectedUserId);
-                
+               
                 originalCollaboratorAddress = (selectedUser && selectedUser.address) ? selectedUser.address : '';
                 document.getElementById('admin-origin').value = originalCollaboratorAddress;
-                
+               
                 if (originalCollaboratorAddress) {
                     confirm("ORIGEM RESIDÊNCIA do COLABORADOR, EDITE ou MARQUE OK");
                 }
-                
+               
                 // --- Lógica de preenchimento automático do destino foi REMOVIDA daqui ---
 
                 initAutocomplete(document.getElementById('admin-origin'));
@@ -291,10 +294,10 @@
             for (let i = 1; i <= passengerCount; i++) {
                 initAutocomplete(document.getElementById(`admin-destination-${i}`));
             }
-            
+           
             // --- Lógica de listener para o destino foi REMOVIDA daqui ---
         }
-        
+       
         function openAdminScheduleModal() {
             const modal = document.getElementById('schedule-modal');
             const today = new Date();
@@ -311,12 +314,12 @@
             const dateInput = document.getElementById('schedule-date');
             const timeInput = document.getElementById('schedule-time');
             if (!dateInput.value || !timeInput.value) { return alert('Por favor, selecione data e hora.'); }
-            
+           
             const scheduledDate = new Date(`${dateInput.value}T${timeInput.value}`);
 
             adminScheduledDateTime = scheduledDate.toISOString();
             adminSelectedRequestType = 'scheduled';
-            
+           
             closeScheduleModal();
             adminRequestRide();
         }
@@ -359,7 +362,7 @@
             }
 
             const { error } = await supabaseClient.from('rides').insert([rideData]);
-            
+           
             if (error) {
                 alert('Erro ao solicitar corrida: ' + error.message);
             } else {
@@ -383,7 +386,7 @@
             }
             select.innerHTML = data.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         }
-        
+       
         function showAdminSubScreen(subScreenId) {
             document.querySelectorAll('.admin-sub-screen').forEach(screen => screen.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
@@ -399,7 +402,7 @@
                 loadHistoryRides();
             }
         }
-        
+       
         async function loadPendingRides() {
             const container = document.getElementById('pending-rides-container');
             container.innerHTML = '<p class="text-center">Carregando solicitações...</p>';
@@ -425,7 +428,7 @@
             container.innerHTML = rides.map(ride => {
                 const destinations = JSON.parse(ride.destination || '[]');
                 const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
-                
+               
                 return `
                     <div id="ride-card-${ride.id}" class="card-gradient p-4 rounded-lg border border-gray-700">
                         <p class="font-bold text-lg">${ride.userName}</p>
@@ -479,7 +482,7 @@
                 const destinations = JSON.parse(ride.destination || '[]');
                 const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
                 const statusInfo = statusMap[ride.status] || { text: ride.status, color: 'text-gray-300' };
-                
+               
                 return `
                     <div class="card-gradient p-4 rounded-lg border border-gray-700">
                         <div class="flex justify-between items-start">
@@ -517,7 +520,7 @@
 
         async function rejectRide(rideId) {
             if (!confirm('Tem certeza que deseja NÃO ACEITAR esta corrida?')) return;
-            
+           
             const { error } = await supabaseClient
                 .from('rides')
                 .update({ status: 'rejected' })
@@ -530,11 +533,11 @@
                 loadPendingRides(); // Recarrega a lista
             }
         }
-        
+       
         function initApp() {
             initializeGoogleMaps();
             populateLoginCompanies();
-            
+           
             document.getElementById('admin-request-immediate-btn').onclick = () => {
                 adminSelectedRequestType = 'immediate';
                 adminScheduledDateTime = null;
@@ -618,7 +621,7 @@
                 // CREATE (with upsert to prevent duplicates by name on creation)
                 result = await supabaseClient.from('companies').upsert({ name, password }, { onConflict: 'name' });
             }
-            
+           
             const { error } = result;
 
             if (error) {
@@ -633,9 +636,9 @@
 
         async function deleteCompany(id, name) {
             if (!confirm(`Tem certeza que deseja excluir a empresa "${name}"? Esta ação não pode ser desfeita.`)) return;
-            
+           
             const { error } = await supabaseClient.from('companies').delete().eq('id', id);
-            
+           
             if (error) {
                 alert('Erro ao excluir empresa: ' + error.message);
             } else {
@@ -646,4 +649,5 @@
         }
     </script>
 </body>
+
 </html>
