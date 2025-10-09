@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -41,12 +42,12 @@
 
     </style>
 </head>
-<body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
+<body class="main-gradient text-white min-h-screen flex items-start justify-center p-4 pt-8">
 
     <div id="app-container" class="w-full max-w-md mx-auto"> 
 
         <div id="company-login-screen" class="screen active">
-            <div id="admin-access-icon" title="Acesso Super Admin" onclick="promptSuperAdminLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem;">
+            <div id="admin-access-icon" title="Acesso Super Admin" onclick="showSuperAdminLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                 </svg>
@@ -57,6 +58,17 @@
             <div class="mb-4"><label for="company-password-input" class="block mb-2 text-sm font-medium">Senha da Empresa</label><input type="password" id="company-password-input" class="w-full p-3 rounded-lg" placeholder="Digite a senha"></div>
             <button onclick="verifyCompanyPassword()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
             <p id="company-login-error" class="text-red-500 text-center mt-4 hidden">Senha da empresa incorreta!</p>
+            <p class="text-xs text-center text-gray-400 mt-4">
+                Esqueceu a senha? Use o acesso Super Admin (ícone de escudo <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 align-text-bottom" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> no canto superior direito) para gerenciar as empresas.
+            </p>
+        </div>
+
+        <div id="super-admin-login-screen" class="screen">
+            <button onclick="showScreen('company-login-screen')" class="mb-4 text-cyan-400 hover:text-cyan-200">← Voltar</button>
+            <h2 class="text-3xl font-bold mb-6 text-center">Acesso Super Admin</h2>
+            <div class="mb-4"><label for="super-admin-password-input" class="block mb-2 text-sm font-medium">Senha Mestra</label><input type="password" id="super-admin-password-input" class="w-full p-3 rounded-lg text-center" placeholder="Digite a senha mestra"></div>
+            <button onclick="verifySuperAdminPassword()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
+            <p id="super-admin-login-error" class="text-red-500 text-center mt-4 hidden">Senha mestra incorreta!</p>
         </div>
        
         <div id="admin-screen" class="screen">
@@ -65,10 +77,11 @@
                 <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
             </div>
 
-            <div class="flex justify-center gap-2 mb-6">
+            <div class="flex flex-wrap justify-center gap-2 mb-6">
                 <button id="tab-request-ride" class="tab-button active" onclick="showAdminSubScreen('request-ride-screen')">Solicitar Corrida</button>
                 <button id="tab-approve-ride" class="tab-button" onclick="showAdminSubScreen('approval-ride-screen')">Aprovar Solicitações</button>
                 <button id="tab-history" class="tab-button" onclick="showAdminSubScreen('history-screen')">Histórico</button>
+                <button id="tab-users" class="tab-button" onclick="showAdminSubScreen('user-management-screen')">Gerenciar Usuários</button>
             </div>
 
             <div id="request-ride-screen" class="admin-sub-screen active">
@@ -100,10 +113,31 @@
                 <div id="history-rides-container" class="space-y-4">
                 </div>
             </div>
+
+            <div id="user-management-screen" class="admin-sub-screen">
+                <h2 class="text-2xl font-bold text-center mb-4">Gerenciar Usuários</h2>
+                <div class="card-gradient p-4 rounded-lg mb-6">
+                    <h3 id="user-form-title" class="text-lg font-semibold mb-2">Adicionar Usuário</h3>
+                    <input type="hidden" id="editing-user-id">
+                    <div class="space-y-2">
+                        <input type="text" id="new-user-matricula" placeholder="Matrícula" class="w-full p-2 rounded-lg">
+                        <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-2 rounded-lg">
+                        <input type="text" id="new-user-address" placeholder="Endereço" class="w-full p-2 rounded-lg">
+                        <input type="tel" id="new-user-phone" placeholder="Telefone" class="w-full p-2 rounded-lg">
+                        <input type="text" id="new-user-password" placeholder="Senha" class="w-full p-2 rounded-lg">
+                    </div>
+                    <button onclick="addOrUpdateUser()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
+                    <button id="cancel-user-edit-btn" onclick="cancelUserEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                </div>
+                <div id="user-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2"></div>
+            </div>
         </div>
 
         <div id="company-management-screen" class="screen">
-            <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Gerenciar Empresas</h2><button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button></div>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Gerenciar Empresas</h2>
+                <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
+            </div>
             <div class="card-gradient p-4 rounded-lg mb-6">
                 <h3 id="company-form-title" class="text-lg font-semibold mb-2">Adicionar Empresa</h3>
                 <input type="hidden" id="editing-company-id">
@@ -147,7 +181,7 @@
         let adminSelectedRequestType = '';
         let adminScheduledDateTime = null;
         let originalCollaboratorAddress = '';
-        // --- ALTERAÇÃO: Flag removida pois não é mais necessária ---
+        let companyUsersCache = [];
 
         function initializeGoogleMaps() {
             if (document.getElementById('google-maps-script-tag')) return;
@@ -186,19 +220,29 @@
         function logout() { 
             state.loggedInCompany = null; 
             document.getElementById('company-password-input').value = ''; 
+            document.getElementById('super-admin-password-input').value = ''; 
             resetAdminForm();
             showScreen('company-login-screen'); 
         }
 
-        async function promptSuperAdminLogin() {
-            const password = prompt("Para acessar o gerenciamento, digite a senha mestra:");
-            if (password === null) return;
+        function showSuperAdminLogin() {
+            showScreen('super-admin-login-screen');
+        }
+
+        async function verifySuperAdminPassword() {
+            const passwordInput = document.getElementById('super-admin-password-input');
+            const password = passwordInput.value;
+            const errorEl = document.getElementById('super-admin-login-error');
+            errorEl.classList.add('hidden');
+            
+            // A senha mestra do Super Admin é '789512'
             if (password === '789512') {
                 state.loggedInCompany = { name: "Super Admin" };
                 await loadCompanyManagement();
                 showScreen('company-management-screen');
+                passwordInput.value = '';
             } else {
-                alert("Senha mestra incorreta.");
+                errorEl.classList.remove('hidden');
             }
         }
 
@@ -223,36 +267,49 @@
                 state.loggedInCompany = data;
                 await setupAdminScreen();
                 showScreen('admin-screen');
+                showAdminSubScreen('request-ride-screen'); // Go to default tab after login
             }
+        }
+        
+        async function refreshAllUsers() {
+            const { data: users, error: usersError } = await supabaseClient.from('users').select('id, name, company, address');
+            if (usersError) { 
+                console.error("Erro ao recarregar todos os usuários:", usersError); 
+                return; 
+            }
+            state.allUsers = users;
+        }
+
+        async function refreshCollaboratorDropdown() {
+             const collaboratorSelect = document.getElementById('collaborator-select');
+             const loggedInCompanyName = state.loggedInCompany.name;
+             const collaborators = state.allUsers.filter(user => user.company === loggedInCompanyName);
+
+             collaborators.sort((a, b) => a.name.localeCompare(b.name));
+            
+             const selectedValue = collaboratorSelect.value;
+             collaboratorSelect.innerHTML = '<option value="">-- Selecione o Colaborador --</option>';
+             collaborators.forEach(user => {
+                 collaboratorSelect.innerHTML += `<option value="${user.id}">${user.name}</option>`;
+             });
+             collaboratorSelect.value = selectedValue; // Preserve selection if possible
+             collaboratorSelect.disabled = false;
         }
 
         async function setupAdminScreen() {
             document.getElementById('admin-welcome-message').textContent = `Bem-vindo, ${state.loggedInCompany.name}!`;
             resetAdminForm(); 
-            showAdminSubScreen('request-ride-screen');
 
-            const { data: users, error: usersError } = await supabaseClient.from('users').select('id, name, company, address');
-            if (usersError) { console.error("Erro ao buscar usuários:", usersError); return; }
-            state.allUsers = users;
-
-            const collaboratorSelect = document.getElementById('collaborator-select');
-            const loggedInCompanyName = state.loggedInCompany.name;
-            const collaborators = state.allUsers.filter(user => user.company === loggedInCompanyName);
-
-            // --- ALTERAÇÃO ADICIONADA: Ordena a lista de colaboradores ---
-            collaborators.sort((a, b) => a.name.localeCompare(b.name));
-
-            collaboratorSelect.innerHTML = '<option value="">-- Selecione o Colaborador --</option>';
-            collaborators.forEach(user => {
-                collaboratorSelect.innerHTML += `<option value="${user.id}">${user.name}</option>`;
-            });
-            collaboratorSelect.disabled = false;
+            await refreshAllUsers();
+            await refreshCollaboratorDropdown();
            
+            document.getElementById('collaborator-select').removeEventListener('change', handleCollaboratorChange);
             document.getElementById('collaborator-select').addEventListener('change', handleCollaboratorChange);
+
+            document.getElementById('admin-passenger-count').removeEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
             document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
         }
 
-        // --- ALTERAÇÃO: Função simplificada ---
         function handleCollaboratorChange(event) {
             const rideDetails = document.getElementById('admin-ride-details');
             const selectedUserId = event.target.value;
@@ -260,7 +317,6 @@
            
             rideDetails.classList.toggle('hidden', !showDetails);
            
-            // Limpa qualquer listener antigo
             document.getElementById('admin-origin').oninput = null;
 
             if (showDetails) {
@@ -273,8 +329,6 @@
                     confirm("ORIGEM RESIDÊNCIA do COLABORADOR, EDITE ou MARQUE OK");
                 }
                
-                // --- Lógica de preenchimento automático do destino foi REMOVIDA daqui ---
-
                 initAutocomplete(document.getElementById('admin-origin'));
                 adminUpdateDestinationFields(document.getElementById('admin-passenger-count').value);
             } else {
@@ -282,7 +336,6 @@
             }
         }
 
-        // --- ALTERAÇÃO: Função simplificada ---
         function adminUpdateDestinationFields(passengerCount) {
             const container = document.getElementById('admin-destinations-container');
             container.innerHTML = '';
@@ -294,8 +347,6 @@
             for (let i = 1; i <= passengerCount; i++) {
                 initAutocomplete(document.getElementById(`admin-destination-${i}`));
             }
-           
-            // --- Lógica de listener para o destino foi REMOVIDA daqui ---
         }
        
         function openAdminScheduleModal() {
@@ -400,6 +451,9 @@
             } else if (subScreenId === 'history-screen') {
                 document.getElementById('tab-history').classList.add('active');
                 loadHistoryRides();
+            } else if (subScreenId === 'user-management-screen') {
+                document.getElementById('tab-users').classList.add('active');
+                loadCompanyUsers();
             }
         }
        
@@ -561,6 +615,27 @@
                     }
                 })
                 .subscribe();
+             supabaseClient
+                .channel('public:users')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
+                    await refreshAllUsers(); // Refresh the global user list
+                    const activeScreen = document.querySelector('.screen.active');
+                     if (!activeScreen || !state.loggedInCompany) return;
+                    
+                     // Refresh collaborator dropdown if we are on the request screen
+                     if (activeScreen.querySelector('#request-ride-screen.active')) {
+                         await refreshCollaboratorDropdown();
+                     }
+
+                     // Refresh user management list if we are on that screen
+                     const activeSubScreen = activeScreen.querySelector('.admin-sub-screen.active');
+                     if (activeSubScreen && activeSubScreen.id === 'user-management-screen') {
+                        if(payload.new?.company === state.loggedInCompany.name || payload.old?.company === state.loggedInCompany.name) {
+                           await loadCompanyUsers();
+                        }
+                     }
+                })
+                .subscribe();
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
@@ -645,6 +720,145 @@
                 alert(`Empresa "${name}" excluída com sucesso.`);
                 await populateLoginCompanies(); // Atualiza o dropdown de login
                 await loadCompanyManagement(); // Atualiza a lista de empresas
+            }
+        }
+
+        // --- USER CRUD FUNCTIONS (COMPANY ADMIN) ---
+
+        async function loadCompanyUsers() {
+            const container = document.getElementById('user-list-container');
+            container.innerHTML = '<p>Carregando usuários...</p>';
+
+            if (!state.loggedInCompany || !state.loggedInCompany.name) {
+                container.innerHTML = '<p>Erro: Empresa não identificada.</p>';
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('company', state.loggedInCompany.name)
+                .order('name');
+
+            if (error) {
+                container.innerHTML = '<p class="text-red-500">Erro ao carregar usuários.</p>';
+                console.error(error);
+                return;
+            }
+             companyUsersCache = data;
+
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center">Nenhum usuário cadastrado para esta empresa.</p>';
+                return;
+            }
+
+            container.innerHTML = data.map(user => `
+                <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold text-lg">${user.name}</p>
+                        <p class="text-sm text-gray-400">Matrícula: ${user.matricula || 'N/A'}</p>
+                        <p class="text-sm text-gray-400">Endereço: ${user.address || 'N/A'}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick='editUserById(${user.id})' class="py-1 px-3 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Editar</button>
+                        <button onclick="deleteUser(${user.id},'${user.name}')" class="py-1 px-3 font-semibold rounded-lg bg-red-600 hover:bg-red-700">X</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editUserById(userId) {
+            const user = companyUsersCache.find(u => u.id === userId);
+            if (!user) return alert('Usuário não encontrado');
+
+            document.getElementById('editing-user-id').value = user.id;
+            document.getElementById('new-user-matricula').value = user.matricula || '';
+            document.getElementById('new-user-name').value = user.name || '';
+            document.getElementById('new-user-address').value = user.address || '';
+            document.getElementById('new-user-phone').value = user.phone || '';
+            document.getElementById('new-user-password').value = '';
+            document.getElementById('new-user-password').placeholder = 'Nova Senha (deixe em branco para manter)';
+
+            document.getElementById('cancel-user-edit-btn').classList.remove('hidden');
+            document.getElementById('user-form-title').textContent = 'Editar Usuário';
+            window.scrollTo(0, 0);
+        }
+
+        function cancelUserEdit() {
+            document.getElementById('editing-user-id').value = '';
+            document.getElementById('new-user-matricula').value = '';
+            document.getElementById('new-user-name').value = '';
+            document.getElementById('new-user-address').value = '';
+            document.getElementById('new-user-phone').value = '';
+            document.getElementById('new-user-password').value = '';
+            document.getElementById('new-user-password').placeholder = 'Senha';
+
+            document.getElementById('cancel-user-edit-btn').classList.add('hidden');
+            document.getElementById('user-form-title').textContent = 'Adicionar Usuário';
+        }
+
+        async function addOrUpdateUser() {
+            const id = document.getElementById('editing-user-id').value;
+            const matricula = document.getElementById('new-user-matricula').value.trim();
+            const name = document.getElementById('new-user-name').value.trim();
+            const address = document.getElementById('new-user-address').value.trim();
+            const phone = document.getElementById('new-user-phone').value.trim();
+            const password = document.getElementById('new-user-password').value.trim();
+            
+            if (!matricula || !name) {
+                return alert('Matrícula e Nome são obrigatórios.');
+            }
+
+            let userData = {
+                matricula,
+                name,
+                address,
+                phone,
+                company: state.loggedInCompany.name
+            };
+
+            if (password) {
+                userData.password = password;
+            }
+
+            let result;
+            if (id) {
+                // UPDATE
+                result = await supabaseClient.from('users').update(userData).eq('id', id);
+            } else {
+                // CREATE
+                if (!password) return alert('Senha é obrigatória para novos usuários.');
+                userData.password = password;
+                result = await supabaseClient.from('users').insert([userData]);
+            }
+        
+            const { error } = result;
+
+            if (error) {
+                alert('Erro ao salvar usuário: ' + error.message);
+                console.error(error);
+            } else {
+                alert('Usuário salvo com sucesso!');
+                cancelUserEdit();
+                // No need to call Supabase again, just update local state and re-render
+                await loadCompanyUsers(); 
+                await refreshAllUsers(); 
+                await refreshCollaboratorDropdown(); 
+            }
+        }
+
+        async function deleteUser(id, name) {
+            if (!confirm(`Tem certeza que deseja excluir o usuário "${name}"?`)) return;
+        
+            const { error } = await supabaseClient.from('users').delete().eq('id', id);
+        
+            if (error) {
+                alert('Erro ao excluir usuário: ' + error.message);
+            } else {
+                alert(`Usuário "${name}" excluído com sucesso.`);
+                await loadCompanyUsers();
+                await refreshAllUsers();
+                await refreshCollaboratorDropdown();
             }
         }
     </script>
