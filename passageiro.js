@@ -82,6 +82,13 @@ async function handleSignIn(email, password) {
     } finally { hideLoading('login-btn'); }
 }
 
+async function handleSignInWithProvider(provider) {
+    try {
+        const { error } = await supabaseClient.auth.signInWithOAuth({ provider });
+        if (error) throw error;
+    } catch (error) { toast.show(`Erro no login com ${provider}: ` + error.message, 'error'); }
+}
+
 async function handleSignUp(fullName, email, phone, password) {
     showLoading('signup-btn');
     try {
@@ -606,3 +613,4 @@ window.useCurrentLocation = useCurrentLocation;
 window.calculatePriceEstimate = calculatePriceEstimate;
 window.requestRide = requestRide;
 window.cancelRide = cancelRide;
+window.handleSignInWithProvider = handleSignInWithProvider; // Make sure this is exposed
