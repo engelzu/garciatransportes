@@ -529,42 +529,29 @@
     </div>
 
     <script>
-        // AJUSTE REALIZADO AQUI
-        // A função foi alterada para usar a API do Google Maps no lado do cliente (navegador)
-        // em vez de tentar chamar uma API no servidor que não existe no contexto deste arquivo.
+        // A chave API do Google Maps para o Distance Matrix API agora será usada no lado do servidor.
+        // A função getDrivingDistance fará uma chamada para a sua própria API no Vercel.
+
         async function getDrivingDistance(origin, destination) {
-            // Verifica se a API do Google Maps e o serviço Distance Matrix estão disponíveis
-            if (!google || !google.maps || !google.maps.DistanceMatrixService) {
-                console.error("O Serviço de Matriz de Distância do Google Maps não está disponível.");
+            // Remove a chamada direta para a API do Google
+            // e faz uma chamada para a sua API no Vercel
+            const url = `/api/get-distance?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.status === 'OK' && data.rows[0].elements[0].status === 'OK') {
+                    const distanceInMeters = data.rows[0].elements[0].distance.value;
+                    return distanceInMeters / 1000; // Converte metros para km
+                } else {
+                    console.error('Erro na API Vercel:', data.status, data.error_message);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Erro ao buscar a distância:', error);
                 return null;
             }
-
-            const service = new google.maps.DistanceMatrixService();
-            // Retorna uma Promessa que resolve com a distância ou rejeita com um erro
-            return new Promise((resolve, reject) => {
-                service.getDistanceMatrix({
-                    origins: [origin],
-                    destinations: [destination],
-                    travelMode: google.maps.TravelMode.DRIVING, // Modo de viagem: dirigindo
-                    unitSystem: google.maps.UnitSystem.METRIC, // Unidade de medida: métrico (km)
-                }, (response, status) => {
-                    // Se a chamada à API for bem-sucedida
-                    if (status === 'OK') {
-                        const results = response.rows[0].elements;
-                        // Verifica se o resultado para o par origem/destino específico é válido
-                        if (results[0].status === 'OK') {
-                            const distanceInMeters = results[0].distance.value;
-                            resolve(distanceInMeters / 1000); // Converte para KM e resolve a promessa
-                        } else {
-                            console.error(`Erro ao calcular distância para o destino: ${destination}. Status: ${results[0].status}`);
-                            resolve(null); // Resolve com nulo se o par específico falhar
-                        }
-                    } else {
-                        console.error(`Erro da Matriz de Distância: ${status}`);
-                        resolve(null); // Resolve com nulo se a chamada geral à API falhar
-                    }
-                });
-            });
         }
 
 
