@@ -8,6 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/resend@3.2.0/dist/index.global.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
@@ -1919,21 +1920,52 @@
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
 
+        // 2. FUNÇÃO DE E-MAIL ATUALIZADA
         async function sendNewRideEmailNotification(ride) {
-            // This function calls a secure backend endpoint to send the email.
-            // The API key is NOT exposed here.
+            console.log('Tentando enviar e-mail para a nova corrida:', ride);
+            // Instancia o Resend com a chave de API
+            const resend = new Resend('re_Qp3oqRvJ_5QKw8pW1zv9VF8kd7pTt6m8V');
+
             try {
-                await fetch('/api/send-email', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(ride),
+                // Monta o conteúdo do e-mail
+                const subject = `Nova Solicitação de Corrida: ${ride.userName}`;
+                const htmlBody = `
+                  <h1>Nova Solicitação de Corrida Recebida</h1>
+                  <p>Uma nova solicitação de corrida foi registrada no sistema.</p>
+                  <h2>Detalhes:</h2>
+                  <ul>
+                    <li><strong>Usuário:</strong> ${ride.userName || 'Não informado'}</li>
+                    <li><strong>Empresa:</strong> ${ride.userCompany || 'N/A'}</li>
+                    <li><strong>Origem:</strong> ${ride.origin_address || 'Não informada'}</li>
+                    <li><strong>Destino:</strong> ${ride.destination || 'Não informado'}</li>
+                    <li><strong>Observação:</strong> ${ride.observation || 'Nenhuma'}</li>
+                    <li><strong>Tipo:</strong> ${ride.request_type === 'scheduled' ? `Agendada para ${new Date(ride.scheduled_datetime).toLocaleString('pt-BR')}` : 'Imediata'}</li>
+                    <li><strong>Horário da Solicitação:</strong> ${new Date(ride.requestTime).toLocaleString('pt-BR')}</li>
+                  </ul>
+                  <p>Por favor, acesse o painel de administrador para designar um motorista.</p>
+                `;
+
+                // Envia o e-mail
+                const { data, error } = await resend.emails.send({
+                  from: 'GARCIA TRANSPORTES <onboarding@resend.dev>',
+                  to: ['engelmobile2020@gmail.com'],
+                  subject: subject,
+                  html: htmlBody,
                 });
+
+                if (error) {
+                    console.error('Erro ao enviar e-mail pela Resend:', error);
+                    alert('A notificação da corrida foi recebida, mas houve uma falha ao enviar o e-mail de alerta.');
+                } else {
+                    console.log('E-mail de notificação enviado com sucesso:', data);
+                }
+
             } catch (error) {
-                console.error('Erro ao enviar e-mail de notificação:', error);
+                console.error('Erro crítico ao tentar enviar e-mail:', error);
+                alert('Ocorreu um erro inesperado ao processar o envio do e-mail.');
             }
         }
+
 
         function setupRealtimeSubscriptions() {
             supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, payload => {
