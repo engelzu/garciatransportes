@@ -1919,6 +1919,22 @@
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
 
+        async function sendNewRideEmailNotification(ride) {
+            // This function calls a secure backend endpoint to send the email.
+            // The API key is NOT exposed here.
+            try {
+                await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(ride),
+                });
+            } catch (error) {
+                console.error('Erro ao enviar e-mail de notificação:', error);
+            }
+        }
+
         function setupRealtimeSubscriptions() {
             supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, payload => {
                 fetchAllData().then(() => { 
@@ -1938,9 +1954,10 @@
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
 
                 if (localStorage.getItem('sessionType') === 'admin') {
-                    // Toca o alarme quando uma nova corrida é INSERIDA com status 'requested'
-                    if (payload.eventType === 'INSERT' && payload.new.status === 'requested') {
+                    // Toca o alarme e envia e-mail quando uma nova corrida é INSERIDA
+                    if (payload.eventType === 'INSERT' && (payload.new.status === 'requested' || payload.new.status === 'scheduled')) {
                         startRingingAdmin();
+                        sendNewRideEmailNotification(payload.new);
                     }
                     // Toca o alarme quando uma corrida existente é ATUALIZADA para o status 'approved'
                     else if (payload.eventType === 'UPDATE' && payload.new.status === 'approved' && payload.old.status !== 'approved') {
