@@ -163,8 +163,7 @@
         </div>
         
         <div id="admin-management-screen" class="screen">
-            <!-- Conteúdo gerado dinamicamente por JS -->
-        </div>
+            </div>
 
     </div>
    
@@ -349,12 +348,9 @@
             const optionsHtml = companyUsers.map(user => `<option value="${user.id}">${user.name}</option>`).join('');
 
             for (let i = 0; i < quantity; i++) {
-                const isOrigin = i === 0;
-                const title = isOrigin ? 'Origem (Passageiro 1)' : `Destino (Passageiro ${i + 1})`;
-                
                 container.innerHTML += `
                     <div class="border border-gray-700 p-3 rounded-lg">
-                        <p class="font-semibold text-md mb-2">${title}</p>
+                        <p class="font-semibold text-md mb-2">Origem (Passageiro ${i + 1})</p>
                         <div class="mb-2">
                             <label for="collaborator-select-${i}" class="block mb-1 text-xs font-medium">Colaborador</label>
                             <select id="collaborator-select-${i}" data-index="${i}" class="w-full p-2 rounded-lg collaborator-selector">
@@ -370,6 +366,16 @@
                 `;
             }
 
+            container.innerHTML += `
+                <div class="border border-cyan-400 p-3 rounded-lg">
+                    <p class="font-semibold text-md mb-2 text-cyan-400">Destino Final</p>
+                    <div>
+                        <label for="address-input-destination" class="block mb-1 text-xs font-medium">Endereço de Destino</label>
+                        <input type="text" id="address-input-destination" class="w-full p-2 rounded-lg" placeholder="Digite o endereço de destino da viagem">
+                    </div>
+                </div>
+            `;
+            
             document.querySelectorAll('.collaborator-selector').forEach(select => {
                 select.addEventListener('change', handleCollaboratorSelection);
             });
@@ -377,6 +383,7 @@
             for (let i = 0; i < quantity; i++) {
                 initAutocomplete(document.getElementById(`address-input-${i}`));
             }
+            initAutocomplete(document.getElementById(`address-input-destination`));
         }
         
         function handleCollaboratorSelection(event) {
@@ -423,36 +430,39 @@
 
         async function adminRequestRide() {
             const passengerCount = parseInt(document.getElementById('passenger-quantity-select').value, 10);
-            if (!passengerCount || passengerCount < 1) {
-                return alert('Selecione a quantidade de passageiros.');
-            }
+            if (!passengerCount || passengerCount < 1) { return alert('Selecione a quantidade de passageiros.'); }
             
             const firstCollaboratorId = document.getElementById('collaborator-select-0').value;
-            if (!firstCollaboratorId) {
-                return alert('Selecione o colaborador de origem.');
-            }
-
+            if (!firstCollaboratorId) { return alert('Selecione o colaborador da Origem 1.'); }
             const collaborator = state.allUsers.find(u => u.id == firstCollaboratorId);
             
             const originAddress = document.getElementById('address-input-0').value.trim();
-            if (!originAddress) {
-                return alert('O endereço de origem é obrigatório.');
-            }
+            if (!originAddress) { return alert('O endereço da Origem 1 é obrigatório.'); }
+
+            const destinationAddress = document.getElementById('address-input-destination').value.trim();
+            if (!destinationAddress) { return alert('O endereço de Destino Final é obrigatório.'); }
 
             const destinations = [];
+
             for (let i = 1; i < passengerCount; i++) {
-                const destValue = document.getElementById(`address-input-${i}`)?.value.trim();
                 const collabId = document.getElementById(`collaborator-select-${i}`)?.value;
                 const collab = state.allUsers.find(u => u.id == collabId);
-
-                if (destValue) {
-                    destinations.push({
-                        name: collab ? collab.name : 'Passageiro sem cadastro',
-                        address: destValue
-                    });
+                const addressValue = document.getElementById(`address-input-${i}`)?.value.trim();
+                
+                if (!collabId || !addressValue) {
+                    return alert(`Preencha os dados da Origem (Passageiro ${i + 1}).`);
                 }
+                destinations.push({
+                    name: `Origem: ${collab.name}`,
+                    address: addressValue
+                });
             }
 
+            destinations.push({
+                name: 'Destino Final',
+                address: destinationAddress
+            });
+            
             let rideData = {
                 userId: collaborator.id,
                 userName: collaborator.name,
@@ -479,7 +489,7 @@
             if (error) {
                 alert('Erro ao solicitar corrida: ' + error.message);
             } else {
-                alert(`Corrida para ${collaborator.name} e mais ${destinations.length} passageiros solicitada com sucesso!`);
+                alert(`Corrida para ${collaborator.name} e outros ${passengerCount - 1} passageiros solicitada!`);
                 resetAdminForm();
             }
 
@@ -518,6 +528,7 @@
             }
         }
        
+        // --- CÓDIGO CORRIGIDO ---
         async function loadPendingRides() {
             const container = document.getElementById('pending-rides-container');
             container.innerHTML = '<p class="text-center">Carregando solicitações...</p>';
@@ -541,21 +552,17 @@
             }
 
             container.innerHTML = rides.map(ride => {
-                const destinations = JSON.parse(ride.destination || '[]');
                 const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
                 const scheduledDate = ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : null;
-
+                
                 let destinationsHtml = '';
-                if (destinations.length > 0) {
-                    destinationsHtml = destinations.map((dest, index) => {
-                        if (typeof dest === 'object' && dest !== null && dest.address) {
-                            return `<p><strong>Destino ${index + 1} (${dest.name}):</strong> ${dest.address}</p>`;
-                        }
-                        if (typeof dest === 'string') {
-                            return `<p><strong>Destino ${index + 1}:</strong> ${dest}</p>`;
-                        }
-                        return '';
-                    }).join('');
+                try {
+                    const destinations = JSON.parse(ride.destination || '[]');
+                    if (Array.isArray(destinations) && destinations.length > 0) {
+                        destinationsHtml = destinations.map(dest => `<p><strong>${dest.name}:</strong> ${dest.address}</p>`).join('');
+                    }
+                } catch (e) {
+                    console.error('Erro ao parsear destinations:', ride.destination);
                 }
 
                 return `
@@ -566,7 +573,7 @@
                             ${scheduledDate ? `<p class="text-xs text-cyan-300 font-semibold">Agendado para: ${scheduledDate}</p>` : ''}
                         </div>
                         <div class="text-sm space-y-1 border-t border-gray-700 pt-2 mt-2">
-                            <p><strong>De:</strong> ${ride.origin_address}</p>
+                            <p><strong>Origem Principal:</strong> ${ride.origin_address}</p>
                             ${destinationsHtml}
                             ${ride.observation ? `<p class="mt-2"><strong>Observação:</strong> ${ride.observation}</p>` : ''}
                         </div>
@@ -611,22 +618,18 @@
             };
 
             container.innerHTML = rides.map(ride => {
-                const destinations = JSON.parse(ride.destination || '[]');
                 const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
                 const scheduledDate = ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : null;
                 const statusInfo = statusMap[ride.status] || { text: ride.status, color: 'text-gray-300' };
 
                 let destinationsHtml = '';
-                if (destinations.length > 0) {
-                     destinationsHtml = destinations.map((dest, index) => {
-                        if (typeof dest === 'object' && dest !== null && dest.address) {
-                            return `<p><strong>Destino ${index + 1} (${dest.name}):</strong> ${dest.address}</p>`;
-                        }
-                        if (typeof dest === 'string') {
-                            return `<p><strong>Destino ${index + 1}:</strong> ${dest}</p>`;
-                        }
-                        return '';
-                    }).join('');
+                 try {
+                    const destinations = JSON.parse(ride.destination || '[]');
+                     if (Array.isArray(destinations) && destinations.length > 0) {
+                        destinationsHtml = destinations.map(dest => `<p><strong>${dest.name}:</strong> ${dest.address}</p>`).join('');
+                    }
+                } catch (e) {
+                    console.error('Erro ao parsear destinations:', ride.destination);
                 }
                
                 return `
@@ -640,7 +643,7 @@
                             <span class="font-bold text-right ${statusInfo.color}">${statusInfo.text}</span>
                         </div>
                         <div class="text-sm space-y-1 border-t border-gray-700 pt-2 mt-2">
-                            <p><strong>De:</strong> ${ride.origin_address}</p>
+                            <p><strong>Origem Principal:</strong> ${ride.origin_address}</p>
                             ${destinationsHtml}
                             ${ride.observation ? `<p class="mt-2"><strong>Observação:</strong> ${ride.observation}</p>` : ''}
                         </div>
@@ -897,7 +900,6 @@
 
             const { error } = id 
                 ? await supabaseClient.from('company_admins').update(adminData).eq('id', id)
-                // A 'constraint' no Supabase vai previnir duplicados (username na mesma company_id)
                 : await supabaseClient.from('company_admins').insert([adminData]);
             
             if (error) {
@@ -1056,4 +1058,3 @@
 </body>
 
 </html>
-
