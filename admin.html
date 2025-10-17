@@ -1234,6 +1234,7 @@
                         </div>
                         <p class="font-semibold">Origem: <span class="font-normal">${ride.origin_address || 'Não informado'}</span></p>
                         <p class="font-semibold">Destino: <span class="font-normal">${destinationAddress}</span></p>
+                        <p class="font-semibold">Observação: <span class="font-normal text-yellow-300">${ride.observation || 'Nenhuma'}</span></p>
                         ${distanceInfo}
                         <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
                         <p class="text-sm text-gray-300">Solicitado em: ${new Date(ride.requestTime).toLocaleTimeString()}</p>
@@ -1281,6 +1282,7 @@
                             <th scope="col" class="px-4 py-3">Usuário</th>
                             <th scope="col" class="px-4 py-3">Origem</th>
                             <th scope="col" class="px-4 py-3">Destino</th>
+                            <th scope="col" class="px-4 py-3">Observação</th>
                             <th scope="col" class="px-4 py-3">Distância (km)</th>
                             <th scope="col" class="px-4 py-3">Motorista</th>
                             <th scope="col" class="px-4 py-3">Status</th>
@@ -1346,6 +1348,7 @@
                         <td class="px-4 py-3 font-medium">${ride.userName}</td>
                         <td class="px-4 py-3">${originAddress}</td>
                         <td class="px-4 py-3">${ride.cleanedDestination}</td>
+                        <td class="px-4 py-3 text-yellow-300">${ride.observation || '-'}</td>
                         <td class="px-4 py-3 font-semibold">${ride.distanceKm}</td>
                         <td class="px-4 py-3">${driverCellHTML}</td>
                         <td class="px-4 py-3">
