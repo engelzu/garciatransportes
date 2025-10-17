@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -55,9 +54,10 @@
            
             <h2 class="text-3xl font-bold mb-6 text-center">Login da Empresa</h2>
             <div class="mb-4"><label for="company-login-select" class="block mb-2 text-sm font-medium">Empresa</label><select id="company-login-select" class="w-full p-3 rounded-lg"></select></div>
-            <div class="mb-4"><label for="company-password-input" class="block mb-2 text-sm font-medium">Senha da Empresa</label><input type="password" id="company-password-input" class="w-full p-3 rounded-lg" placeholder="Digite a senha"></div>
-            <button onclick="verifyCompanyPassword()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
-            <p id="company-login-error" class="text-red-500 text-center mt-4 hidden">Senha da empresa incorreta!</p>
+            <div class="mb-4"><label for="admin-username-input" class="block mb-2 text-sm font-medium">Usuário Admin</label><input type="text" id="admin-username-input" class="w-full p-3 rounded-lg" placeholder="Digite seu usuário"></div>
+            <div class="mb-4"><label for="admin-password-input" class="block mb-2 text-sm font-medium">Senha</label><input type="password" id="admin-password-input" class="w-full p-3 rounded-lg" placeholder="Digite sua senha"></div>
+            <button onclick="verifyCompanyAdminPassword()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
+            <p id="company-login-error" class="text-red-500 text-center mt-4 hidden">Usuário ou senha incorretos!</p>
             <p class="text-xs text-center text-gray-400 mt-4">
                 Esqueceu a senha? Use o acesso Super Admin (ícone de escudo <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 align-text-bottom" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> no canto superior direito) para gerenciar as empresas.
             </p>
@@ -85,15 +85,27 @@
             </div>
 
             <div id="request-ride-screen" class="admin-sub-screen active">
-                <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
+                 <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
                 <div id="admin-request-form" class="card-gradient p-6 rounded-lg">
-                    <div class="mb-6"><label for="collaborator-select" class="block mb-2 text-sm font-medium">Colaborador</label><select id="collaborator-select" class="w-full p-3 rounded-lg"><option value="">-- Carregando... --</option></select></div>
+                    <div class="mb-4">
+                        <label for="passenger-quantity-select" class="block mb-2 text-sm font-medium">SELECIONE A QUANTIDADE DE PASSAGEIROS</label>
+                        <select id="passenger-quantity-select" class="w-full p-3 rounded-lg">
+                            <option value="">-- Quantidade --</option>
+                            <option value="1">1 Passageiro</option>
+                            <option value="2">2 Passageiros</option>
+                            <option value="3">3 Passageiros</option>
+                            <option value="4">4 Passageiros</option>
+                        </select>
+                    </div>
+                    <div id="collaborators-container" class="space-y-4">
+                    </div>
                     <div id="admin-ride-details" class="hidden">
-                        <hr class="border-gray-600 my-6"><h3 class="text-lg font-semibold mb-4 text-center">Detalhes da Viagem</h3>
-                        <div class="mb-4"><label for="admin-origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label><input type="text" id="admin-origin" class="w-full p-3 rounded-lg" placeholder="Digite o endereço de partida"></div>
-                        <div class="mb-4"><label for="admin-passenger-count" class="block mb-2 text-sm font-medium">Passageiros</label><select id="admin-passenger-count" class="w-full p-3 rounded-lg"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
-                        <div id="admin-destinations-container" class="w-full"></div>
-                        <div class="mb-4"><label for="admin-observation" class="block mb-2 text-sm font-medium">Observação</label><textarea id="admin-observation" class="w-full p-3 rounded-lg" placeholder="Ex: Ponto de referência..." rows="2"></textarea></div>
+                        <hr class="border-gray-600 my-6">
+                        <h3 class="text-lg font-semibold mb-4 text-center">Detalhes da Viagem</h3>
+                        <div class="mb-4">
+                            <label for="admin-observation" class="block mb-2 text-sm font-medium">Observação</label>
+                            <textarea id="admin-observation" class="w-full p-3 rounded-lg" placeholder="Ex: Ponto de referência..." rows="2"></textarea>
+                        </div>
                         <div class="mt-6 space-y-3">
                             <button id="admin-request-immediate-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR AGORA</button>
                             <button id="admin-request-scheduled-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">AGENDAR</button>
@@ -143,13 +155,17 @@
                 <input type="hidden" id="editing-company-id">
                 <div class="flex gap-2 mb-2">
                     <input type="text" id="new-company-name" placeholder="Nome da Empresa" class="w-full p-2 rounded-lg">
-                    <input type="text" id="new-company-password" placeholder="Senha" class="w-full p-2 rounded-lg">
                 </div>
                 <button onclick="addOrUpdateCompany()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar</button>
                 <button id="cancel-edit-btn" onclick="cancelEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
             </div>
             <div id="company-list-container" class="space-y-3"></div>
         </div>
+        
+        <div id="admin-management-screen" class="screen">
+            <!-- Conteúdo gerado dinamicamente por JS -->
+        </div>
+
     </div>
    
     <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 items-center justify-center z-50 p-4">
@@ -177,11 +193,12 @@
        
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
        
-        let state = { loggedInCompany: null, allUsers: [] };
+        let state = { loggedInCompany: null, loggedInAdmin: null, allUsers: [] };
         let adminSelectedRequestType = '';
         let adminScheduledDateTime = null;
-        let originalCollaboratorAddress = '';
         let companyUsersCache = [];
+        let currentManagingCompany = { id: null, name: null };
+
 
         function initializeGoogleMaps() {
             if (document.getElementById('google-maps-script-tag')) return;
@@ -202,15 +219,12 @@
         }
        
         function resetAdminForm() {
-            document.getElementById('collaborator-select').value = '';
+            document.getElementById('passenger-quantity-select').value = '';
+            document.getElementById('collaborators-container').innerHTML = '';
             document.getElementById('admin-ride-details').classList.add('hidden');
-            document.getElementById('admin-origin').value = '';
-            document.getElementById('admin-passenger-count').value = '1';
-            document.getElementById('admin-destinations-container').innerHTML = '';
             document.getElementById('admin-observation').value = '';
-            originalCollaboratorAddress = '';
-            document.getElementById('admin-origin').oninput = null;
         }
+
 
         function showScreen(screenId) { 
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active')); 
@@ -219,7 +233,9 @@
        
         function logout() { 
             state.loggedInCompany = null; 
-            document.getElementById('company-password-input').value = ''; 
+            state.loggedInAdmin = null;
+            document.getElementById('admin-username-input').value = '';
+            document.getElementById('admin-password-input').value = ''; 
             document.getElementById('super-admin-password-input').value = ''; 
             resetAdminForm();
             showScreen('company-login-screen'); 
@@ -235,9 +251,8 @@
             const errorEl = document.getElementById('super-admin-login-error');
             errorEl.classList.add('hidden');
             
-            // A senha mestra do Super Admin é '789512'
             if (password === '789512') {
-                state.loggedInCompany = { name: "Super Admin" };
+                state.loggedInCompany = { name: "Super Admin" }; // Generic object for super admin
                 await loadCompanyManagement();
                 showScreen('company-management-screen');
                 passwordInput.value = '';
@@ -246,28 +261,51 @@
             }
         }
 
-        async function verifyCompanyPassword() {
+        async function verifyCompanyAdminPassword() {
             const companyName = document.getElementById('company-login-select').value;
-            const password = document.getElementById('company-password-input').value.trim();
+            const username = document.getElementById('admin-username-input').value.trim();
+            const password = document.getElementById('admin-password-input').value.trim();
             const errorEl = document.getElementById('company-login-error');
             errorEl.classList.add('hidden');
 
-            if (!companyName || !password) {
+            if (!companyName || !username || !password) {
                 errorEl.textContent = 'Preencha todos os campos.';
                 errorEl.classList.remove('hidden');
                 return;
             }
-           
-            const { data, error } = await supabaseClient.from('companies').select('*').eq('name', companyName).eq('password', password).single();
-           
-            if (error || !data) {
-                errorEl.textContent = 'Senha da empresa incorreta!';
+
+            const { data: company, error: companyError } = await supabaseClient
+                .from('companies')
+                .select('id, name')
+                .eq('name', companyName)
+                .single();
+
+            if (companyError || !company) {
+                errorEl.textContent = 'Empresa não encontrada.';
+                errorEl.classList.remove('hidden');
+                console.error("Login Error: Company not found", companyError);
+                return;
+            }
+
+            const { data: admin, error: adminError } = await supabaseClient
+                .from('company_admins')
+                .select('*')
+                .eq('company_id', company.id)
+                .eq('username', username)
+                .eq('password', password)
+                .single();
+
+            if (adminError || !admin) {
+                errorEl.textContent = 'Usuário ou senha incorretos.';
                 errorEl.classList.remove('hidden');
             } else {
-                state.loggedInCompany = data;
+                state.loggedInCompany = company;
+                state.loggedInAdmin = admin;
                 await setupAdminScreen();
                 showScreen('admin-screen');
-                showAdminSubScreen('request-ride-screen'); // Go to default tab after login
+                showAdminSubScreen('request-ride-screen');
+                document.getElementById('admin-username-input').value = '';
+                document.getElementById('admin-password-input').value = '';
             }
         }
         
@@ -280,75 +318,83 @@
             state.allUsers = users;
         }
 
-        async function refreshCollaboratorDropdown() {
-             const collaboratorSelect = document.getElementById('collaborator-select');
-             const loggedInCompanyName = state.loggedInCompany.name;
-             const collaborators = state.allUsers.filter(user => user.company === loggedInCompanyName);
-
-             collaborators.sort((a, b) => a.name.localeCompare(b.name));
-            
-             const selectedValue = collaboratorSelect.value;
-             collaboratorSelect.innerHTML = '<option value="">-- Selecione o Colaborador --</option>';
-             collaborators.forEach(user => {
-                 collaboratorSelect.innerHTML += `<option value="${user.id}">${user.name}</option>`;
-             });
-             collaboratorSelect.value = selectedValue; // Preserve selection if possible
-             collaboratorSelect.disabled = false;
-        }
-
         async function setupAdminScreen() {
             document.getElementById('admin-welcome-message').textContent = `Bem-vindo, ${state.loggedInCompany.name}!`;
             resetAdminForm(); 
 
             await refreshAllUsers();
-            await refreshCollaboratorDropdown();
-           
-            document.getElementById('collaborator-select').removeEventListener('change', handleCollaboratorChange);
-            document.getElementById('collaborator-select').addEventListener('change', handleCollaboratorChange);
 
-            document.getElementById('admin-passenger-count').removeEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
-            document.getElementById('admin-passenger-count').addEventListener('change', (e) => adminUpdateDestinationFields(e.target.value));
+            const passengerSelect = document.getElementById('passenger-quantity-select');
+            passengerSelect.removeEventListener('change', handlePassengerQuantityChange);
+            passengerSelect.addEventListener('change', handlePassengerQuantityChange);
         }
-
-        function handleCollaboratorChange(event) {
+        
+        function handlePassengerQuantityChange(event) {
+            const quantity = parseInt(event.target.value, 10);
+            const container = document.getElementById('collaborators-container');
             const rideDetails = document.getElementById('admin-ride-details');
-            const selectedUserId = event.target.value;
-            const showDetails = !!selectedUserId;
-           
-            rideDetails.classList.toggle('hidden', !showDetails);
-           
-            document.getElementById('admin-origin').oninput = null;
-
-            if (showDetails) {
-                const selectedUser = state.allUsers.find(user => user.id == selectedUserId);
-               
-                originalCollaboratorAddress = (selectedUser && selectedUser.address) ? selectedUser.address : '';
-                document.getElementById('admin-origin').value = originalCollaboratorAddress;
-               
-                if (originalCollaboratorAddress) {
-                    confirm("ORIGEM RESIDÊNCIA do COLABORADOR, EDITE ou MARQUE OK");
-                }
-               
-                initAutocomplete(document.getElementById('admin-origin'));
-                adminUpdateDestinationFields(document.getElementById('admin-passenger-count').value);
-            } else {
-                 resetAdminForm();
-            }
-        }
-
-        function adminUpdateDestinationFields(passengerCount) {
-            const container = document.getElementById('admin-destinations-container');
             container.innerHTML = '';
-            for (let i = 1; i <= passengerCount; i++) {
-                const labelText = i === 1 ? 'Destino Passageiro 1 <span class="text-red-400">(Obrigatório)</span>' : `Destino Passageiro ${i}`;
-                container.innerHTML += `<div class="mb-4"><label class="block mb-2 text-sm font-medium">${labelText}</label><input type="text" id="admin-destination-${i}" class="w-full p-3 rounded-lg" placeholder="Digite o endereço completo"></div>`;
+
+            if (isNaN(quantity) || quantity < 1) {
+                rideDetails.classList.add('hidden');
+                return;
+            }
+            
+            rideDetails.classList.remove('hidden');
+
+            const companyUsers = state.allUsers
+                .filter(user => user.company === state.loggedInCompany.name)
+                .sort((a, b) => a.name.localeCompare(b.name));
+            
+            const optionsHtml = companyUsers.map(user => `<option value="${user.id}">${user.name}</option>`).join('');
+
+            for (let i = 0; i < quantity; i++) {
+                const isOrigin = i === 0;
+                const title = isOrigin ? 'Origem (Passageiro 1)' : `Destino (Passageiro ${i + 1})`;
+                
+                container.innerHTML += `
+                    <div class="border border-gray-700 p-3 rounded-lg">
+                        <p class="font-semibold text-md mb-2">${title}</p>
+                        <div class="mb-2">
+                            <label for="collaborator-select-${i}" class="block mb-1 text-xs font-medium">Colaborador</label>
+                            <select id="collaborator-select-${i}" data-index="${i}" class="w-full p-2 rounded-lg collaborator-selector">
+                                <option value="">-- Selecione --</option>
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="address-input-${i}" class="block mb-1 text-xs font-medium">Endereço</label>
+                            <input type="text" id="address-input-${i}" class="w-full p-2 rounded-lg" placeholder="Endereço autocompletado ou manual">
+                        </div>
+                    </div>
+                `;
             }
 
-            for (let i = 1; i <= passengerCount; i++) {
-                initAutocomplete(document.getElementById(`admin-destination-${i}`));
+            document.querySelectorAll('.collaborator-selector').forEach(select => {
+                select.addEventListener('change', handleCollaboratorSelection);
+            });
+            
+            for (let i = 0; i < quantity; i++) {
+                initAutocomplete(document.getElementById(`address-input-${i}`));
             }
         }
-       
+        
+        function handleCollaboratorSelection(event) {
+            const selectedUserId = event.target.value;
+            const index = event.target.dataset.index;
+            const addressInput = document.getElementById(`address-input-${index}`);
+
+            if (selectedUserId) {
+                const selectedUser = state.allUsers.find(user => user.id == selectedUserId);
+                addressInput.value = (selectedUser && selectedUser.address) ? selectedUser.address : '';
+                if (addressInput.value) {
+                    confirm(`Endereço do colaborador ${selectedUser.name} preenchido. Confirme ou edite.`);
+                }
+            } else {
+                addressInput.value = '';
+            }
+        }
+
         function openAdminScheduleModal() {
             const modal = document.getElementById('schedule-modal');
             const today = new Date();
@@ -376,31 +422,47 @@
         }
 
         async function adminRequestRide() {
-            const collaboratorId = document.getElementById('collaborator-select').value;
-            if (!collaboratorId) return alert('Selecione um colaborador.');
-
-            const collaborator = state.allUsers.find(u => u.id == collaboratorId);
-            const passengerCount = document.getElementById('admin-passenger-count').value;
-            const destinations = [];
-            for (let i = 1; i <= passengerCount; i++) {
-                const destValue = document.getElementById(`admin-destination-${i}`)?.value.trim();
-                if (destValue) destinations.push(destValue);
+            const passengerCount = parseInt(document.getElementById('passenger-quantity-select').value, 10);
+            if (!passengerCount || passengerCount < 1) {
+                return alert('Selecione a quantidade de passageiros.');
+            }
+            
+            const firstCollaboratorId = document.getElementById('collaborator-select-0').value;
+            if (!firstCollaboratorId) {
+                return alert('Selecione o colaborador de origem.');
             }
 
-            if (!document.getElementById('admin-origin').value.trim() || destinations.length === 0) {
-                return alert('Origem e pelo menos um Destino são obrigatórios.');
+            const collaborator = state.allUsers.find(u => u.id == firstCollaboratorId);
+            
+            const originAddress = document.getElementById('address-input-0').value.trim();
+            if (!originAddress) {
+                return alert('O endereço de origem é obrigatório.');
+            }
+
+            const destinations = [];
+            for (let i = 1; i < passengerCount; i++) {
+                const destValue = document.getElementById(`address-input-${i}`)?.value.trim();
+                const collabId = document.getElementById(`collaborator-select-${i}`)?.value;
+                const collab = state.allUsers.find(u => u.id == collabId);
+
+                if (destValue) {
+                    destinations.push({
+                        name: collab ? collab.name : 'Passageiro sem cadastro',
+                        address: destValue
+                    });
+                }
             }
 
             let rideData = {
                 userId: collaborator.id,
                 userName: collaborator.name,
                 userCompany: collaborator.company,
-                origin_address: document.getElementById('admin-origin').value.trim(),
+                origin_address: originAddress,
                 destination: JSON.stringify(destinations),
-                passenger_count: parseInt(passengerCount),
+                passenger_count: passengerCount,
                 observation: document.getElementById('admin-observation').value.trim(),
                 requestTime: new Date().toISOString(),
-                requested_by_admin_name: state.loggedInCompany.name,
+                requested_by_admin_name: state.loggedInAdmin.username,
             };
 
             if (adminSelectedRequestType === 'scheduled' && adminScheduledDateTime) {
@@ -417,9 +479,8 @@
             if (error) {
                 alert('Erro ao solicitar corrida: ' + error.message);
             } else {
-                alert(`Corrida para ${collaborator.name} solicitada com sucesso!`);
+                alert(`Corrida para ${collaborator.name} e mais ${destinations.length} passageiros solicitada com sucesso!`);
                 resetAdminForm();
-                document.getElementById('admin-ride-details').classList.add('hidden');
             }
 
             adminSelectedRequestType = '';
@@ -482,15 +543,32 @@
             container.innerHTML = rides.map(ride => {
                 const destinations = JSON.parse(ride.destination || '[]');
                 const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
-               
+                const scheduledDate = ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : null;
+
+                let destinationsHtml = '';
+                if (destinations.length > 0) {
+                    destinationsHtml = destinations.map((dest, index) => {
+                        if (typeof dest === 'object' && dest !== null && dest.address) {
+                            return `<p><strong>Destino ${index + 1} (${dest.name}):</strong> ${dest.address}</p>`;
+                        }
+                        if (typeof dest === 'string') {
+                            return `<p><strong>Destino ${index + 1}:</strong> ${dest}</p>`;
+                        }
+                        return '';
+                    }).join('');
+                }
+
                 return `
                     <div id="ride-card-${ride.id}" class="card-gradient p-4 rounded-lg border border-gray-700">
-                        <p class="font-bold text-lg">${ride.userName}</p>
-                        <p class="text-sm text-gray-400 mb-3">Solicitado em: ${requestDate}</p>
-                        <div class="text-sm space-y-1">
+                        <div class="mb-2">
+                            <p class="font-bold text-lg">${ride.userName}</p>
+                            <p class="text-xs text-gray-400">Solicitado em: ${requestDate}</p>
+                            ${scheduledDate ? `<p class="text-xs text-cyan-300 font-semibold">Agendado para: ${scheduledDate}</p>` : ''}
+                        </div>
+                        <div class="text-sm space-y-1 border-t border-gray-700 pt-2 mt-2">
                             <p><strong>De:</strong> ${ride.origin_address}</p>
-                            <p><strong>Para:</strong> ${destinations.join(', ')}</p>
-                            ${ride.observation ? `<p><strong>Obs:</strong> ${ride.observation}</p>` : ''}
+                            ${destinationsHtml}
+                            ${ride.observation ? `<p class="mt-2"><strong>Observação:</strong> ${ride.observation}</p>` : ''}
                         </div>
                         <div class="flex justify-end gap-3 mt-4">
                              <button onclick="rejectRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-red-600 hover:bg-red-700">NÃO ACEITAR</button>
@@ -535,21 +613,36 @@
             container.innerHTML = rides.map(ride => {
                 const destinations = JSON.parse(ride.destination || '[]');
                 const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
+                const scheduledDate = ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : null;
                 const statusInfo = statusMap[ride.status] || { text: ride.status, color: 'text-gray-300' };
+
+                let destinationsHtml = '';
+                if (destinations.length > 0) {
+                     destinationsHtml = destinations.map((dest, index) => {
+                        if (typeof dest === 'object' && dest !== null && dest.address) {
+                            return `<p><strong>Destino ${index + 1} (${dest.name}):</strong> ${dest.address}</p>`;
+                        }
+                        if (typeof dest === 'string') {
+                            return `<p><strong>Destino ${index + 1}:</strong> ${dest}</p>`;
+                        }
+                        return '';
+                    }).join('');
+                }
                
                 return `
                     <div class="card-gradient p-4 rounded-lg border border-gray-700">
-                        <div class="flex justify-between items-start">
+                        <div class="flex justify-between items-start mb-2">
                             <div>
                                 <p class="font-bold text-lg">${ride.userName}</p>
-                                <p class="text-sm text-gray-400 mb-3">Solicitado em: ${requestDate}</p>
+                                <p class="text-xs text-gray-400">Solicitado em: ${requestDate}</p>
+                                ${scheduledDate ? `<p class="text-xs text-cyan-300 font-semibold">Agendado para: ${scheduledDate}</p>` : ''}
                             </div>
-                            <span class="font-bold ${statusInfo.color}">${statusInfo.text}</span>
+                            <span class="font-bold text-right ${statusInfo.color}">${statusInfo.text}</span>
                         </div>
-                        <div class="text-sm space-y-1">
+                        <div class="text-sm space-y-1 border-t border-gray-700 pt-2 mt-2">
                             <p><strong>De:</strong> ${ride.origin_address}</p>
-                            <p><strong>Para:</strong> ${destinations.join(', ')}</p>
-                            ${ride.observation ? `<p><strong>Obs:</strong> ${ride.observation}</p>` : ''}
+                            ${destinationsHtml}
+                            ${ride.observation ? `<p class="mt-2"><strong>Observação:</strong> ${ride.observation}</p>` : ''}
                         </div>
                     </div>
                 `;
@@ -568,7 +661,7 @@
                 alert('Erro ao aprovar a corrida: ' + error.message);
             } else {
                 alert('Corrida aprovada com sucesso!');
-                loadPendingRides(); // Recarrega a lista
+                loadPendingRides();
             }
         }
 
@@ -584,7 +677,7 @@
                 alert('Erro ao rejeitar a corrida: ' + error.message);
             } else {
                 alert('Corrida não aceita.');
-                loadPendingRides(); // Recarrega a lista
+                loadPendingRides();
             }
         }
        
@@ -603,7 +696,7 @@
                 .channel('public:rides')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
                     const activeScreen = document.querySelector('.screen.active');
-                    if (!activeScreen) return;
+                    if (!activeScreen || !state.loggedInCompany) return;
 
                     const activeSubScreen = activeScreen.querySelector('.admin-sub-screen.active');
                     if (activeSubScreen) {
@@ -615,19 +708,18 @@
                     }
                 })
                 .subscribe();
+
              supabaseClient
                 .channel('public:users')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
-                    await refreshAllUsers(); // Refresh the global user list
+                    await refreshAllUsers(); 
                     const activeScreen = document.querySelector('.screen.active');
                      if (!activeScreen || !state.loggedInCompany) return;
                     
-                     // Refresh collaborator dropdown if we are on the request screen
                      if (activeScreen.querySelector('#request-ride-screen.active')) {
-                         await refreshCollaboratorDropdown();
+                         // A lógica de recarregar o dropdown foi movida para dentro do handlePassengerQuantityChange para ser mais eficiente
                      }
 
-                     // Refresh user management list if we are on that screen
                      const activeSubScreen = activeScreen.querySelector('.admin-sub-screen.active');
                      if (activeSubScreen && activeSubScreen.id === 'user-management-screen') {
                         if(payload.new?.company === state.loggedInCompany.name || payload.old?.company === state.loggedInCompany.name) {
@@ -640,7 +732,7 @@
 
         document.addEventListener('DOMContentLoaded', initApp);
 
-        // --- COMPANY CRUD FUNCTIONS ---
+        // --- SUPER ADMIN: COMPANY CRUD FUNCTIONS ---
 
         async function loadCompanyManagement() {
             const container = document.getElementById('company-list-container');
@@ -655,29 +747,27 @@
                 <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
                     <div>
                         <p class="font-semibold text-lg">${c.name}</p>
-                        <p class="text-sm text-gray-400">Senha: ${c.password}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="editCompany(${c.id},'${c.name}','${c.password}')" class="py-1 px-3 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Editar</button>
+                        <button onclick="manageAdminsForCompany(${c.id},'${c.name}')" class="py-1 px-3 font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white">Gerenciar Admins</button>
+                        <button onclick="editCompany(${c.id},'${c.name}')" class="py-1 px-3 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Renomear</button>
                         <button onclick="deleteCompany(${c.id},'${c.name}')" class="py-1 px-3 font-semibold rounded-lg bg-red-600 hover:bg-red-700">X</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function editCompany(id, name, password) {
+        function editCompany(id, name) {
             document.getElementById('editing-company-id').value = id;
             document.getElementById('new-company-name').value = name;
-            document.getElementById('new-company-password').value = password;
             document.getElementById('cancel-edit-btn').classList.remove('hidden');
-            document.getElementById('company-form-title').textContent = 'Editar Empresa';
-            window.scrollTo(0, 0); // Rola para o topo para ver o formulário
+            document.getElementById('company-form-title').textContent = 'Editar Nome da Empresa';
+            window.scrollTo(0, 0);
         }
 
         function cancelEdit() {
             document.getElementById('editing-company-id').value = '';
             document.getElementById('new-company-name').value = '';
-            document.getElementById('new-company-password').value = '';
             document.getElementById('cancel-edit-btn').classList.add('hidden');
             document.getElementById('company-form-title').textContent = 'Adicionar Empresa';
         }
@@ -685,32 +775,28 @@
         async function addOrUpdateCompany() {
             const id = document.getElementById('editing-company-id').value;
             const name = document.getElementById('new-company-name').value.trim();
-            const password = document.getElementById('new-company-password').value.trim();
-            if (!name || !password) return alert('Nome e Senha são obrigatórios.');
+            if (!name) return alert('Nome da empresa é obrigatório.');
 
             let result;
             if (id) {
-                // UPDATE
-                result = await supabaseClient.from('companies').update({ name, password }).eq('id', id);
+                result = await supabaseClient.from('companies').update({ name }).eq('id', id);
             } else {
-                // CREATE (with upsert to prevent duplicates by name on creation)
-                result = await supabaseClient.from('companies').upsert({ name, password }, { onConflict: 'name' });
+                result = await supabaseClient.from('companies').insert({ name });
             }
            
             const { error } = result;
-
             if (error) {
                 alert('Erro ao salvar empresa: ' + error.message);
                 console.error(error);
             } else {
-                cancelEdit(); // Limpa o formulário e reseta o estado de edição
+                cancelEdit();
                 await populateLoginCompanies();
                 await loadCompanyManagement();
             }
         }
 
         async function deleteCompany(id, name) {
-            if (!confirm(`Tem certeza que deseja excluir a empresa "${name}"? Esta ação não pode ser desfeita.`)) return;
+            if (!confirm(`Tem certeza que deseja excluir a empresa "${name}"? Esta ação também excluirá todos os seus admins e usuários.`)) return;
            
             const { error } = await supabaseClient.from('companies').delete().eq('id', id);
            
@@ -718,12 +804,122 @@
                 alert('Erro ao excluir empresa: ' + error.message);
             } else {
                 alert(`Empresa "${name}" excluída com sucesso.`);
-                await populateLoginCompanies(); // Atualiza o dropdown de login
-                await loadCompanyManagement(); // Atualiza a lista de empresas
+                await populateLoginCompanies();
+                await loadCompanyManagement();
             }
         }
 
-        // --- USER CRUD FUNCTIONS (COMPANY ADMIN) ---
+        // --- SUPER ADMIN: ADMINS CRUD ---
+        function manageAdminsForCompany(companyId, companyName) {
+            currentManagingCompany = { id: companyId, name: companyName };
+            showScreen('admin-management-screen');
+            loadCompanyAdmins();
+        }
+
+        async function loadCompanyAdmins() {
+            const container = document.getElementById('admin-management-screen');
+            if (!currentManagingCompany.id) {
+                container.innerHTML = `<button onclick="showScreen('company-management-screen')">← Voltar</button><p class="text-red-500">Erro: ID da empresa não encontrado.</p>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Admins: ${currentManagingCompany.name}</h2>
+                    <button onclick="showScreen('company-management-screen')" class="text-sm bg-gray-600 hover:bg-gray-700 p-2 rounded-lg">← Voltar</button>
+                </div>
+                <div class="card-gradient p-4 rounded-lg mb-6">
+                    <h3 id="admin-form-title" class="text-lg font-semibold mb-2">Adicionar Novo Admin</h3>
+                    <input type="hidden" id="editing-admin-id">
+                    <div class="space-y-2">
+                        <input type="text" id="new-admin-username" placeholder="Usuário" class="w-full p-2 rounded-lg">
+                        <input type="text" id="new-admin-password" placeholder="Senha" class="w-full p-2 rounded-lg">
+                    </div>
+                    <button onclick="addOrUpdateCompanyAdmin()" class="w-full mt-3 py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar Admin</button>
+                    <button id="cancel-admin-edit-btn" onclick="cancelCompanyAdminEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                </div>
+                <div id="admin-list-container" class="space-y-3">Carregando...</div>
+            `;
+
+            const adminListContainer = document.getElementById('admin-list-container');
+            const { data, error } = await supabaseClient.from('company_admins').select('*').eq('company_id', currentManagingCompany.id).order('username');
+
+            if (error) {
+                adminListContainer.innerHTML = '<p class="text-red-500">Erro ao carregar admins.</p>';
+                return;
+            }
+            if (data.length === 0) {
+                adminListContainer.innerHTML = '<p class="text-gray-400 text-center">Nenhum admin cadastrado para esta empresa.</p>';
+                return;
+            }
+
+            adminListContainer.innerHTML = data.map(admin => `
+                <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold text-lg">${admin.username}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick='editCompanyAdmin(${JSON.stringify(admin)})' class="py-1 px-3 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Editar</button>
+                        <button onclick="deleteCompanyAdmin(${admin.id}, '${admin.username}')" class="py-1 px-3 font-semibold rounded-lg bg-red-600 hover:bg-red-700">X</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function editCompanyAdmin(admin) {
+            document.getElementById('editing-admin-id').value = admin.id;
+            document.getElementById('new-admin-username').value = admin.username;
+            document.getElementById('new-admin-password').value = admin.password;
+            document.getElementById('cancel-admin-edit-btn').classList.remove('hidden');
+            document.getElementById('admin-form-title').textContent = 'Editar Admin';
+            window.scrollTo(0, 0);
+        }
+
+        function cancelCompanyAdminEdit() {
+            document.getElementById('editing-admin-id').value = '';
+            document.getElementById('new-admin-username').value = '';
+            document.getElementById('new-admin-password').value = '';
+            document.getElementById('cancel-admin-edit-btn').classList.add('hidden');
+            document.getElementById('admin-form-title').textContent = 'Adicionar Novo Admin';
+        }
+
+        async function addOrUpdateCompanyAdmin() {
+            const id = document.getElementById('editing-admin-id').value;
+            const username = document.getElementById('new-admin-username').value.trim();
+            const password = document.getElementById('new-admin-password').value.trim();
+            if (!username || !password) return alert('Usuário e Senha são obrigatórios.');
+
+            const adminData = {
+                company_id: currentManagingCompany.id,
+                username,
+                password
+            };
+
+            const { error } = id 
+                ? await supabaseClient.from('company_admins').update(adminData).eq('id', id)
+                // A 'constraint' no Supabase vai previnir duplicados (username na mesma company_id)
+                : await supabaseClient.from('company_admins').insert([adminData]);
+            
+            if (error) {
+                alert('Erro ao salvar admin: ' + error.message);
+            } else {
+                cancelCompanyAdminEdit();
+                await loadCompanyAdmins();
+            }
+        }
+
+        async function deleteCompanyAdmin(id, username) {
+            if (!confirm(`Tem certeza que deseja excluir o admin "${username}"?`)) return;
+            const { error } = await supabaseClient.from('company_admins').delete().eq('id', id);
+            if (error) {
+                alert('Erro ao excluir admin: ' + error.message);
+            } else {
+                await loadCompanyAdmins();
+            }
+        }
+
+
+        // --- COMPANY ADMIN: USER CRUD FUNCTIONS ---
 
         async function loadCompanyUsers() {
             const container = document.getElementById('user-list-container');
@@ -823,10 +1019,8 @@
 
             let result;
             if (id) {
-                // UPDATE
                 result = await supabaseClient.from('users').update(userData).eq('id', id);
             } else {
-                // CREATE
                 if (!password) return alert('Senha é obrigatória para novos usuários.');
                 userData.password = password;
                 result = await supabaseClient.from('users').insert([userData]);
@@ -840,10 +1034,8 @@
             } else {
                 alert('Usuário salvo com sucesso!');
                 cancelUserEdit();
-                // No need to call Supabase again, just update local state and re-render
                 await loadCompanyUsers(); 
                 await refreshAllUsers(); 
-                await refreshCollaboratorDropdown(); 
             }
         }
 
@@ -858,10 +1050,10 @@
                 alert(`Usuário "${name}" excluído com sucesso.`);
                 await loadCompanyUsers();
                 await refreshAllUsers();
-                await refreshCollaboratorDropdown();
             }
         }
     </script>
 </body>
 
 </html>
+
