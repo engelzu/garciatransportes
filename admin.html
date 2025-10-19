@@ -343,25 +343,60 @@
              <button onclick="logout()" class="mb-4 text-yellow-300">← Sair e Voltar à Tela Inicial</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Painel do Administrador</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                 <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg">Gerenciar Motoristas</button>
-                <button onclick="showScreen('admin-user-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg">Gerenciar Usuários</button>
-                 <button onclick="showScreen('admin-requests-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg">Ver Solicitações de Corrida</button>
-                <button onclick="showScreen('admin-heatmap-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg">Ver Mapa de Calor</button>
-                <button onclick="showScreen('admin-customize-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg">Personalizar App</button>
-                <button onclick="openRecordsTab()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg">Registros</button>
-                <a href="https://dashboard-with-supabase.lumi.ing" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg text-center">DASHBOARD</a>
+                <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <span>Gerenciar Motoristas</span>
+                </button>
+                <button onclick="showScreen('admin-user-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span>Gerenciar Usuários</span>
+                </button>
+                <button onclick="showScreen('admin-requests-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span>Solicitações</span>
+                </button>
+                <button onclick="showScreen('admin-heatmap-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                    <span>Mapa de Calor</span>
+                </button>
+                <button onclick="showScreen('admin-customize-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Personalizar</span>
+                </button>
+                <button onclick="openRecordsTab()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Registros</span>
+                </button>
+                <a href="https://dashboard-with-supabase.lumi.ing" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg text-center flex flex-col items-center gap-2 card-gradient">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
             </div>
-        </div>
+</div>
 
         <div id="admin-requests-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="promptToGoBack()" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
                 <div class="w-32"></div> </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                 <div class="card-gradient p-4 rounded-lg w-full">
-                    <h3 class="font-semibold mb-2 text-center">Status das Corridas</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                 <div class="card-gradient p-3 rounded-lg w-full" style="height: fit-content;">
+<h3 class="font-semibold mb-2 text-center">Status das Corridas</h3>
                     <div class="flex justify-around text-center flex-wrap gap-2">
                         <div>
                             <p class="text-2xl font-bold text-orange-400" id="status-agendada-count">0</p>
@@ -385,37 +420,35 @@
                         </div>
                     </div>
                     <div class="mt-4 pt-4 border-t border-gray-600 text-center">
-                        <div id="digital-clock" class="text-5xl font-mono text-cyan-300 mb-3">00:00:00</div>
-                        <button onclick="exportDailyReportNow()" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white">
-                            EXPORTAR RELATÓRIO DIÁRIO
+                        <div id="digital-clock" class="text-3xl font-mono text-cyan-300 mb-2">00:00:00</div>
+<button onclick="exportDailyReportNow()" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white">
+                            EXPORTAR
                         </button>
-                    </div>
+</div>
                 </div>
-
-                <div class="card-gradient p-6 rounded-lg w-full lg:col-span-2">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div class="card-gradient p-3 rounded-lg w-full lg:col-span-2" style="height: fit-content;">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <div>
                             <h3 class="font-semibold text-2xl mb-4">Motoristas</h3>
-                            <div class="space-y-2 text-lg">
-                                <p>Total: <span id="total-drivers-count" class="font-bold">0</span></p>
+                    <div class="space-y-1 text-base">
+<p>Total: <span id="total-drivers-count" class="font-bold">0</span></p>
                                 <p class="text-green-400">Ativos: <span id="active-drivers-count" class="font-bold">0</span></p>
                                 <p class="text-red-400">Inativos: <span id="inactive-drivers-count" class="font-bold">0</span></p>
                             </div>
                         </div>
                         <div class="flex flex-col items-center gap-4">
-                            <div class="w-40 h-40">
-                                <canvas id="driver-status-chart"></canvas>
+                    <div class="w-32 h-32">
+<canvas id="driver-status-chart"></canvas>
                             </div>
-                            <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-3 px-4 font-semibold rounded-lg button-gradient text-white">
-                                Gerenciar Motoristas
+                            <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-2 px-3 text-sm font-semibold rounded-lg button-gradient text-white">
+Gerenciar Motoristas
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
-                <div class="lg:col-span-1">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
+<div class="lg:col-span-1">
                     <h3 class="text-2xl font-bold mb-4">Novas Solicitações</h3>
                     <div id="admin-requests-list" class="space-y-4">
                         </div>
@@ -2750,43 +2783,115 @@
                 new google.maps.places.Autocomplete(originInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
             }
         }
-
         async function initHeatmap() {
             const mapDiv = document.getElementById('heatmap-canvas');
-            if (!mapDiv) return;
+            if (!mapDiv) {
+                console.error('Elemento do mapa não encontrado');
+                return;
+            }
+            
+            // Verifica se a API de visualização está carregada
+            if (typeof google === 'undefined' || !google.maps || !google.maps.visualization) {
+                console.error('Google Maps Visualization API não carregada');
+                showModal('A biblioteca de visualização do Google Maps não foi carregada corretamente');
+                return;
+            }
+
             const center = { lat: -30.0346, lng: -51.2177 }; // Centro aproximado de Porto Alegre
-            map = new google.maps.Map(mapDiv, {
-                center: center,
-                zoom: 12,
-                mapTypeId: 'satellite'
-            });
-
-            const geocodePromises = state.users
-                .filter(user => user.address && user.address.trim() !== '')
-                .map(user => geocodeAddress(user.address).catch(e => null));
-
-            const results = await Promise.all(geocodePromises);
-            const locationsData = results
-                .filter(coords => coords)
-                .map(coords => new google.maps.LatLng(coords.lat, coords.lng));
-
-            if (locationsData.length > 0) {
-                if (heatmap) heatmap.setMap(null);
-                heatmap = new google.maps.visualization.HeatmapLayer({
-                    data: locationsData,
-                    map: map,
-                    radius: 20,
-                    opacity: 0.8
+            
+            try {
+                map = new google.maps.Map(mapDiv, {
+                    center: center,
+                    zoom: 12,
+                    mapTypeId: 'roadmap'  // Mudado para roadmap para melhor visualização
                 });
+
+                // Adiciona marcadores para debug
+                const marker = new google.maps.Marker({
+                    position: center,
+                    map: map,
+                    title: 'Centro do Mapa'
+                });
+
+                console.log('Mapa inicializado, buscando endereços dos usuários...');
+
+                const geocodePromises = state.users
+                    .filter(user => user.address && user.address.trim() !== '')
+                    .map(user => {
+                        console.log(`Geocodificando: ${user.address}`);
+                        return geocodeAddress(user.address)
+                            .then(coords => {
+                                console.log(`Endereço geocodificado: ${user.address} -> ${JSON.stringify(coords)}`);
+                                return coords;
+                            })
+                            .catch(e => {
+                                console.error(`Erro ao geocodificar ${user.address}:`, e);
+                                return null;
+                            });
+                    });
+
+                const results = await Promise.all(geocodePromises);
+                const locationsData = results
+                    .filter(coords => coords)
+                    .map(coords => {
+                        console.log(`Coordenada válida: ${coords.lat}, ${coords.lng}`);
+                        return new google.maps.LatLng(coords.lat, coords.lng);
+                    });
+
+                console.log(`Total de coordenadas válidas: ${locationsData.length}`);
+
+                if (locationsData.length > 0) {
+                    if (heatmap) heatmap.setMap(null);
+                    heatmap = new google.maps.visualization.HeatmapLayer({
+                        data: locationsData,
+                        map: map,
+                        radius: 40,  // Aumentado o raio para melhor visualização
+                        opacity: 1,
+                        gradient: [
+                            'rgba(0, 255, 255, 0)',
+                            'rgba(0, 255, 255, 1)',
+                            'rgba(0, 191, 255, 1)',
+                            'rgba(0, 127, 255, 1)',
+                            'rgba(0, 63, 255, 1)',
+                            'rgba(0, 0, 255, 1)',
+                            'rgba(0, 0, 223, 1)',
+                            'rgba(0, 0, 191, 1)',
+                            'rgba(0, 0, 159, 1)',
+                            'rgba(0, 0, 127, 1)',
+                            'rgba(63, 0, 91, 1)',
+                            'rgba(127, 0, 63, 1)',
+                            'rgba(191, 0, 31, 1)',
+                            'rgba(255, 0, 0, 1)'
+                        ]
+                    });
+                    
+                    // Ajusta o zoom para incluir todos os pontos
+                    const bounds = new google.maps.LatLngBounds();
+                    locationsData.forEach(loc => bounds.extend(loc));
+                    map.fitBounds(bounds);
+                } else {
+                    console.warn('Nenhuma coordenada válida encontrada para gerar o mapa de calor');
+                    showModal('Não foi possível geocodificar os endereços dos usuários para gerar o mapa de calor');
+                }
+            } catch (error) {
+                console.error('Erro ao inicializar o mapa de calor:', error);
+                showModal('Erro ao carregar o mapa de calor. Verifique o console para detalhes.');
             }
         }
-
-         // Chama loadAppIcon no final para garantir que o ícone padrão seja carregado se não houver um salvo
+// Chama loadAppIcon no final para garantir que o ícone padrão seja carregado se não houver um salvo
         document.addEventListener('DOMContentLoaded', () => {
              loadAppIcon();
         });
 
     </script>
    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
+   <style>
+    #heatmap-canvas {
+        height: 70vh;
+        width: 100%;
+        border-radius: 0.5rem;
+        border: 2px solid #4f46e5;
+    }
+   </style>
 </body>
 </html>
