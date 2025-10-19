@@ -670,8 +670,14 @@
                     }
                 } catch (e) {
                     console.warn("Could not parse complex destination JSON, falling back:", trimmedString, e);
-                    // Fallback for complex structure if JSON parsing fails (try simple cleaning)
-                    formattedAddress = trimmedString.replace(/^\["|"\]$/g, '').replace(/\[\{.*?address":"(.*?)"\}\]/g, '$1').replace(/\{"name":".*?","address":"(.*?)"\}/g, '$1').replace(/[\[\]\{\}"]/g, '').replace(/name:.*?,address:/g, '').trim(); 
+                    // Fallback attempt: Try to extract addresses using regex if JSON parse fails
+                     const regexAddresses = trimmedString.match(/"address":"(.*?)"/g);
+                     if (regexAddresses) {
+                         formattedAddress = regexAddresses.map(match => match.replace(/"address":"(.*)"/, '$1')).join(' - ');
+                     } else {
+                         // Final fallback: just clean the string
+                         formattedAddress = trimmedString.replace(/[\[\]\{\}"]/g, '').replace(/name:.*?,address:/g, '').replace(/,/g, ' - ').trim();
+                     }
                 }
             }
             // Try cleaning as simple format ["address"] or just "address"
@@ -1271,6 +1277,9 @@
         }
 
         // --- LÓGICA DO ADMIN ---
+        // ========================================================================
+        // FUNÇÃO CORRIGIDA (loadAdminRequests)
+        // ========================================================================
         async function loadAdminRequests() {
             const list = document.getElementById('admin-requests-list');
             list.innerHTML = '';
@@ -1362,13 +1371,14 @@
                         `;
                     }
 
+                    // CORREÇÃO: Comentário removido daqui
                     card.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
                             <h4 class="font-semibold text-lg">Nova Solicitação</h4>
                             ${rideTypeInfo}
                         </div>
                         <p class="font-semibold">Origem: <span class="font-normal">${originAddress || 'Não informado'}</span></p>
-                        <p class="font-semibold">Destino: <span class="font-normal">${destinationAddress}</span></p> {/* Mostra o destino formatado */}
+                        <p class="font-semibold">Destino: <span class="font-normal">${destinationAddress}</span></p> 
                         <p class="font-semibold">Observação: <span class="font-normal text-yellow-300">${ride.observation || 'Nenhuma'}</span></p>
                         ${distanceInfo}
                         <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
@@ -1488,7 +1498,7 @@
                     </button>
                 </div>`;
 
-                // CORREÇÃO: Comentários removidos daqui
+                // CORREÇÃO: Comentários removidos daqui também
                 tableHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20">
                         <td class="px-4 py-3 font-medium">${ride.userName}</td>
@@ -2533,11 +2543,18 @@
 
                 // Usa os endereços brutos para calcular a distância
                 if (ride.origin_address && ride.destination) {
-                    const distance = await getDrivingDistance(ride.origin_address, ride.destination); 
-                    if (distance !== null) {
-                        distanceKm = distance.toFixed(2);
+                    // Evita chamar a API se a origem ou destino formatado ainda for o JSON bruto (indicando falha na formatação inicial)
+                    const rawOrigin = ride.origin_address;
+                    const rawDestination = ride.destination;
+                    if(rawOrigin && rawDestination && !rawOrigin.startsWith('[{') && !rawDestination.startsWith('[{')) {
+                        const distance = await getDrivingDistance(rawOrigin, rawDestination); 
+                        if (distance !== null) {
+                            distanceKm = distance.toFixed(2);
+                        } else {
+                            distanceKm = 'Erro';
+                        }
                     } else {
-                        distanceKm = 'Erro';
+                        distanceKm = 'N/A'; // Não calcula se os dados estiverem mal formatados
                     }
                 }
 
