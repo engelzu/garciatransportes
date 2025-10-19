@@ -199,6 +199,11 @@
          #driver-status-label.text-green-400 { color: #22c55e !important; } /* Mantém cores de status */
          #driver-status-label.text-red-400 { color: #ef4444 !important; } /* Mantém cores de status */
 
+         /* Estilo para inputs de data/hora */
+        input[type="date"], input[type="datetime-local"] {
+            color-scheme: dark; /* Garante que o calendário interno tenha cores escuras */
+        }
+
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
@@ -283,7 +288,7 @@
 
                 <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6">
                     <h3 class="font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
-                    <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-300 font-semibold"></p>
+                    <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-800 font-semibold"></p>
 
                     <div class="mb-4">
                         <label for="origin" class="block mb-2 text-sm font-medium">Qual a sua origem?</label>
@@ -561,7 +566,7 @@
                 <table id="all-records-table" class="w-full text-sm text-left">
                     <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
                         <tr>
-                            <th scope="col" class="px-4 py-3">Data Início/Aceite</th>
+                            <th scope="col" class="px-4 py-3">Data Solicitação</th>
                             <th scope="col" class="px-4 py-3">Usuário</th>
                             <th scope="col" class="px-4 py-3">Empresa</th>
                             <th scope="col" class="px-4 py-3">Origem</th>
@@ -641,6 +646,43 @@
             // Remove a formatação específica `["..."]`
             return address.replace(/^\["|"\]$/g, '').trim();
         }
+
+        // ========================================================================
+        // NOVA FUNÇÃO AUXILIAR - formatDestination
+        // ========================================================================
+        function formatDestination(destinationString) {
+            if (typeof destinationString !== 'string' || !destinationString.trim()) return '-';
+
+            let formattedAddress = '-';
+            const trimmedString = destinationString.trim();
+
+            // Try parsing as complex JSON array [{...}, {...}]
+            if (trimmedString.startsWith('[{') && trimmedString.endsWith('}]')) {
+                try {
+                    const destinationsArray = JSON.parse(trimmedString);
+                    if (Array.isArray(destinationsArray)) {
+                        const addresses = destinationsArray
+                            .map(dest => dest.address || '') // Get address from each object
+                            .filter(Boolean); // Remove empty addresses
+                        if (addresses.length > 0) {
+                            formattedAddress = addresses.join(' - '); // Join with hyphen
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Could not parse complex destination JSON, falling back:", trimmedString, e);
+                    // Fallback for complex structure if JSON parsing fails (try simple cleaning)
+                    formattedAddress = trimmedString.replace(/^\["|"\]$/g, '').replace(/\[\{.*?address":"(.*?)"\}\]/g, '$1').replace(/\{"name":".*?","address":"(.*?)"\}/g, '$1').replace(/[\[\]\{\}"]/g, '').replace(/name:.*?,address:/g, '').trim(); 
+                }
+            }
+            // Try cleaning as simple format ["address"] or just "address"
+            else {
+                 formattedAddress = trimmedString.replace(/^\["|"\]$/g, '').trim();
+            }
+
+            // Ensure we don't return an empty string
+            return formattedAddress || '-';
+        }
+
 
         // Função auxiliar para geocodificar um endereço usando a API do Google Maps
         async function geocodeAddress(address) {
@@ -1180,7 +1222,7 @@
                     arrivedPickupIconContainer.classList.remove('hidden');
                     break;
                 case 'in_progress':
-                     message = `Viagem para ${ride.destination} em andamento.`;
+                     message = `Viagem para ${formatDestination(ride.destination)} em andamento.`; // Usa destino formatado
                      const inProgressImg = document.createElement('img');
                      inProgressImg.src = 'images/destino.png'; 
                      inProgressImg.alt = 'Viagem Iniciada';
@@ -1268,11 +1310,13 @@
                     card.className = 'card-gradient p-4 rounded-lg shadow-md';
 
                     const originAddress = cleanAddressString(ride.origin_address);
-                    const destinationAddress = cleanAddressString(ride.destination);
+                    // Usa a nova função para formatar o destino
+                    const destinationAddress = formatDestination(ride.destination);
                     let distanceInfo = `<p class="text-sm text-gray-500">Distância: Calculando...</p>`;
 
-                    if (originAddress && destinationAddress) {
-                         const distance = await getDrivingDistance(originAddress, destinationAddress);
+                    // Usa os endereços brutos para calcular a distância
+                    if (ride.origin_address && ride.destination) {
+                         const distance = await getDrivingDistance(ride.origin_address, ride.destination);
                          if (distance !== null) {
                             distanceInfo = `<p class="font-semibold">Distância: <span class="font-normal">${distance.toFixed(1)} km</span></p>`;
                          } else {
@@ -1323,8 +1367,8 @@
                             <h4 class="font-semibold text-lg">Nova Solicitação</h4>
                             ${rideTypeInfo}
                         </div>
-                        <p class="font-semibold">Origem: <span class="font-normal">${ride.origin_address || 'Não informado'}</span></p>
-                        <p class="font-semibold">Destino: <span class="font-normal">${destinationAddress}</span></p>
+                        <p class="font-semibold">Origem: <span class="font-normal">${originAddress || 'Não informado'}</span></p>
+                        <p class="font-semibold">Destino: <span class="font-normal">${destinationAddress}</span></p> {/* Mostra o destino formatado */}
                         <p class="font-semibold">Observação: <span class="font-normal text-yellow-300">${ride.observation || 'Nenhuma'}</span></p>
                         ${distanceInfo}
                         <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
@@ -1336,7 +1380,10 @@
                 };
             }
         }
-
+        
+        // ========================================================================
+        // FUNÇÃO CORRIGIDA (renderOngoingRidesTable)
+        // ========================================================================
         async function renderOngoingRidesTable() {
             const tableContainer = document.getElementById('admin-ongoing-rides-table');
             tableContainer.innerHTML = '<div class="loader mx-auto"></div>';
@@ -1351,17 +1398,20 @@
             const ridesWithDistancePromises = ongoingRides.map(async (ride) => {
                 let distanceKm = 'N/D';
                 const originAddress = cleanAddressString(ride.origin_address);
-                const destinationAddress = cleanAddressString(ride.destination);
+                 // Formata o destino usando a nova função
+                const formattedDestination = formatDestination(ride.destination); 
 
-                if (originAddress && destinationAddress) {
-                    const distance = await getDrivingDistance(originAddress, destinationAddress);
+                // Usa os endereços brutos para calcular a distância
+                if (ride.origin_address && ride.destination) {
+                    const distance = await getDrivingDistance(ride.origin_address, ride.destination); 
                     if (distance !== null) {
                         distanceKm = distance.toFixed(1);
                     } else {
                         distanceKm = 'Erro';
                     }
                 }
-                return { ...ride, distanceKm, cleanedDestination: destinationAddress };
+                // Retorna o destino formatado
+                return { ...ride, distanceKm, cleanedOrigin: originAddress, formattedDestination: formattedDestination }; 
             });
 
             const ridesWithDistance = await Promise.all(ridesWithDistancePromises);
@@ -1385,11 +1435,14 @@
                     <tbody>
             `;
 
-            ridesWithDistance.sort((a, b) => new Date((a.request_type === 'scheduled' && a.scheduled_datetime) || a.requestTime) - new Date((b.request_type === 'scheduled' && b.scheduled_datetime) || b.requestTime));
+            // Ordena primeiro por data/hora (agendada ou solicitação)
+            ridesWithDistance.sort((a, b) => {
+                const dateA = (a.request_type === 'scheduled' && a.scheduled_datetime) ? new Date(a.scheduled_datetime) : new Date(a.requestTime);
+                const dateB = (b.request_type === 'scheduled' && b.scheduled_datetime) ? new Date(b.scheduled_datetime) : new Date(b.requestTime);
+                return dateA - dateB;
+            });
 
             ridesWithDistance.forEach(ride => {
-                const rideUser = state.users.find(u => u.id === ride.userId);
-                const originAddress = ride.origin_address ? ride.origin_address : 'Origem não informada';
                 const statusInfo = translateStatus(ride.status); 
 
                 let rideTypeInfo = '';
@@ -1399,13 +1452,15 @@
                     rideTypeInfo = '<span class="text-xs font-bold py-1 px-2 rounded-full bg-blue-500 text-white">IMEDIATA</span>';
                 }
 
+                // --- LÓGICA DA DATA/HORA ---
                 let dateTimeString = '';
                 const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
                 if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
                     dateTimeString = new Date(ride.scheduled_datetime).toLocaleString('pt-BR', options);
-                } else {
+                } else { 
                     dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', options);
                 }
+                // --- FIM DA LÓGICA DA DATA/HORA ---
 
                 let driverCellHTML = ride.driverName || 'N/A';
                 let actionsCellHTML = `<div class="flex items-center gap-2">`;
@@ -1433,12 +1488,12 @@
                     </button>
                 </div>`;
 
-
+                // CORREÇÃO: Comentários removidos daqui
                 tableHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20">
                         <td class="px-4 py-3 font-medium">${ride.userName}</td>
-                        <td class="px-4 py-3">${originAddress}</td>
-                        <td class="px-4 py-3">${ride.cleanedDestination}</td>
+                        <td class="px-4 py-3">${ride.cleanedOrigin || '-'}</td> 
+                        <td class="px-4 py-3">${ride.formattedDestination}</td> 
                         <td class="px-4 py-3 text-yellow-300">${ride.observation || '-'}</td>
                         <td class="px-4 py-3 font-semibold">${ride.distanceKm}</td>
                         <td class="px-4 py-3">${driverCellHTML}</td>
@@ -1446,7 +1501,7 @@
                             <span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span>
                         </td>
                         <td class="px-4 py-3">${rideTypeInfo}</td>
-                        <td class="px-4 py-3">${dateTimeString}</td>
+                        <td class="px-4 py-3">${dateTimeString}</td> 
                         <td class="px-4 py-3">${actionsCellHTML}</td>
                     </tr>
                 `;
@@ -1455,6 +1510,7 @@
             tableHTML += `</tbody></table>`;
             tableContainer.innerHTML = tableHTML;
         }
+
 
         async function updateRideDriver(rideId) {
             const selectElement = document.getElementById(`ongoing-driver-select-${rideId}`);
@@ -1901,7 +1957,7 @@
                 const requestDateTime = new Date(ride.requestTime).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 let content = `
                     <div class="flex justify-between items-start mb-1">
-                        <p class="font-semibold pr-2">Destino Final: <span class="font-normal">${ride.destination}</span></p>
+                        <p class="font-semibold pr-2">Destino Final: <span class="font-normal">${formatDestination(ride.destination)}</span></p> {/* Usa destino formatado */}
                         <p class="text-sm text-gray-300">Solicitado por: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
                         <p class="text-xs text-gray-400 whitespace-nowrap">${requestDateTime}</p>
                     </div>
@@ -1935,9 +1991,15 @@
                 const ride = state.rides.find(r => r.id === rideId);
                 if (ride && ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) {
                     const { lat, lon } = ride.userLocation;
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank');
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank'); // Usa Google Maps para navegação
                 } else {
-                    showModal("Não foi possível obter a localização do usuário para navegação.");
+                     console.warn("Localização do usuário não disponível para navegação.");
+                     // Tenta navegar para a origem se o endereço estiver disponível
+                     if (ride && ride.origin_address) {
+                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.origin_address)}`, '_blank');
+                     } else {
+                         showModal("Não foi possível obter a localização do usuário ou endereço de origem para navegação.");
+                     }
                 }
             }
         }
@@ -1958,7 +2020,8 @@
                     console.error("Erro ao iniciar viagem:", error);
                     showModal("Não foi possível iniciar a viagem.");
                 } else { 
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.destination)}`, '_blank'); 
+                    // Navega para o destino final (usa o valor bruto, não formatado, para o Google Maps)
+                     window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.destination)}`, '_blank'); 
                 }
             }
         }
@@ -1987,13 +2050,14 @@
                 const currentRide = state.rides.find(r => r.id === rideId && r.status !== 'completed' && r.status !== 'canceled');
                 if (currentRide) {
                     await supabaseClient.from('rides').update({ driverCurrentLocation: driverLocation }).eq('id', rideId);
-                } else {
+                } else { // Se a corrida não for encontrada (finalizada/cancelada), para o watch
                     navigator.geolocation.clearWatch(driverWatchId);
                     driverWatchId = null;
                 }
             }, (error) => { 
                 console.error("Erro ao rastrear localização do motorista:", error); 
-                showModal('Não foi possível rastrear sua localização. Verifique as permissões.');
+                 // Não mostra modal para não interromper o motorista constantemente
+                 // Apenas loga o erro
             }, { 
                 enableHighAccuracy: true, 
                 timeout: 5000, 
@@ -2015,7 +2079,7 @@
         async function sendNewRideEmailNotification(ride) {
             console.log('Tentando enviar e-mail para a nova corrida:', ride);
             // Instancia o Resend com a chave de API
-            const resend = new Resend('re_Qp3oqRvJ_5QKw8pW1zv9VF8kd7pTt6m8V');
+            const resend = new Resend('re_Qp3oqRvJ_5QKw8pW1zv9VF8kd7pTt6m8V'); // ATENÇÃO: Chave exposta no frontend!
 
             try {
                 // Monta o conteúdo do e-mail
@@ -2028,7 +2092,7 @@
                     <li><strong>Usuário:</strong> ${ride.userName || 'Não informado'}</li>
                     <li><strong>Empresa:</strong> ${ride.userCompany || 'N/A'}</li>
                     <li><strong>Origem:</strong> ${ride.origin_address || 'Não informada'}</li>
-                    <li><strong>Destino:</strong> ${ride.destination || 'Não informado'}</li>
+                    <li><strong>Destino:</strong> ${formatDestination(ride.destination)}</li> {/* Usa destino formatado */}
                     <li><strong>Observação:</strong> ${ride.observation || 'Nenhuma'}</li>
                     <li><strong>Tipo:</strong> ${ride.request_type === 'scheduled' ? `Agendada para ${new Date(ride.scheduled_datetime).toLocaleString('pt-BR')}` : 'Imediata'}</li>
                     <li><strong>Horário da Solicitação:</strong> ${new Date(ride.requestTime).toLocaleString('pt-BR')}</li>
@@ -2038,8 +2102,8 @@
 
                 // Envia o e-mail
                 const { data, error } = await resend.emails.send({
-                  from: 'GARCIA TRANSPORTES <onboarding@resend.dev>',
-                  to: ['engelmobile2020@gmail.com'],
+                  from: 'GARCIA TRANSPORTES <onboarding@resend.dev>', // Remetente precisa ser um domínio verificado
+                  to: ['engelmobile2020@gmail.com'], // Destinatário(s)
                   subject: subject,
                   html: htmlBody,
                 });
@@ -2157,6 +2221,8 @@
             });
             const countEl = document.getElementById('available-drivers-count');
             if (countEl) { 
+                // Altera a cor do texto para escuro para melhor contraste
+                countEl.className = 'text-center mb-4 text-lg text-green-800 font-semibold';
                 countEl.textContent = `Motoristas disponíveis agora: ${availableDrivers.length}`;
             }
         }
@@ -2239,7 +2305,7 @@
                 'ID da Corrida': ride.id,
                 'Usuário': ride.userName,
                 'Empresa': ride.userCompany,
-                'Destino': ride.destination,
+                'Destino': formatDestination(ride.destination), // Usa destino formatado
                 'Motorista': ride.driverName || 'N/A',
                 'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                 'Data do Aceite': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A',
@@ -2271,7 +2337,8 @@
 
             const dataToExport = filteredRides.map(ride => ({
                 'ID da Corrida': ride.id, 'Usuário': ride.userName, 'Empresa': ride.userCompany,
-                'Destino': ride.destination, 'Motorista': ride.driverName || 'N/A',
+                'Destino': formatDestination(ride.destination), // Usa destino formatado
+                 'Motorista': ride.driverName || 'N/A',
                 'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                 'Data do Aceite': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A',
                 'Status': translateStatus(ride.status).text
@@ -2343,7 +2410,7 @@
                 row.className = 'border-b border-gray-700';
                 row.innerHTML = `
                     <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td>
-                    <td class="px-4 py-3">${ride.destination}</td>
+                    <td class="px-4 py-3">${formatDestination(ride.destination)}</td> {/* Usa destino formatado */}
                     <td class="px-4 py-3">${translateStatus(ride.status).text}</td>
                 `;
                 tbody.appendChild(row);
@@ -2378,7 +2445,7 @@
                 row.innerHTML = `
                     <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td>
                     <td class="px-4 py-3">${ride.userName}</td>
-                    <td class="px-4 py-3">${ride.destination}</td>
+                    <td class="px-4 py-3">${formatDestination(ride.destination)}</td> {/* Usa destino formatado */}
                 `;
                 tbody.appendChild(row);
             });
@@ -2392,7 +2459,7 @@
 
             const dataToExport = userRides.map(ride => ({
                 'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
-                'Destino': ride.destination,
+                'Destino': formatDestination(ride.destination), // Usa destino formatado
                 'Motorista': ride.driverName || 'N/A',
                 'Status': translateStatus(ride.status).text
             }));
@@ -2411,7 +2478,7 @@
                 'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                 'Usuário': ride.userName,
                 'Empresa': ride.userCompany,
-                'Destino': ride.destination,
+                'Destino': formatDestination(ride.destination), // Usa destino formatado
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -2426,7 +2493,7 @@
         }
 
         // ========================================================================
-        // FUNÇÃO MODIFICADA
+        // FUNÇÃO CORRIGIDA (loadAllRecords)
         // ========================================================================
         async function loadAllRecords() {
             const tableBody = document.getElementById('all-records-body');
@@ -2460,11 +2527,13 @@
             // Geração das linhas da tabela modificada
             const rowPromises = data.map(async (ride) => {
                 let distanceKm = 'N/D';
-                const originAddress = cleanAddressString(ride.origin_address) || '-'; // CAMPO NOVO
-                const destinationAddress = cleanAddressString(ride.destination);
+                const originAddress = cleanAddressString(ride.origin_address) || '-'; 
+                 // Usa a função formatDestination
+                const destinationAddress = formatDestination(ride.destination);
 
-                if (originAddress && destinationAddress && originAddress !== '-' && destinationAddress !== '-') {
-                    const distance = await getDrivingDistance(originAddress, destinationAddress);
+                // Usa os endereços brutos para calcular a distância
+                if (ride.origin_address && ride.destination) {
+                    const distance = await getDrivingDistance(ride.origin_address, ride.destination); 
                     if (distance !== null) {
                         distanceKm = distance.toFixed(2);
                     } else {
@@ -2473,20 +2542,19 @@
                 }
 
                 const statusInfo = translateStatus(ride.status);
-                // CAMPO NOVO: Data de Aceite (início do transporte)
-                const acceptDateTime = ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A';
-                // CAMPO NOVO: Observação
+                // Usar requestTime para a data exibida na primeira coluna
+                const requestDateTime = ride.requestTime ? new Date(ride.requestTime).toLocaleString('pt-BR') : 'N/A'; 
                 const observation = ride.observation || '-';
-                // Adiciona data-request-time para o filtro de data funcionar
-                const requestTimestamp = new Date(ride.requestTime).getTime();
+                const requestTimestamp = new Date(ride.requestTime).getTime(); // Mantém para filtro
 
+                // CORREÇÃO: Comentário removido da linha abaixo
                 return `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20" data-request-time="${requestTimestamp}">
-                        <td class="px-4 py-3">${acceptDateTime}</td>
+                        <td class="px-4 py-3">${requestDateTime}</td> 
                         <td class="px-4 py-3">${ride.userName}</td>
                         <td class="px-4 py-3">${ride.userCompany || '-'}</td>
                         <td class="px-4 py-3">${originAddress}</td>
-                        <td class="px-4 py-3">${destinationAddress}</td>
+                        <td class="px-4 py-3">${destinationAddress}</td> 
                         <td class="px-4 py-3">${observation}</td>
                         <td class="px-4 py-3">${ride.driverName || '-'}</td>
                         <td class="px-4 py-3"><span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span></td>
@@ -2499,7 +2567,7 @@
         }
 
         // ========================================================================
-        // FUNÇÃO MODIFICADA
+        // FUNÇÃO filterRecords (sem alteração lógica)
         // ========================================================================
         function filterRecords() {
             const startDate = document.getElementById('records-start-date').value;
@@ -2512,46 +2580,40 @@
             const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
 
             rows.forEach(row => {
-                // Lógica de data agora usa o data-attribute 'data-request-time'
                 const requestTimestamp = row.dataset.requestTime;
-                // Lógica de empresa usa a célula de índice 2
                 const companyCell = row.cells[2]; 
                 
                 if (requestTimestamp && companyCell) {
-                    // Lógica da Data (agora com data-attribute)
                     const recordDate = parseInt(requestTimestamp);
                     let dateMatch = true;
                     if (start && recordDate < start) dateMatch = false;
                     if (end && recordDate > end) dateMatch = false;
 
-                    // Lógica da Empresa (sem alteração)
                     const rowCompany = companyCell.textContent.trim();
                     let companyMatch = (selectedCompany === "" || rowCompany === selectedCompany);
 
-                    // Combina os filtros
                     row.style.display = (dateMatch && companyMatch) ? '' : 'none';
                 }
             });
         }
 
         // ========================================================================
-        // FUNÇÃO MODIFICADA
+        // FUNÇÃO CORRIGIDA (exportRecordsToExcel)
         // ========================================================================
         function exportRecordsToExcel() {
             const table = document.getElementById('all-records-table');
             const rows = table.querySelectorAll('tbody tr');
             const dataToExport = [];
 
-            // 1. Adiciona os cabeçalhos da tabela (lê automaticamente do thead)
+            // 1. Adiciona os cabeçalhos da tabela
             const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
-            dataToExport.push(headers);
+            dataToExport.push(headers); 
 
             // 2. Adiciona apenas as linhas visíveis (filtradas)
             let visibleRows = 0;
             rows.forEach(row => {
-                if (row.style.display !== 'none') { // Verifica se a linha está visível
+                if (row.style.display !== 'none') { 
                     const cells = Array.from(row.querySelectorAll('td')).map(td => {
-                        // Limpa o texto do status para não exportar o HTML do badge
                         if (td.querySelector('.status-badge')) {
                             return td.querySelector('.status-badge').textContent.trim();
                         }
@@ -2573,9 +2635,9 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
 
-            // Define larguras de coluna para melhor visualização (9 colunas)
+            // Define larguras de coluna
             worksheet['!cols'] = [
-                { wch: 20 }, // Data Início/Aceite
+                { wch: 20 }, // Data Solicitação
                 { wch: 25 }, // Usuário
                 { wch: 20 }, // Empresa
                 { wch: 40 }, // Origem
