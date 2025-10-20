@@ -12,6 +12,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@2.0.1/dist/themes/minimal.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@2.0.1/dist/index.min.js"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -59,28 +65,34 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .pac-container {
-            background-color: #374151;
-            border-radius: 8px;
-            border: 1px solid #4b5563;
+
+        /* ESTILO PARA O AUTOCOMPLETE DO GEOAPIFY */
+        .geoapify-autocomplete-input {
+             color: white !important;
+             background-color: #1f2937 !important; /* Fundo do input */
+             border: 1px solid #4b5563 !important;
         }
-        .pac-item {
-            padding: 10px;
-            font-size: 14px;
-            color: #d1d5db;
-            cursor: pointer;
+        .geoapify-autocomplete-items {
+            background-color: #374151 !important; /* Fundo da lista dropdown */
+            border: 1px solid #4b5563 !important;
+            color: white !important;
         }
-        .pac-item:hover {
-            background-color: #4b5563;
+        .geoapify-autocomplete-items div:hover {
+            background-color: #4b5563 !important; /* Cor do item em hover */
         }
-        .pac-item-query {
-            font-weight: 600;
-            color: #f3f4f6;
+        .geoapify-autocomplete-item {
+             color: white !important;
         }
+        .geoapify-autocomplete-item.active {
+            background-color: #4f46e5 !important; /* Cor do item selecionado */
+        }
+        /* FIM DO ESTILO DO AUTOCOMPLETE */
+        
         #heatmap-canvas {
-            height: 60vh;
+            height: 70vh; /* Você já tinha isso, mas garantindo */
             width: 100%;
             border-radius: 0.5rem;
+            border: 2px solid #4f46e5;
         }
         .toggle-switch {
             position: relative;
@@ -203,6 +215,11 @@
         input[type="date"], input[type="datetime-local"] {
             color-scheme: dark; /* Garante que o calendário interno tenha cores escuras */
         }
+         
+        /* Corrige o input de autocomplete para ficar dentro do card */
+        .autocomplete-container {
+            position: relative;
+        }
 
     </style>
 </head>
@@ -290,12 +307,12 @@
                     <h3 class="font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
                     <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-800 font-semibold"></p>
 
-                    <div class="mb-4">
+                    <div class="mb-4 autocomplete-container">
                         <label for="origin" class="block mb-2 text-sm font-medium">Qual a sua origem?</label>
                         <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço de partida completo">
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-4 autocomplete-container">
                         <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
                         <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço completo">
                     </div>
@@ -504,7 +521,11 @@ Gerenciar Motoristas
                         <input type="text" id="new-user-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Nome Completo">
                         <input type="password" id="new-user-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Senha">
                         <input type="text" id="new-user-company" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Empresa">
-                        <input type="text" id="new-user-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Endereço">
+                        
+                        <div class="autocomplete-container">
+                            <input type="text" id="new-user-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Endereço">
+                        </div>
+                        
                         <input type="tel" id="new-user-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Telefone">
                         <button onclick="addUser()" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient text-white">Adicionar</button>
                     </div>
@@ -527,7 +548,7 @@ Gerenciar Motoristas
         <div id="admin-heatmap-screen" class="screen">
             <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Mapa de Localização de Usuários</h2>
-            <div id="heatmap-canvas"></div>
+            <div id="heatmap-canvas"></div> 
         </div>
 
         <div id="admin-customize-screen" class="screen">
@@ -633,7 +654,9 @@ Gerenciar Motoristas
                     <option value="inactive">Inativo</option>
                 </select>
                 <input type="text" id="modal-input-company" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Empresa">
-                <input type="text" id="modal-input-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Endereço">
+                <div class="autocomplete-container">
+                    <input type="text" id="modal-input-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Endereço">
+                </div>
                 <input type="password" id="modal-input-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Senha">
                 <input type="password" id="modal-input-admin-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Senha do Admin">
             </div>
@@ -645,27 +668,70 @@ Gerenciar Motoristas
     </div>
 
     <script>
-        // A chave API do Google Maps para o Distance Matrix API agora será usada no lado do servidor.
-        // A função getDrivingDistance fará uma chamada para a sua própria API no Vercel.
+        // ========================================================================
+        // NOVA CONSTANTE - CHAVE DA API GEOAPIFY
+        // ========================================================================
+        const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38';
 
-        async function getDrivingDistance(origin, destination) {
-            // Remove a chamada direta para a API do Google
-            // e faz uma chamada para a sua API no Vercel
-            const url = `/api/get-distance?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}`;
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - getDrivingDistance (Usa Geoapify Routing)
+        // ========================================================================
+        // Esta função geocodifica endereços e depois chama getDrivingDistanceByCoords
+        async function getDrivingDistance(originAddress, destinationAddress) {
+            
+            // 1. Geocodificar os dois endereços
+            let originCoords, destCoords;
+            try {
+                // Tenta geocodificar a origem. geocodeAddress AGORA retorna {lat, lon}
+                originCoords = await geocodeAddress(originAddress);
+                if (!originCoords) throw new Error('Falha ao geocodificar origem');
+                
+                // Tenta geocodificar o destino
+                destCoords = await geocodeAddress(destinationAddress);
+                if (!destCoords) throw new Error('Falha ao geocodificar destino');
 
+            } catch (error) {
+                console.error('Erro na geocodificação para cálculo de distância:', error);
+                return null; // Retorna nulo se qualquer geocodificação falhar
+            }
+            
+            // 2. Chamar a nova função com as coordenadas
+            // A função agora espera {lat, lon}, que é o que geocodeAddress retorna
+            return await getDrivingDistanceByCoords(originCoords, destCoords);
+        }
+
+        // ========================================================================
+        // NOVA FUNÇÃO - getDrivingDistanceByCoords (Usa Geoapify Routing API)
+        // ========================================================================
+        // Esta função calcula a distância de ROTA (carro) usando coordenadas
+        async function getDrivingDistanceByCoords(originCoords, destCoords) {
+            // Verifica se as coordenadas são válidas
+            if (!originCoords || typeof originCoords.lat === 'undefined' || typeof originCoords.lon === 'undefined' ||
+                !destCoords || typeof destCoords.lat === 'undefined' || typeof destCoords.lon === 'undefined') {
+                console.warn("getDrivingDistanceByCoords: Coordenadas inválidas.", originCoords, destCoords);
+                return null;
+            }
+
+            // 1. Formatar os waypoints para a API do Geoapify
+            const waypoints = `${originCoords.lat},${originCoords.lon}|${destCoords.lat},${destCoords.lon}`;
+            
+            // 2. Montar a URL da API de Roteamento (Routing API) do Geoapify
+            const url = `https://api.geoapify.com/v1/routing?waypoints=${encodeURIComponent(waypoints)}&mode=drive&units=metric&apiKey=${GEOAPIFY_API_KEY}`;
+            
             try {
                 const response = await fetch(url);
                 const data = await response.json();
 
-                if (data.status === 'OK' && data.rows[0].elements[0].status === 'OK') {
-                    const distanceInMeters = data.rows[0].elements[0].distance.value;
+                // 3. Processar a resposta do Geoapify
+                if (data.features && data.features.length > 0) {
+                    const distanceInMeters = data.features[0].properties.distance;
                     return distanceInMeters / 1000; // Converte metros para km
                 } else {
-                    console.error('Erro na API Vercel:', data.status, data.error_message);
+                    console.error('Erro na API de Roteamento Geoapify:', data);
                     return null;
                 }
             } catch (error) {
-                console.error('Erro ao buscar a distância:', error);
+                console.error('Erro ao buscar a distância (Geoapify):', error);
                 return null;
             }
         }
@@ -723,66 +789,55 @@ Gerenciar Motoristas
         }
 
 
-        // Função auxiliar para geocodificar um endereço usando a API do Google Maps
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - geocodeAddress
+        // ========================================================================
+        // Esta função agora usa a API de Geocoding do Geoapify
         async function geocodeAddress(address) {
-            if (!google || !google.maps || !google.maps.Geocoder) {
-                console.error("Geocoder do Google Maps não está disponível.");
-                return new Promise((_, reject) => reject("Geocoder not available"));
+            // Se o endereço for nulo ou inválido, rejeita imediatamente
+            if (!address || typeof address !== 'string' || address.trim().length < 3) {
+                console.warn(`Tentativa de geocodificar endereço inválido: ${address}`);
+                return Promise.reject("Endereço inválido");
             }
+            
+            const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
 
-            return new Promise((resolve, reject) => {
-                const geocoder = new google.maps.Geocoder();
+                if (data.features && data.features.length > 0) {
+                    const coords = data.features[0].geometry.coordinates;
+                    // ATENÇÃO: Geoapify retorna [lng, lat]. Vamos padronizar para {lat, lon}
+                    return { lat: coords[1], lon: coords[0] };
+                } else {
+                    // Segunda tentativa, adicionando contexto local (Guaíba)
+                    const newAddress = `${address}, Guaíba, RS`;
+                    const fallbackUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(newAddress)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
+                    
+                    const fallbackResponse = await fetch(fallbackUrl);
+                    const fallbackData = await fallbackResponse.json();
 
-                // Primeira tentativa com o endereço original
-                geocoder.geocode({ 'address': address, 'region': 'br' }, (results, status) => {
-                    console.log(`Geocoding status for "${address}": ${status}`);
-                    if (status === 'OK' && results[0]) {
-                        resolve({ lat: results[0].geometry.location.lat(), lng: results[0].geometry.location.lng() });
-                    } else if (status === 'ZERO_RESULTS') {
-                        // Segunda tentativa, adicionando contexto local
-                        const newAddress = `${address}, Guaíba, RS`;
-                        console.warn(`Primeira tentativa falhou. Tentando com: "${newAddress}"`);
-                        geocoder.geocode({ 'address': newAddress, 'region': 'br' }, (newResults, newStatus) => {
-                            console.log(`Second geocoding status for "${newAddress}": ${newStatus}`);
-                            if (newStatus === 'OK' && newResults[0]) {
-                                resolve({ lat: newResults[0].geometry.location.lat(), lng: newResults[0].geometry.location.lng() });
-                            } else {
-                                console.error(`A segunda geocodificação também falhou: ${newStatus} para o endereço: ${newAddress}`);
-                                reject(newStatus);
-                            }
-                        });
+                    if (fallbackData.features && fallbackData.features.length > 0) {
+                        const coords = fallbackData.features[0].geometry.coordinates;
+                        return { lat: coords[1], lon: coords[0] };
                     } else {
-                        console.error(`A geocodificação não foi bem-sucedida pelo seguinte motivo: ${status} para o endereço: ${address}`);
-                        reject(status);
+                        console.error(`A segunda geocodificação também falhou para: ${newAddress}`);
+                        throw new Error('ZERO_RESULTS');
                     }
-                });
-            });
+                }
+            } catch (error) {
+                console.error(`Geocodificação falhou para: ${address}`, error);
+                throw error;
+            }
         }
 
-
-        // Calcula a distância em km entre dois pontos geográficos usando a fórmula de Haversine
-        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Raio da Terra em quilômetros
-            const dLat = deg2rad(lat2 - lat1);
-            const dLon = deg2rad(lon2 - lon1);
-            const a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const d = R * c; // Distância em km
-            return d;
-        }
-
-        // Converte graus para radianos
-        function deg2rad(deg) { 
-            return deg * (Math.PI / 180); 
-        }
+        // --- FUNÇÕES DE CÁLCULO DE LINHA RETA (HAVERSINE) REMOVIDAS ---
 
         // --- CONFIGURAÇÃO INICIAL E ESTADO DA APLICAÇÃO ---
         let driverWatchId = null; 
-        let map;
-        let heatmap;
+        let map; // Será usado pelo Leaflet
+        let heatmap; // Será usado pelo Leaflet.heat
         let tempDriverId = null; // Armazena temporariamente o ID do motorista para login
         let driverChart = null; // Referência para o gráfico de pizza dos motoristas
         let countdownInterval = null;
@@ -797,7 +852,10 @@ Gerenciar Motoristas
             currentDriverId: null,
             currentUserRideId: null,
             currentUserId: null,
-            userStatusInterval: null // Intervalo para checar status da corrida do usuário
+            userStatusInterval: null, // Intervalo para checar status da corrida do usuário
+            // Armazena os dados de lat/lon do autocomplete
+            currentUserOrigin: null, 
+            currentUserDestination: null
         };
 
         // --- CONFIGURAÇÃO DO SUPABASE ---
@@ -878,11 +936,17 @@ Gerenciar Motoristas
             const inputContainer = document.getElementById('modal-input-container');
 
             Array.from(inputContainer.children).forEach(child => {
-                if (child.tagName === 'INPUT' || child.tagName === 'SELECT') {
+                if (child.tagName === 'INPUT' || child.tagName === 'SELECT' || child.classList.contains('autocomplete-container')) {
                     child.style.display = 'none';
-                    child.value = ''; 
+                    // Limpa inputs, exceto o container do autocomplete
+                    if (child.tagName !== 'DIV') child.value = ''; 
                 }
             });
+
+            // Limpa o input de endereço dentro do container do modal
+            const modalAddressInput = document.getElementById('modal-input-address');
+            if (modalAddressInput) modalAddressInput.value = '';
+
 
             if (content.type) {
                 inputContainer.classList.remove('hidden');
@@ -905,13 +969,18 @@ Gerenciar Motoristas
                     document.getElementById('modal-input-name').style.display = 'block';
                     document.getElementById('modal-input-password').style.display = 'block'; 
                     document.getElementById('modal-input-company').style.display = 'block';
-                    document.getElementById('modal-input-address').style.display = 'block';
+                    document.getElementById('modal-input-address').parentElement.style.display = 'block'; // Mostra o container do autocomplete
                     document.getElementById('modal-input-phone').style.display = 'block';
+                    
                     document.getElementById('modal-input-matricula').value = content.matricula;
                     document.getElementById('modal-input-name').value = content.name;
                     document.getElementById('modal-input-company').value = content.company;
-                    document.getElementById('modal-input-address').value = content.address;
+                    document.getElementById('modal-input-address').value = content.address; // Define o valor do input de endereço
                     document.getElementById('modal-input-phone').value = content.phone;
+                    
+                    // Inicializa o autocomplete para o modal
+                    initAutocomplete(document.getElementById('modal-input-address'));
+
                 } else if(content.type === 'driver-password') {
                     document.getElementById('modal-input-driver-password').style.display = 'block';
                 } else if(content.type === 'delete-with-password') {
@@ -942,6 +1011,15 @@ Gerenciar Motoristas
                     child.value = '';
                     child.style.display = 'none'; 
                 }
+                 if (child.classList.contains('autocomplete-container')) {
+                     child.style.display = 'none';
+                     // Remove a instância do autocomplete para evitar duplicatas
+                     const input = child.querySelector('input');
+                     if (input && input.geoapify_autocomplete_instance) {
+                         input.geoapify_autocomplete_instance.destroy();
+                         input.geoapify_autocomplete_instance = null;
+                     }
+                 }
             });
         }
 
@@ -1037,7 +1115,11 @@ Gerenciar Motoristas
                 startDigitalClock('digital-clock');
             }
             if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
-            if (screenId === 'admin-user-crud-screen') renderUserCrudList();
+            if (screenId === 'admin-user-crud-screen') {
+                 renderUserCrudList();
+                 // Inicializa o autocomplete para o formulário "Adicionar Novo Usuário"
+                 initAutocomplete(document.getElementById('new-user-address'));
+            }
             if (screenId === 'admin-heatmap-screen') initHeatmap();
             if (screenId === 'driver-selection-screen') populateDriverSelection();
             if (screenId === 'driver-screen') {
@@ -1048,6 +1130,13 @@ Gerenciar Motoristas
                 checkUserRideStatus(); 
                 updateAvailableDriversCount(); 
                 renderUserRideHistory(); 
+                // Inicializa o autocomplete para os inputs de origem e destino do usuário
+                initAutocomplete(document.getElementById('origin'), (feature) => {
+                    state.currentUserOrigin = feature; // Salva os dados do local
+                });
+                initAutocomplete(document.getElementById('destination'), (feature) => {
+                    state.currentUserDestination = feature; // Salva os dados do local
+                });
             }
             if (screenId === 'admin-records-screen') {
                 loadAllRecords(); 
@@ -1103,10 +1192,16 @@ Gerenciar Motoristas
         // --- LÓGICA DO USUÁRIO ---
 
         async function requestRide() {
-            const origin = document.getElementById('origin').value;
-            const destination = document.getElementById('destination').value;
-            if (!origin || !destination) {
-                showModal('Por favor, insira a origem e o destino.');
+            const originAddress = document.getElementById('origin').value;
+            const destinationAddress = document.getElementById('destination').value;
+            
+            // Valida se os dados de autocomplete foram salvos
+            if (!state.currentUserOrigin || state.currentUserOrigin.properties.formatted !== originAddress) {
+                showModal('Por favor, selecione um endereço de ORIGEM válido da lista de sugestões.');
+                return;
+            }
+             if (!state.currentUserDestination || state.currentUserDestination.properties.formatted !== destinationAddress) {
+                showModal('Por favor, selecione um endereço de DESTINO válido da lista de sugestões.');
                 return;
             }
 
@@ -1128,22 +1223,25 @@ Gerenciar Motoristas
 
             document.getElementById('user-request-form').classList.add('hidden');
             document.getElementById('user-status').classList.remove('hidden');
-            document.getElementById('user-status-message').textContent = 'Validando endereço de origem...';
+            document.getElementById('user-status-message').textContent = 'Solicitando corrida...';
 
             try {
-                const originCoords = await geocodeAddress(origin);
-                const userLocation = { lat: originCoords.lat, lon: originCoords.lng };
+                // Usa as coordenadas salvas do autocomplete
+                const originCoords = state.currentUserOrigin.properties;
+                // Padroniza para {lat, lon}
+                const userLocation = { lat: originCoords.lat, lon: originCoords.lon };
                 const currentUser = state.users.find(u => u.id === state.currentUserId);
 
                 const newRide = {
-                    destination: destination,
-                    origin_address: origin,
+                    destination: destinationAddress, // Salva o endereço de destino como texto
+                    origin_address: originAddress,   // Salva o endereço de origem como texto
                     status: 'requested',
                     userId: currentUser.id,
                     userName: currentUser.name,
                     userCompany: currentUser.company,
                     requestTime: new Date().toISOString(),
-                    userLocation: userLocation,
+                    // Salva a localização de origem (Geoapify retorna [lon, lat], mas 'select' callback retorna .lat, .lon)
+                    userLocation: userLocation, // Salva no formato padronizado {lat, lon}
                     request_type: isScheduled ? 'scheduled' : 'immediate', 
                     scheduled_datetime: scheduledTime 
                 };
@@ -1161,14 +1259,19 @@ Gerenciar Motoristas
                 state.currentUserRideId = data.id;
                 document.getElementById('user-status-message').textContent = 'Aguardando um motorista aceitar...';
                 startUserStatusCheck();
+                
+                // Limpa os estados de localização após o sucesso
+                state.currentUserOrigin = null;
+                state.currentUserDestination = null;
 
             } catch (error) {
-                console.error("Erro ao geocodificar o endereço de origem:", error);
-                showModal('Não foi possível encontrar o endereço de origem. Por favor, verifique e tente novamente.');
+                console.error("Erro ao processar solicitação de corrida:", error);
+                showModal('Não foi possível processar sua solicitação.');
                 document.getElementById('user-request-form').classList.remove('hidden');
                 document.getElementById('user-status').classList.add('hidden');
             }
         }
+
 
         function checkUserRideStatus() {
              if (state.currentUserRideId) {
@@ -1207,7 +1310,7 @@ Gerenciar Motoristas
             }, 5000);
         }
 
-        function updateUserStatusMessage(ride) {
+        async function updateUserStatusMessage(ride) {
             const searchingIconContainer = document.getElementById('status-icon-searching');
             const enRouteIconContainer = document.getElementById('status-icon-en-route');
             const arrivedPickupIconContainer = document.getElementById('status-icon-arrived-pickup');
@@ -1237,13 +1340,22 @@ Gerenciar Motoristas
                     break;
                 case 'accepted':
                     message = `Motorista ${ride.driverName} está a caminho!`;
+                    
+                    // LÓGICA DE CÁLCULO DE DISTÂNCIA (Geoapify Routing)
                     if (ride.driverCurrentLocation && ride.userLocation) {
-                        const distance = getDistanceFromLatLonInKm(
-                            ride.userLocation.lat, ride.userLocation.lon,
-                            ride.driverCurrentLocation.lat, ride.driverCurrentLocation.lon
+                        // Chama a função assíncrona que calcula a distância de ROTA
+                        const distance = await getDrivingDistanceByCoords(
+                            ride.userLocation,             // Coordenadas do usuário {lat, lon}
+                            ride.driverCurrentLocation     // Coordenadas do motorista {lat, lon}
                         );
-                        message += ` Distância: ${distance.toFixed(2)} km`;
+                        
+                        if (distance !== null) {
+                            message += ` Distância: ${distance.toFixed(2)} km`;
+                        } else {
+                            message += ` (Calculando distância...)`;
+                        }
                     }
+
                     const acceptedImg = document.createElement('img');
                     acceptedImg.src = 'images/aceitou.png'; 
                     acceptedImg.alt = 'Motorista Aceitou';
@@ -2032,20 +2144,21 @@ Gerenciar Motoristas
                 showModal("Não foi possível aceitar a corrida.");
             } else { 
                 const ride = state.rides.find(r => r.id === rideId);
+                
+                // Tenta navegar para as coordenadas de origem primeiro
                 if (ride && ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) {
                     const { lat, lon } = ride.userLocation;
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank'); // Usa Google Maps para navegação
+                    // Link do Waze para coordenadas
+                    window.open(`waze://?ll=${lat},${lon}&navigate=yes`, '_blank');
+                } else if (ride && ride.origin_address) {
+                    // Fallback para endereço de origem se as coordenadas não estiverem salvas
+                    window.open(`waze://?q=${encodeURIComponent(ride.origin_address)}&navigate=yes`, '_blank');
                 } else {
-                     console.warn("Localização do usuário não disponível para navegação.");
-                     // Tenta navegar para a origem se o endereço estiver disponível
-                     if (ride && ride.origin_address) {
-                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.origin_address)}`, '_blank');
-                     } else {
-                         showModal("Não foi possível obter a localização do usuário ou endereço de origem para navegação.");
-                     }
+                     showModal("Não foi possível obter a localização do usuário ou endereço de origem para navegação.");
                 }
             }
         }
+
 
         async function arriveAtPickup(rideId) {
             const { error } = await supabaseClient.from('rides').update({ status: 'arrived_pickup' }).eq('id', rideId);
@@ -2063,8 +2176,10 @@ Gerenciar Motoristas
                     console.error("Erro ao iniciar viagem:", error);
                     showModal("Não foi possível iniciar a viagem.");
                 } else { 
-                    // Navega para o destino final (usa o valor bruto, não formatado, para o Google Maps)
-                     window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.destination)}`, '_blank'); 
+                    // Navega para o destino final (usa o valor bruto, não formatado)
+                    // Usa a função de formatação para extrair o endereço de destino principal
+                    const destinationAddress = formatDestination(ride.destination);
+                    window.open(`waze://?q=${encodeURIComponent(destinationAddress)}&navigate=yes`, '_blank'); 
                 }
             }
         }
@@ -2736,12 +2851,10 @@ Gerenciar Motoristas
 
         // --- FUNÇÃO DE INICIALIZAÇÃO PRINCIPAL ---
         async function initApp() {
-            if (typeof google === 'undefined' || !google.maps || !google.maps.Geocoder) {
-                 document.getElementById('app-container').innerHTML = '<p class="text-red-500 text-center text-lg">Erro ao carregar o mapa.</p>';
-                 return; 
-            }
-
-            initAutocomplete(); 
+            // Esta função não precisa mais verificar o 'google', 
+            // ela será chamada pelo DOMContentLoaded
+            
+            initAutocomplete(); // Esta função agora está vazia, mas é chamada
             await fetchAllData(); 
             setupRealtimeSubscriptions(); 
             loadAppIcon();
@@ -2773,55 +2886,84 @@ Gerenciar Motoristas
             }
         }
 
-        function initAutocomplete() {
-            const destinationInput = document.getElementById('destination');
-            const originInput = document.getElementById('origin');
-            if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - initAutocomplete
+        // ========================================================================
+        // Esta função agora inicializa o Geoapify Autocomplete
+        function initAutocomplete(inputElement, onPlaceSelectCallback) {
+            // Se nenhum elemento for passado, a função é encerrada
+            // Isso acontece na chamada antiga de initApp()
+            if (!inputElement) return;
+
+            // Evita reinicializar em um input que já tem
+            if (inputElement.geoapify_autocomplete_instance) {
+                inputElement.geoapify_autocomplete_instance.destroy();
+                inputElement.geoapify_autocomplete_instance = null;
             }
-            if (originInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                new google.maps.places.Autocomplete(originInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
-            }
+
+            const autocomplete = new Autocomplete(inputElement, {
+                apiKey: GEOAPIFY_API_KEY,
+                filter: {
+                    countrycode: ['br'] // Filtra para o Brasil
+                },
+                lang: 'pt', // Define o idioma para Português
+                placeholder: inputElement.placeholder,
+                allowNonVerifiedHouseNumber: true,
+                allowNonVerifiedStreet: true
+            });
+
+            autocomplete.on('select', (feature) => {
+                if (feature) {
+                    // Se um callback foi fornecido (como na tela do usuário),
+                    // chama ele com os dados do local selecionado
+                    if (onPlaceSelectCallback) {
+                        onPlaceSelectCallback(feature);
+                    }
+                }
+            });
+            
+            // Armazena a instância no elemento para referência futura (ex: no modal)
+            inputElement.geoapify_autocomplete_instance = autocomplete;
         }
+
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - initHeatmap (agora usa Leaflet)
+        // ========================================================================
         async function initHeatmap() {
             const mapDiv = document.getElementById('heatmap-canvas');
             if (!mapDiv) {
                 console.error('Elemento do mapa não encontrado');
                 return;
             }
-            
-            // Verifica se a API de visualização está carregada
-            if (typeof google === 'undefined' || !google.maps || !google.maps.visualization) {
-                console.error('Google Maps Visualization API não carregada');
-                showModal('A biblioteca de visualização do Google Maps não foi carregada corretamente');
-                return;
-            }
 
-            const center = { lat: -30.0346, lng: -51.2177 }; // Centro aproximado de Porto Alegre
+            // Remove o mapa Leaflet anterior, se existir, para evitar duplicação
+            if (map) {
+                map.remove();
+                map = null;
+            }
+            
+            // Centro aproximado de Guaíba/Porto Alegre
+            const center = [-30.0346, -51.2177]; // [lat, lng] para Leaflet
             
             try {
-                map = new google.maps.Map(mapDiv, {
-                    center: center,
-                    zoom: 12,
-                    mapTypeId: 'roadmap'  // Mudado para roadmap para melhor visualização
-                });
+                // 1. Inicializa o mapa Leaflet
+                map = L.map(mapDiv).setView(center, 12);
 
-                // Adiciona marcadores para debug
-                const marker = new google.maps.Marker({
-                    position: center,
-                    map: map,
-                    title: 'Centro do Mapa'
-                });
+                // 2. Adiciona o mapa-base (tile layer) do Geoapify
+                // Usando o estilo "dark-matter" que combina com seu app
+                L.tileLayer(`https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`, {
+                    attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a>'
+                }).addTo(map);
 
-                console.log('Mapa inicializado, buscando endereços dos usuários...');
+                console.log('Mapa Leaflet inicializado, buscando endereços dos usuários...');
 
+                // 3. Busca e geocodifica os endereços (usando a *nova* função geocodeAddress)
                 const geocodePromises = state.users
                     .filter(user => user.address && user.address.trim() !== '')
                     .map(user => {
-                        console.log(`Geocodificando: ${user.address}`);
                         return geocodeAddress(user.address)
                             .then(coords => {
-                                console.log(`Endereço geocodificado: ${user.address} -> ${JSON.stringify(coords)}`);
+                                // geocodeAddress retorna {lat, lon}
                                 return coords;
                             })
                             .catch(e => {
@@ -2831,43 +2973,27 @@ Gerenciar Motoristas
                     });
 
                 const results = await Promise.all(geocodePromises);
+                
+                // 4. Formata os dados para o Leaflet.heat ([lat, lng])
                 const locationsData = results
-                    .filter(coords => coords)
-                    .map(coords => {
-                        console.log(`Coordenada válida: ${coords.lat}, ${coords.lng}`);
-                        return new google.maps.LatLng(coords.lat, coords.lng);
-                    });
+                    .filter(coords => coords) // Filtra os nulos
+                    .map(coords => [coords.lat, coords.lon]); // Formato [lat, lon]
 
                 console.log(`Total de coordenadas válidas: ${locationsData.length}`);
 
+                // 5. Adiciona a camada de heatmap
                 if (locationsData.length > 0) {
-                    if (heatmap) heatmap.setMap(null);
-                    heatmap = new google.maps.visualization.HeatmapLayer({
-                        data: locationsData,
-                        map: map,
-                        radius: 40,  // Aumentado o raio para melhor visualização
-                        opacity: 1,
-                        gradient: [
-                            'rgba(0, 255, 255, 0)',
-                            'rgba(0, 255, 255, 1)',
-                            'rgba(0, 191, 255, 1)',
-                            'rgba(0, 127, 255, 1)',
-                            'rgba(0, 63, 255, 1)',
-                            'rgba(0, 0, 255, 1)',
-                            'rgba(0, 0, 223, 1)',
-                            'rgba(0, 0, 191, 1)',
-                            'rgba(0, 0, 159, 1)',
-                            'rgba(0, 0, 127, 1)',
-                            'rgba(63, 0, 91, 1)',
-                            'rgba(127, 0, 63, 1)',
-                            'rgba(191, 0, 31, 1)',
-                            'rgba(255, 0, 0, 1)'
-                        ]
-                    });
+                    if (heatmap) heatmap.remove(); // Remove heatmap anterior
+                    
+                    heatmap = L.heatLayer(locationsData, {
+                        radius: 40,
+                        blur: 20,
+                        maxZoom: 18,
+                        gradient: {0.4: 'blue', 0.65: 'lime', 1: 'red'} // Gradiente padrão
+                    }).addTo(map);
                     
                     // Ajusta o zoom para incluir todos os pontos
-                    const bounds = new google.maps.LatLngBounds();
-                    locationsData.forEach(loc => bounds.extend(loc));
+                    const bounds = L.latLngBounds(locationsData);
                     map.fitBounds(bounds);
                 } else {
                     console.warn('Nenhuma coordenada válida encontrada para gerar o mapa de calor');
@@ -2878,20 +3004,18 @@ Gerenciar Motoristas
                 showModal('Erro ao carregar o mapa de calor. Verifique o console para detalhes.');
             }
         }
-// Chama loadAppIcon no final para garantir que o ícone padrão seja carregado se não houver um salvo
+
+        // Chama loadAppIcon no final para garantir que o ícone padrão seja carregado se não houver um salvo
         document.addEventListener('DOMContentLoaded', () => {
              loadAppIcon();
+             // Chama o initApp() DEPOIS que o DOM estiver carregado
+             initApp();
         });
 
     </script>
-   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZt7BabbQJ3UaLSQYChtMhieikDlqvpLg&libraries=places,visualization&callback=initApp" async defer></script>
+   
    <style>
-    #heatmap-canvas {
-        height: 70vh;
-        width: 100%;
-        border-radius: 0.5rem;
-        border: 2px solid #4f46e5;
-    }
+    /* Estilo do heatmap já foi movido para o <style> principal no <head> */
    </style>
 </body>
 </html>
