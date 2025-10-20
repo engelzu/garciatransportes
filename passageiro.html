@@ -329,12 +329,12 @@
                  <h3 class="text-center font-semibold mb-4 text-xl">Solicitar uma Viagem</h3>
                 
                  <div class="mb-4 input-and-button-container autocomplete-container">
-                    <label for="origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label>
-                    <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço de partida"
-                           oninput="handleAddressInput(event, 'originList', 'origin')"> {/* Adicionado oninput */}
-                    <div class="autocomplete-list" id="originList"></div> {/* Adicionada div */}
-                    <button onclick="useCurrentLocation()" class="mt-2 w-full py-2 px-4 text-sm font-semibold rounded-lg bg-sky-600 hover:bg-sky-700">Usar minha localização atual</button>
-                </div>
+    <label for="origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label>
+    <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço de partida"
+           oninput="handleAddressInput(event, 'originList', 'origin')">
+    <div class="autocomplete-list" id="originList"></div>
+    <button onclick="useCurrentLocation()" class="mt-2 w-full py-2 px-4 text-sm font-semibold rounded-lg bg-sky-600 hover:bg-sky-700">Usar minha localização atual</button>
+</div>
                 
                 <div class="mb-4 input-and-button-container">
                     <label for="passenger-count" class="block mb-2 text-sm font-medium">Quantidade de Passageiros?</label>
