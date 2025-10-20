@@ -11,8 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@latest/styles/minimal-dark.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@latest/dist/index.min.js"></script>
+    
     <style>
         body, html {
             background-color: #000;
@@ -68,37 +67,59 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        /* ESTILO PARA O AUTOCOMPLETE DO GEOAPIFY */
-        .autocomplete-container {
-            position: relative; /* Necessário para o dropdown */
+
+        /* ESTILO PARA O AUTOCOMPLETE (CUSTOMIZADO) */
+        .autocomplete-container { /* Container para posicionamento */
+            position: relative;
         }
-        /* A biblioteca minimal-dark.css cuida da maior parte, mas podemos forçar algumas cores */
-        .geoapify-autocomplete-input {
-             color: white !important;
-             background-color: #374151 !important; /* Fundo do input */
-             border: 1px solid #4b5563 !important;
-             padding: 0.75rem !important; /* p-3 */
-             border-radius: 0.5rem !important; /* rounded-lg */
+
+        .autocomplete-list {
+            position: absolute;
+            top: 100%; /* Posiciona abaixo do input */
+            left: 0;
+            right: 0;
+            background: #374151; /* Fundo escuro */
+            border: 1px solid #4b5563; /* Borda escura */
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem; /* rounded-lg */
+            max-height: 200px; /* Altura máxima */
+            overflow-y: auto;
+            z-index: 1050; /* Sobrepor tudo */
+            display: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
-        .geoapify-autocomplete-items {
-            background-color: #374151 !important; /* Fundo da lista dropdown */
-            border: 1px solid #4b5563 !important;
-            color: white !important;
-            z-index: 1000; /* Garante que fique sobre outros elementos */
+
+        .autocomplete-list.show {
+            display: block;
         }
-        .geoapify-autocomplete-items div:hover {
-            background-color: #4b5563 !important; /* Cor do item em hover */
+
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #4b5563; /* Separador escuro */
+            color: white !important; /* Texto branco */
+            transition: background-color 0.2s ease;
         }
-        .geoapify-autocomplete-item {
-             color: white !important;
-             padding: 10px !important;
-             font-size: 14px !important;
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
         }
-        .geoapify-autocomplete-item.active {
-            background-color: #4f46e5 !important; /* Cor do item selecionado */
+
+        .autocomplete-item:hover {
+            background-color: #4b5563; /* Hover mais claro */
         }
-        /* FIM DO ESTILO DO AUTOCOMPLETE */
+
+        .autocomplete-item strong {
+            color: #00ffff; /* Cor ciano de destaque */
+        }
+
+        .loading, .no-results {
+            padding: 10px 12px;
+            text-align: center;
+            color: #9ca3af; /* Cinza claro */
+            font-style: italic;
+        }
+        /* FIM DO ESTILO CUSTOMIZADO */
 
         #mobile-menu {
             transform: translateX(100%);
@@ -166,8 +187,6 @@
             max-width: 400px;
             margin: 0 auto;
         }
-
-        /* Removido #destination obsoleto */
 
         #request-ride-btn {
             width: 100%;
@@ -309,8 +328,11 @@
             <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6 content-wrapper">
                  <h3 class="text-center font-semibold mb-4 text-xl">Solicitar uma Viagem</h3>
                 
-                <div class="mb-4 input-and-button-container autocomplete-container"> <label for="origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label>
-                    <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço de partida">
+                 <div class="mb-4 input-and-button-container autocomplete-container">
+                    <label for="origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label>
+                    <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço de partida"
+                           oninput="handleAddressInput(event, 'originList', 'origin')"> {/* Adicionado oninput */}
+                    <div class="autocomplete-list" id="originList"></div> {/* Adicionada div */}
                     <button onclick="useCurrentLocation()" class="mt-2 w-full py-2 px-4 text-sm font-semibold rounded-lg bg-sky-600 hover:bg-sky-700">Usar minha localização atual</button>
                 </div>
                 
@@ -404,6 +426,8 @@
         // ========================================================================
         const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38'; //
 
+        let debounceTimer; // Adicionado para autocomplete manual
+
         // --- CONFIGURAÇÃO INICIAL E ESTADO DA APLICAÇÃO ---
         let state = {
             rides: [],
@@ -427,6 +451,123 @@
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ========================================================================
+        // FUNÇÕES DE AUTOCOMPLETE MANUAL (do mapa.html / ADMIN_EMPRESA.html)
+        // ========================================================================
+
+        // Função para lidar com a digitação e aplicar debounce
+        function handleAddressInput(event, listId, inputType, index = null) {
+            clearTimeout(debounceTimer);
+            const query = event.target.value;
+            debounceTimer = setTimeout(() => {
+                searchAddress(query, listId, inputType, index); // Passa o tipo e índice
+            }, 300); // 300ms de debounce
+        }
+
+        async function searchAddress(query, listId, inputType, index) {
+            if (query.length < 3) {
+                hideList(listId);
+                return;
+            }
+
+            const list = document.getElementById(listId);
+            if (!list) return; // Segurança
+            list.innerHTML = '<div class="loading">Buscando...</div>';
+            list.classList.add('show');
+
+            try {
+                // Usa a chave API já definida
+                const response = await fetch(
+                    `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&lang=pt&limit=5&apiKey=${GEOAPIFY_API_KEY}`
+                );
+
+                const data = await response.json();
+
+                if (data.features && data.features.length > 0) {
+                    displayResults(data.features, listId, inputType, index); // Passa o tipo e índice
+                } else {
+                    list.innerHTML = '<div class="no-results">Nenhum resultado encontrado</div>';
+                }
+            } catch (error) {
+                console.error('Erro ao buscar endereços:', error);
+                list.innerHTML = '<div class="no-results">Erro ao buscar endereços</div>';
+            }
+        }
+
+        function displayResults(features, listId, inputType, index) {
+            const list = document.getElementById(listId);
+            if (!list) return; // Segurança
+            list.innerHTML = '';
+
+            features.forEach(feature => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+
+                const formatted = feature.properties.formatted;
+                const city = feature.properties.city || '';
+                const state = feature.properties.state || '';
+
+                item.innerHTML = `
+                    <strong>${formatted}</strong>
+                    ${city || state ? `<br><small style="color: #999;">${city}${city && state ? ', ' : ''}${state}</small>` : ''}
+                `;
+
+                // Modificado para chamar a nova 'selectAddress' com tipo e índice
+                item.onclick = () => selectAddress(feature, listId, inputType, index);
+                list.appendChild(item);
+            });
+
+            list.classList.add('show');
+        }
+
+        // Função 'selectAddress' ADAPTADA para o passageiro
+        function selectAddress(feature, listId, inputType, index) {
+            const inputId = listId.replace('List', ''); // Ex: 'originList' -> 'origin', 'destination-1List' -> 'destination-1'
+            const input = document.getElementById(inputId);
+
+            if (input) {
+                input.value = feature.properties.formatted; // Preenche o input
+            }
+            hideList(listId); // Esconde a lista
+
+            // Adiciona lógica para salvar no state
+            // **AJUSTE:** Garante que .properties tenha lat/lon
+            if (!feature.properties) feature.properties = {};
+            if (feature.geometry && feature.geometry.coordinates) {
+                 feature.properties.lon = feature.geometry.coordinates[0];
+                 feature.properties.lat = feature.geometry.coordinates[1];
+            }
+            feature.properties.formatted = feature.properties.formatted || input.value; // Garante formatted
+
+            if (inputType === 'origin') {
+                state.selectedOrigin = feature;
+                console.log("Origem selecionada:", state.selectedOrigin);
+            } else if (inputType === 'destination' && index !== null) {
+                state.selectedDestinationsData[index] = feature;
+                console.log(`Destino ${index + 1} selecionado:`, state.selectedDestinationsData[index]);
+            }
+        }
+
+        function hideList(listId) {
+            const list = document.getElementById(listId);
+            if (list) {
+                list.classList.remove('show');
+            }
+        }
+
+        // Fechar listas ao clicar fora (copiado do mapa.html / ADMIN_EMPRESA.html)
+        document.addEventListener('click', function(e) {
+            // Se o clique NÃO for dentro de um container de autocomplete
+            if (!e.target.closest('.autocomplete-container')) {
+                // Esconde todas as listas de autocomplete
+                document.querySelectorAll('.autocomplete-list').forEach(list => list.classList.remove('show'));
+            }
+        });
+        // ========================================================================
+        // FIM DAS FUNÇÕES DE AUTOCOMPLETE MANUAL
+        // ========================================================================
+
 
         // ========================================================================
         // NOVA FUNÇÃO - getDrivingDistanceByCoords (Usa Geoapify Routing API)
@@ -464,7 +605,7 @@
             }
         }
 
-        // --- LÓGICA DE MODAL --- (sem alterações)
+        // --- LÓGICA DE MODAL ---
         // ... (código existente sem alterações) ...
         function showModal(modalId, htmlContent, onConfirmCallback, showCancelButton = false) {
             const modal = document.getElementById(modalId);
@@ -511,7 +652,7 @@
         }
 
 
-        // --- LÓGICA DO MENU SANDUÍCHE --- (sem alterações)
+        // --- LÓGICA DO MENU SANDUÍCHE ---
         // ... (código existente sem alterações) ...
          function toggleMenu() {
             const menu = document.getElementById('mobile-menu');
@@ -520,7 +661,7 @@
             backdrop.classList.toggle('hidden');
         }
 
-        // --- LÓGICA DE LOGIN --- (sem alterações)
+        // --- LÓGICA DE LOGIN ---
         // ... (código existente sem alterações) ...
          async function loginUser() {
             const matricula = document.getElementById('user-id').value.trim();
@@ -592,8 +733,8 @@
             showScreen('initial-screen');
         }
 
-        // --- NAVEGAÇÃO ENTRE TELAS --- (sem alterações lógicas, apenas autocomplete)
-        // ... (código existente sem alterações) ...
+
+        // --- NAVEGAÇÃO ENTRE TELAS ---
         function updateUserScreenView() {
             const requestForm = document.getElementById('user-request-form');
             const permissionMessage = document.getElementById('permission-denied-message');
@@ -625,8 +766,8 @@
             if (screenId === 'user-screen' && state.currentUser) {
                 updateUserScreenView();
                 await checkUserRideStatus();
-                // Inicializa autocomplete aqui, APÓS a tela estar visível
-                initAutocomplete(document.getElementById('origin'), (feature) => { state.selectedOrigin = feature; });
+                // A inicialização do autocomplete agora é feita pelo oninput nos inputs
+                // e pela função updateDestinationFields
                 updateDestinationFields(document.getElementById('passenger-count').value);
             } else if (state.userStatusInterval) {
                 clearInterval(state.userStatusInterval);
@@ -704,8 +845,9 @@
             }
         }
 
-        // --- LÓGICA DE SOLICITAÇÃO DE CORRIDA --- (sem alterações)
-        // ... (código existente sem alterações) ...
+
+        // --- LÓGICA DE SOLICITAÇÃO DE CORRIDA ---
+        // ... (selectRequestType, openScheduleModal, confirmSchedule, resetRequestButton - sem alterações) ...
         function selectRequestType(type) {
             selectedRequestType = type;
 
@@ -877,8 +1019,7 @@
 
 
         // --- checkUserRideStatus, startUserStatusCheck, updateUserStatusMessage, cancelRide ---
-        // Nenhuma alteração necessária aqui (updateUserStatusMessage já usa a função correta)
-        // ... (código existente sem alterações) ...
+        // ... (código existente sem alterações lógicas, já usa a função correta getDrivingDistanceByCoords) ...
         async function checkUserRideStatus() {
             if (!state.currentUser) return;
 
@@ -961,6 +1102,7 @@
                 }
             }
         }
+
 
         function startUserStatusCheck() {
             if (state.userStatusInterval) clearInterval(state.userStatusInterval);
@@ -1140,7 +1282,6 @@
             }
         }
 
-
         async function cancelRide() {
             if (state.currentUserRideId) {
                 showModal('modal', 'Tem certeza que deseja cancelar esta solicitação?', async () => {
@@ -1154,6 +1295,7 @@
                 }, true);
             }
         }
+
 
         // --- fetchAllData, setupRealtimeSubscriptions, initApp ---
         // ... (código existente sem alterações) ...
@@ -1199,7 +1341,7 @@
                 if (state.currentUser) {
                     document.getElementById('user-welcome-message').textContent = `Olá, ${state.currentUser.name}!`;
                     setupRealtimeSubscriptions();
-                    await showScreen('user-screen'); // Isso vai chamar o initAutocomplete
+                    await showScreen('user-screen'); // Isso vai chamar o updateDestinationFields
                 } else {
                     logoutUser();
                 }
@@ -1207,6 +1349,7 @@
                 showScreen(localStorage.getItem('lastScreen') || 'initial-screen');
             }
         }
+
 
         // --- Vídeo ---
         // ... (código existente sem alterações) ...
@@ -1234,62 +1377,17 @@
             handleVideoEnd();
         }
 
-        // ========================================================================
-        // FUNÇÃO ATUALIZADA - initAutocomplete (Usa Geoapify)
-        // ========================================================================
-        function initAutocomplete(inputElement, onPlaceSelectCallback) {
-            // Verifica se a biblioteca foi carregada
-            if (typeof Autocomplete === 'undefined') {
-                console.error("ERRO: Biblioteca Autocomplete (Geoapify) não carregada.");
-                return;
-            }
-
-            // Evita reinicializar
-            if (inputElement.geoapify_autocomplete_instance) {
-                 inputElement.geoapify_autocomplete_instance.destroy();
-                 inputElement.geoapify_autocomplete_instance = null;
-            }
-
-            try {
-                const autocomplete = new Autocomplete(inputElement, {
-                    apiKey: GEOAPIFY_API_KEY,
-                    filter: { countrycode: ['br'] },
-                    lang: 'pt',
-                    placeholder: inputElement.placeholder,
-                    allowNonVerifiedHouseNumber: true,
-                    allowNonVerifiedStreet: true
-                });
-
-                autocomplete.on('select', (feature) => {
-                    if (feature && onPlaceSelectCallback) {
-                        // **AJUSTE:** Garante que .properties tenha lat/lon
-                        if (!feature.properties) feature.properties = {};
-                        if (feature.geometry && feature.geometry.coordinates) {
-                             feature.properties.lon = feature.geometry.coordinates[0];
-                             feature.properties.lat = feature.geometry.coordinates[1];
-                        }
-                        onPlaceSelectCallback(feature); // Chama o callback com os dados do local
-                    }
-                });
-
-                inputElement.geoapify_autocomplete_instance = autocomplete;
-
-            } catch (error) {
-                console.error("Erro ao inicializar Geoapify Autocomplete:", error, "no elemento:", inputElement);
-            }
-        }
-
 
         // ========================================================================
-        // FUNÇÃO ATUALIZADA - updateDestinationFields (Usa Geoapify)
+        // FUNÇÃO ATUALIZADA - updateDestinationFields (Usa autocomplete manual)
         // ========================================================================
-        // ... (código existente sem alterações) ...
         function updateDestinationFields(passengerCount) {
             const container = document.getElementById('destinations-container');
             container.innerHTML = ''; // Limpa campos antigos
-            state.selectedDestinationsData = new Array(parseInt(passengerCount)).fill(null); // Reseta/Cria array
+            const count = parseInt(passengerCount) || 1; // Garante que seja número
+            state.selectedDestinationsData = new Array(count).fill(null); // Reseta/Cria array com tamanho correto
 
-            for (let i = 1; i <= passengerCount; i++) {
+            for (let i = 1; i <= count; i++) {
                 const inputContainer = document.createElement('div');
                 inputContainer.className = 'mb-4 input-and-button-container autocomplete-container'; // Adiciona container
 
@@ -1307,15 +1405,20 @@
                 input.className = 'w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none';
                 input.placeholder = 'Digite o endereço completo';
 
+                // Adiciona o gatilho oninput
+                input.setAttribute('oninput', `handleAddressInput(event, 'destination-${i}List', 'destination', ${i - 1})`);
+
+                // Cria a div da lista
+                const listDiv = document.createElement('div');
+                listDiv.className = 'autocomplete-list';
+                listDiv.id = `destination-${i}List`;
+
                 inputContainer.appendChild(label);
                 inputContainer.appendChild(input);
+                inputContainer.appendChild(listDiv); // Adiciona a lista ao container
                 container.appendChild(inputContainer);
 
-                // Inicializa o autocomplete para este novo campo
-                // Usa um índice (i-1) para salvar os dados no array
-                initAutocomplete(input, (feature) => {
-                    state.selectedDestinationsData[i - 1] = feature;
-                });
+                // Não chama mais initAutocomplete aqui
             }
         }
 
@@ -1514,6 +1617,7 @@
 
             XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
         }
+
 
         // ========================================================================
         // FUNÇÃO ATUALIZADA - Botão de Solicitar (Usa state e validação)
