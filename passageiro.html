@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@latest/styles/minimal-dark.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@latest/dist/index.min.js"></script>
     <style>
         body, html {
             background-color: #000;
@@ -65,24 +68,37 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .pac-container {
-            background-color: #374151;
-            border-radius: 8px;
-            border: 1px solid #4b5563;
+        
+        /* ESTILO PARA O AUTOCOMPLETE DO GEOAPIFY */
+        .autocomplete-container {
+            position: relative; /* Necessário para o dropdown */
         }
-        .pac-item {
-            padding: 10px;
-            font-size: 14px;
-            color: #d1d5db;
-            cursor: pointer;
+        /* A biblioteca minimal-dark.css cuida da maior parte, mas podemos forçar algumas cores */
+        .geoapify-autocomplete-input {
+             color: white !important;
+             background-color: #374151 !important; /* Fundo do input */
+             border: 1px solid #4b5563 !important;
+             padding: 0.75rem !important; /* p-3 */
+             border-radius: 0.5rem !important; /* rounded-lg */
         }
-        .pac-item:hover {
-            background-color: #4b5563;
+        .geoapify-autocomplete-items {
+            background-color: #374151 !important; /* Fundo da lista dropdown */
+            border: 1px solid #4b5563 !important;
+            color: white !important;
+            z-index: 1000; /* Garante que fique sobre outros elementos */
         }
-        .pac-item-query {
-            font-weight: 600;
-            color: #f3f4f6;
+        .geoapify-autocomplete-items div:hover {
+            background-color: #4b5563 !important; /* Cor do item em hover */
         }
+        .geoapify-autocomplete-item {
+             color: white !important;
+             padding: 10px !important;
+             font-size: 14px !important;
+        }
+        .geoapify-autocomplete-item.active {
+            background-color: #4f46e5 !important; /* Cor do item selecionado */
+        }
+        /* FIM DO ESTILO DO AUTOCOMPLETE */
 
         #mobile-menu {
             transform: translateX(100%);
@@ -127,7 +143,6 @@
             border-color: #15803d;
         }
 
-
         #menu-toggle-btn svg path {
             stroke: #ffffff !important;
         }
@@ -152,10 +167,7 @@
             margin: 0 auto;
         }
 
-        #destination {
-            width: 100%;
-            box-sizing: border-box;
-        }
+        /* Removido #destination obsoleto */
 
         #request-ride-btn {
             width: 100%;
@@ -297,8 +309,7 @@
             <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6 content-wrapper">
                  <h3 class="text-center font-semibold mb-4 text-xl">Solicitar uma Viagem</h3>
                 
-                <div class="mb-4 input-and-button-container">
-                    <label for="origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label>
+                <div class="mb-4 input-and-button-container autocomplete-container"> <label for="origin" class="block mb-2 text-sm font-medium">Origem <span class="text-red-400">(Obrigatório)</span></label>
                     <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none" placeholder="Digite o endereço de partida">
                     <button onclick="useCurrentLocation()" class="mt-2 w-full py-2 px-4 text-sm font-semibold rounded-lg bg-sky-600 hover:bg-sky-700">Usar minha localização atual</button>
                 </div>
@@ -368,7 +379,6 @@
         </div>
     </div>
 
-
     <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <h3 class="text-2xl font-bold mb-4">Agendar Corrida</h3>
@@ -389,44 +399,89 @@
 
 
     <script>
+        // ========================================================================
+        // NOVA CONSTANTE - CHAVE DA API GEOAPIFY
+        // ========================================================================
+        const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38'; //
+
         // --- CONFIGURAÇÃO INICIAL E ESTADO DA APLICAÇÃO ---
         let state = {
             rides: [],
             users: [],
-            appIcon: 'images/user.png', 
-            currentUserRideId: null, 
+            appIcon: 'images/user.png',
+            currentUserRideId: null,
             currentUser: null,
-            userStatusInterval: null 
+            userStatusInterval: null,
+            // Armazena os dados do local selecionado pelo autocomplete
+            selectedOrigin: null,
+            selectedDestinationsData: [] // Array para guardar dados dos destinos
         };
 
-        let selectedDestinations = []; 
+        // As variáveis abaixo não são mais diretamente do estado, mas controlam o fluxo da *próxima* requisição
         let selectedObservation = '';
-        let selectedRequestType = ''; 
+        let selectedRequestType = '';
         let scheduledDateTime = null;
-        let isProcessingRequest = false; 
+        let isProcessingRequest = false;
 
         // --- CONFIGURAÇÃO DO SUPABASE ---
-        const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
+        const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- LÓGICA DE MODAL ---
+        // ========================================================================
+        // NOVA FUNÇÃO - getDrivingDistanceByCoords (Usa Geoapify Routing API)
+        // ========================================================================
+        // Esta função calcula a distância de ROTA (carro) usando coordenadas
+        async function getDrivingDistanceByCoords(originCoords, destCoords) {
+            // Verifica se as coordenadas são válidas
+            if (!originCoords || typeof originCoords.lat === 'undefined' || typeof originCoords.lon === 'undefined' ||
+                !destCoords || typeof destCoords.lat === 'undefined' || typeof destCoords.lon === 'undefined') {
+                console.warn("getDrivingDistanceByCoords: Coordenadas inválidas.", originCoords, destCoords);
+                return null;
+            }
+
+            // 1. Formatar os waypoints para a API do Geoapify
+            const waypoints = `${originCoords.lat},${originCoords.lon}|${destCoords.lat},${destCoords.lon}`;
+
+            // 2. Montar a URL da API de Roteamento (Routing API) do Geoapify
+            const url = `https://api.geoapify.com/v1/routing?waypoints=${encodeURIComponent(waypoints)}&mode=drive&units=metric&apiKey=${GEOAPIFY_API_KEY}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // 3. Processar a resposta do Geoapify
+                if (data.features && data.features.length > 0) {
+                    const distanceInMeters = data.features[0].properties.distance;
+                    return distanceInMeters / 1000; // Converte metros para km
+                } else {
+                    console.error('Erro na API de Roteamento Geoapify:', data);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Erro ao buscar a distância (Geoapify):', error);
+                return null;
+            }
+        }
+
+        // --- LÓGICA DE MODAL --- (sem alterações)
+        // ... (código existente sem alterações) ...
         function showModal(modalId, htmlContent, onConfirmCallback, showCancelButton = false) {
             const modal = document.getElementById(modalId);
             if (!modal) return;
-            
+
             const messageEl = modal.querySelector('#modal-message');
             if(messageEl && typeof htmlContent === 'string') {
                 messageEl.textContent = htmlContent;
             }
-            
+
             const confirmBtn = modal.querySelector('#modal-confirm');
             const cancelBtn = modal.querySelector('#modal-cancel');
 
             if (confirmBtn) {
-                confirmBtn.onclick = () => { 
-                    if (onConfirmCallback) onConfirmCallback(); 
-                    closeModal(modalId); 
+                confirmBtn.onclick = () => {
+                    if (onConfirmCallback) onConfirmCallback();
+                    closeModal(modalId);
                 };
             }
 
@@ -436,14 +491,14 @@
                     cancelBtn.onclick = () => closeModal(modalId);
                 }
             }
-            
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
 
         function closeModal(modalId = 'modal') {
             const modal = document.getElementById(modalId);
-            if (!modal) return; 
+            if (!modal) return;
 
             modal.classList.add('hidden');
             modal.classList.remove('flex');
@@ -454,17 +509,20 @@
                 confirmBtn.onclick = confirmSchedule;
             }
         }
-        
-        // --- LÓGICA DO MENU SANDUÍCHE ---
-        function toggleMenu() {
+
+
+        // --- LÓGICA DO MENU SANDUÍCHE --- (sem alterações)
+        // ... (código existente sem alterações) ...
+         function toggleMenu() {
             const menu = document.getElementById('mobile-menu');
             const backdrop = document.getElementById('menu-backdrop');
             menu.classList.toggle('active');
             backdrop.classList.toggle('hidden');
         }
 
-        // --- LÓGICA DE LOGIN ---
-        async function loginUser() {
+        // --- LÓGICA DE LOGIN --- (sem alterações)
+        // ... (código existente sem alterações) ...
+         async function loginUser() {
             const matricula = document.getElementById('user-id').value.trim();
             const password = document.getElementById('user-password').value.trim();
             const errorEl = document.getElementById('user-login-error');
@@ -481,30 +539,31 @@
                 .eq('matricula', matricula)
                 .eq('password', password)
                 .single();
-            
-            if (error && error.code !== 'PGRST116') { 
+
+            if (error && error.code !== 'PGRST116') {
                 console.error('Erro no Supabase ao tentar login:', error);
                 errorEl.textContent = 'Erro de comunicação com o servidor. Por favor, tente novamente.';
                 errorEl.classList.remove('hidden');
-                return; 
+                return;
             }
 
             if (user) {
-                state.currentUser = user; 
+                state.currentUser = user;
                 localStorage.setItem('loggedInUser', JSON.stringify(user));
                 document.getElementById('user-welcome-message').textContent = `Olá, ${user.name}!`;
-                
+
                 errorEl.classList.add('hidden');
                 document.getElementById('user-id').value = '';
                 document.getElementById('user-password').value = '';
-                
-                selectedDestinations = [];
+
+                state.selectedOrigin = null;
+                state.selectedDestinationsData = [];
                 selectedObservation = '';
                 selectedRequestType = '';
                 scheduledDateTime = null;
                 isProcessingRequest = false;
 
-                await checkUserRideStatus(); 
+                await checkUserRideStatus();
                 showScreen('user-screen');
             } else {
                 errorEl.textContent = 'Matrícula ou senha incorreta!';
@@ -516,21 +575,25 @@
             state.currentUser = null;
             state.currentUserRideId = null;
             localStorage.removeItem('loggedInUser');
-            localStorage.removeItem('currentUserRideId'); 
-            localStorage.removeItem('lastScreen'); 
+            localStorage.removeItem('currentUserRideId');
+            localStorage.removeItem('lastScreen');
             if (state.userStatusInterval) {
                 clearInterval(state.userStatusInterval);
                 state.userStatusInterval = null;
             }
-            
+
             document.getElementById('user-welcome-message').textContent = '';
             document.getElementById('user-request-form').classList.remove('hidden');
             document.getElementById('user-status').classList.add('hidden');
 
+            state.selectedOrigin = null;
+            state.selectedDestinationsData = [];
+
             showScreen('initial-screen');
         }
 
-        // --- NAVEGAÇÃO ENTRE TELAS ---
+        // --- NAVEGAÇÃO ENTRE TELAS --- (sem alterações lógicas, apenas autocomplete)
+        // ... (código existente sem alterações) ...
         function updateUserScreenView() {
             const requestForm = document.getElementById('user-request-form');
             const permissionMessage = document.getElementById('permission-denied-message');
@@ -554,14 +617,17 @@
             if (activeScreen) {
                 activeScreen.classList.add('active');
             }
-            
+
             if (['initial-screen', 'user-login-screen', 'user-screen'].includes(screenId)) {
                 localStorage.setItem('lastScreen', screenId);
             }
 
             if (screenId === 'user-screen' && state.currentUser) {
-                updateUserScreenView(); 
+                updateUserScreenView();
                 await checkUserRideStatus();
+                // Inicializa autocomplete aqui, APÓS a tela estar visível
+                initAutocomplete(document.getElementById('origin'), (feature) => { state.selectedOrigin = feature; });
+                updateDestinationFields(document.getElementById('passenger-count').value);
             } else if (state.userStatusInterval) {
                 clearInterval(state.userStatusInterval);
                 state.userStatusInterval = null;
@@ -571,7 +637,11 @@
                 toggleMenu();
             }
         }
-        
+
+
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - useCurrentLocation (Usa Geoapify Reverse Geocoding e ajusta state)
+        // ========================================================================
         async function useCurrentLocation() {
             const originInput = document.getElementById('origin');
             originInput.disabled = true;
@@ -589,50 +659,53 @@
                     navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
                 });
 
-                const latlng = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
 
-                const geocoder = new google.maps.Geocoder();
-                await geocoder.geocode({ location: latlng }, (results, status) => {
-                    if (status === "OK") {
-                        if (results[0]) {
-                            originInput.value = results[0].formatted_address;
-                        } else {
-                            showModal('modal', 'Nenhum endereço encontrado para sua localização.');
-                            originInput.value = '';
-                        }
-                    } else {
-                        showModal('modal', 'Falha na geocodificação: ' + status);
-                        originInput.value = '';
-                    }
-                    originInput.disabled = false;
-                });
+                // Chama a API Reverse Geocoding do Geoapify
+                const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.features && data.features.length > 0) {
+                    const address = data.features[0].properties.formatted;
+                    originInput.value = address;
+                    // Salva os dados do local (incluindo lat/lon) no state
+                    // **AJUSTE:** Garante que .properties tenha lat/lon para consistência com autocomplete
+                    const featureData = data.features[0];
+                    if (!featureData.properties) featureData.properties = {};
+                    featureData.properties.lat = lat;
+                    featureData.properties.lon = lon;
+                    featureData.properties.formatted = address; // Garante que o endereço formatado esteja lá
+
+                    state.selectedOrigin = featureData;
+
+                } else {
+                    showModal('modal', 'Nenhum endereço encontrado para sua localização.');
+                    originInput.value = '';
+                    state.selectedOrigin = null;
+                }
 
             } catch (error) {
                 let userMessage = "Não foi possível obter sua localização. Verifique as permissões do navegador.";
                 if (error && error.code) {
                     switch (error.code) {
-                        case 1: // PERMISSION_DENIED
-                            userMessage = "Você negou a permissão de localização.";
-                            break;
-                        case 2: // POSITION_UNAVAILABLE
-                            userMessage = "Informações de localização não estão disponíveis no momento.";
-                            break;
-                        case 3: // TIMEOUT
-                            userMessage = "A solicitação para obter a localização expirou.";
-                            break;
+                        case 1: userMessage = "Você negou a permissão de localização."; break;
+                        case 2: userMessage = "Informações de localização não estão disponíveis."; break;
+                        case 3: userMessage = "A solicitação para obter a localização expirou."; break;
                     }
                 }
                 showModal('modal', userMessage);
                 console.error('Erro detalhado ao obter localização:', error);
                 originInput.value = '';
+                state.selectedOrigin = null;
+            } finally {
                 originInput.disabled = false;
             }
         }
 
-        // --- LÓGICA DE SOLICITAÇÃO DE CORRIDA ---
+        // --- LÓGICA DE SOLICITAÇÃO DE CORRIDA --- (sem alterações)
+        // ... (código existente sem alterações) ...
         function selectRequestType(type) {
             selectedRequestType = type;
 
@@ -662,7 +735,7 @@
                 showModal('modal', 'Por favor, selecione uma data e hora para agendamento.');
                 return;
             }
-            
+
             const scheduledDate = new Date(`${dateInput.value}T${timeInput.value}`);
             if (scheduledDate < new Date()) {
                 showModal('modal', 'A data e hora do agendamento não podem ser no passado.');
@@ -670,7 +743,7 @@
             }
 
             scheduledDateTime = scheduledDate.toISOString();
-            
+
             closeModal('schedule-modal');
             requestRide();
         }
@@ -681,20 +754,55 @@
             requestRideBtn.textContent = 'SOLICITAR TAXI';
         }
 
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - requestRide (Usa dados do state e não geocodifica mais)
+        // ========================================================================
         async function requestRide() {
             if (isProcessingRequest) return;
             showScreen('user-screen');
 
-            const originAddress = document.getElementById('origin').value.trim();
-            const destinations = selectedDestinations;
-            const observation = selectedObservation;
+            const originInput = document.getElementById('origin');
+            const originAddress = originInput.value.trim();
             const passengerCount = document.getElementById('passenger-count').value;
             const requestRideBtn = document.getElementById('request-ride-btn');
-            
-            if (!originAddress || !destinations || destinations.length === 0 || !destinations[0]) {
-                showModal('modal', 'Origem ou destino faltando. Por favor, preencha o formulário novamente.');
+
+            // 1. Validação usando os dados salvos no state pelo autocomplete
+            if (!state.selectedOrigin || !state.selectedOrigin.properties || state.selectedOrigin.properties.formatted !== originAddress) {
+                showModal('modal', 'Endereço de ORIGEM inválido. Por favor, selecione um da lista de sugestões ou use sua localização atual.');
                 return;
             }
+
+            // Pega os destinos dos inputs E verifica se os dados correspondentes estão no state.selectedDestinationsData
+            const destinations = [];
+            let firstDestinationValid = false;
+            for (let i = 0; i < passengerCount; i++) {
+                const destInput = document.getElementById(`destination-${i + 1}`);
+                const destAddress = destInput ? destInput.value.trim() : '';
+
+                // Verifica se o endereço digitado corresponde a um local selecionado
+                const selectedData = state.selectedDestinationsData[i];
+                if (i === 0) { // Destino 1 é obrigatório e precisa ser validado
+                    if (!destAddress || !selectedData || !selectedData.properties || selectedData.properties.formatted !== destAddress) {
+                        showModal('modal', `Endereço do DESTINO ${i+1} inválido. Por favor, selecione um da lista de sugestões.`);
+                        return;
+                    }
+                    firstDestinationValid = true;
+                    destinations.push(destAddress); // Guarda o endereço como string
+                } else if (destAddress && (!selectedData || !selectedData.properties || selectedData.properties.formatted !== destAddress)) {
+                    // Se digitou algo no destino 2+ mas não selecionou da lista
+                     showModal('modal', `Endereço do DESTINO ${i+1} inválido. Por favor, selecione um da lista de sugestões ou deixe em branco se não aplicável.`);
+                    return;
+                } else if (destAddress) {
+                    destinations.push(destAddress); // Guarda o endereço como string se válido
+                }
+            }
+
+            if (!firstDestinationValid) {
+                 showModal('modal', 'O destino do primeiro passageiro é obrigatório e precisa ser selecionado da lista.');
+                 return;
+            }
+
+            const observation = selectedObservation; // Pega da variável global
 
             if (state.currentUserRideId) {
                 showModal('modal', 'Você já possui uma solicitação de corrida ativa.');
@@ -706,18 +814,13 @@
             requestRideBtn.textContent = 'Processando...';
 
             try {
-                const geocoder = new google.maps.Geocoder();
-                const geocodeResult = await new Promise((resolve, reject) => {
-                    geocoder.geocode({ 'address': originAddress }, (results, status) => {
-                        if (status === 'OK' && results[0]) {
-                            resolve(results[0].geometry.location);
-                        } else {
-                            reject(new Error('Endereço de origem inválido. Por favor, verifique e tente novamente.'));
-                        }
-                    });
-                });
-
-                const userLocation = { lat: geocodeResult.lat(), lon: geocodeResult.lng() };
+                // Não precisa mais geocodificar aqui, já temos lat/lon da origem
+                const originProps = state.selectedOrigin.properties;
+                // Certifica que temos lat/lon
+                if (typeof originProps.lat === 'undefined' || typeof originProps.lon === 'undefined') {
+                    throw new Error('Coordenadas de origem inválidas. Tente selecionar novamente.');
+                }
+                const userLocation = { lat: originProps.lat, lon: originProps.lon };
                 const currentUser = state.currentUser;
 
                 if (!currentUser) {
@@ -726,7 +829,7 @@
 
                 let newRideData = {
                     origin_address: originAddress,
-                    destination: JSON.stringify(destinations),
+                    destination: JSON.stringify(destinations), // Salva o array de strings de endereços
                     observation: observation,
                     passenger_count: parseInt(passengerCount),
                     status: 'pending_approval',
@@ -734,13 +837,12 @@
                     userName: currentUser.name,
                     userCompany: currentUser.company,
                     requestTime: new Date().toISOString(),
-                    userLocation: userLocation,
+                    userLocation: userLocation, // Salva {lat, lon}
                     request_type: selectedRequestType
                 };
 
                 if (selectedRequestType === 'scheduled' && scheduledDateTime) {
                     newRideData.scheduled_datetime = scheduledDateTime;
-                    newRideData.status = 'pending_approval';
                 }
 
                 const { data, error } = await supabaseClient.from('rides').insert([newRideData]).select().single();
@@ -751,42 +853,74 @@
 
                 state.currentUserRideId = data.id;
                 localStorage.setItem('currentUserRideId', data.id);
-                
+
                 document.getElementById('origin').value = '';
                 document.getElementById('passenger-count').value = 1;
                 updateDestinationFields(1);
                 document.getElementById('observation').value = '';
-                selectedDestinations = [];
+                state.selectedOrigin = null;
+                state.selectedDestinationsData = [];
                 selectedObservation = '';
                 selectedRequestType = '';
                 scheduledDateTime = null;
 
-                await checkUserRideStatus(); 
+                await checkUserRideStatus();
 
             } catch (error) {
                 console.error("Erro detalhado no processo de solicitação:", error);
                 showModal('modal', error.message || 'Ocorreu um erro inesperado ao processar sua solicitação.');
-                resetRequestButton();
             } finally {
                 isProcessingRequest = false;
+                resetRequestButton();
             }
         }
-        
+
+
+        // --- checkUserRideStatus, startUserStatusCheck, updateUserStatusMessage, cancelRide ---
+        // Nenhuma alteração necessária aqui (updateUserStatusMessage já usa a função correta)
+        // ... (código existente sem alterações) ...
         async function checkUserRideStatus() {
             if (!state.currentUser) return;
 
             const requestForm = document.getElementById('user-request-form');
             const userStatusDiv = document.getElementById('user-status');
-            const chegueiImage = document.getElementById('cheguei-image'); 
-            
-            const { data: activeRide, error } = await supabaseClient
-                .from('rides')
-                .select('*')
-                .eq('userId', state.currentUser.id)
-                .in('status', ['pending_approval', 'approved', 'rejected', 'requested', 'assigned', 'accepted', 'arrived_pickup', 'in_progress', 'scheduled'])
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
+            const chegueiImage = document.getElementById('cheguei-image');
+
+            const storedRideId = localStorage.getItem('currentUserRideId');
+            let rideToCheckId = state.currentUserRideId || storedRideId;
+
+            let activeRide = null;
+            let error = null;
+
+            if (rideToCheckId) {
+                const { data, error: fetchError } = await supabaseClient
+                    .from('rides')
+                    .select('*')
+                    .eq('id', rideToCheckId)
+                    .in('status', ['pending_approval', 'approved', 'rejected', 'requested', 'assigned', 'accepted', 'arrived_pickup', 'in_progress', 'scheduled'])
+                    .maybeSingle();
+                 activeRide = data;
+                 error = fetchError;
+            }
+
+            if (!activeRide && !error) {
+                 const { data, error: fetchError } = await supabaseClient
+                    .from('rides')
+                    .select('*')
+                    .eq('userId', state.currentUser.id)
+                    .in('status', ['pending_approval', 'approved', 'rejected', 'requested', 'assigned', 'accepted', 'arrived_pickup', 'in_progress', 'scheduled'])
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                 activeRide = data;
+                 error = fetchError;
+            }
+
+
+            if (error) {
+                 console.error("Erro ao buscar corrida ativa:", error);
+            }
+
 
             if (activeRide && activeRide.status !== 'rejected') {
                 state.currentUserRideId = activeRide.id;
@@ -795,14 +929,14 @@
                 requestForm.classList.add('hidden');
                 userStatusDiv.classList.remove('hidden');
                 await updateUserStatusMessage(activeRide);
-                
+
                 if (activeRide.status === 'arrived_pickup') {
                     chegueiImage.classList.remove('hidden');
                 } else {
                     chegueiImage.classList.add('hidden');
                 }
 
-                startUserStatusCheck(); 
+                startUserStatusCheck();
             } else {
                 if(activeRide && activeRide.status === 'rejected'){
                     const seenRejectedId = localStorage.getItem('seenRejectedRideId');
@@ -814,46 +948,46 @@
                 }
                 state.currentUserRideId = null;
                 localStorage.removeItem('currentUserRideId');
-                
+
                 userStatusDiv.classList.add('hidden');
                 updateUserScreenView();
                 resetRequestButton();
                 document.getElementById('user-status-message').textContent = '';
                 chegueiImage.classList.add('hidden');
-                
-                if (state.userStatusInterval) { 
+
+                if (state.userStatusInterval) {
                     clearInterval(state.userStatusInterval);
                     state.userStatusInterval = null;
                 }
             }
         }
 
-
         function startUserStatusCheck() {
             if (state.userStatusInterval) clearInterval(state.userStatusInterval);
-            
+
             state.userStatusInterval = setInterval(async () => {
                 if (!state.currentUserRideId) {
-                    clearInterval(state.userStatusInterval); 
+                    clearInterval(state.userStatusInterval);
                     state.userStatusInterval = null;
-                    await checkUserRideStatus(); 
+                    await checkUserRideStatus();
                     return;
                 }
-                
+
                 const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
-                
+
                 if (myRide && !['completed', 'canceled', 'rejected'].includes(myRide.status)) {
-                   await updateUserStatusMessage(myRide); 
+                   await updateUserStatusMessage(myRide);
                 } else {
                     clearInterval(state.userStatusInterval);
                     state.userStatusInterval = null;
-                    state.currentUserRideId = null; 
-                    localStorage.removeItem('currentUserRideId'); 
-                    showModal('modal', myRide ? `Sua corrida foi ${translateStatus(myRide.status)}.` : 'Sua corrida foi finalizada.', checkUserRideStatus);
+                    const finalStatus = myRide ? translateStatus(myRide.status) : 'finalizada';
+                    state.currentUserRideId = null;
+                    localStorage.removeItem('currentUserRideId');
+                    showModal('modal', `Sua corrida foi ${finalStatus}.`, checkUserRideStatus);
                 }
-            }, 10000); 
+            }, 10000);
         }
-        
+
         function silenceAlert() {
             const arrivalSound = document.getElementById('arrival-sound');
             const silenceBtn = document.getElementById('silence-alert-btn');
@@ -885,7 +1019,8 @@
 
             let message = '';
             let scheduleInfo = '';
-            let driverInfo = ''; 
+            let driverInfo = '';
+            let distanceInfo = ''; // Para exibir a distância
 
             if (ride.driverId && ['assigned', 'accepted', 'arrived_pickup', 'in_progress'].includes(ride.status)) {
                 const { data: driver, error } = await supabaseClient
@@ -925,8 +1060,18 @@
                         </div>
                     `;
                 }
+
+                // Calcula e adiciona a distância se o status for 'accepted'
+                if (ride.status === 'accepted' && ride.driverCurrentLocation && ride.userLocation) {
+                    const distance = await getDrivingDistanceByCoords(ride.userLocation, ride.driverCurrentLocation);
+                    if (distance !== null) {
+                        distanceInfo = `<p class="mt-2 text-cyan-400">Distância: ${distance.toFixed(1)} km</p>`;
+                    } else {
+                        distanceInfo = `<p class="mt-2 text-gray-400">Calculando distância...</p>`;
+                    }
+                }
             }
-            
+
             if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
                 const scheduledDate = new Date(ride.scheduled_datetime);
                 const formattedScheduledDateTime = scheduledDate.toLocaleString('pt-BR', {
@@ -955,6 +1100,7 @@
                     message = `Seu motorista está a caminho!`;
                     getIcon('en-route').innerHTML = `<img src="images/aceitou.png" alt="Motorista Aceitou" class="h-20 w-20 mx-auto">`;
                     getIcon('en-route').classList.remove('hidden');
+                    // A distância é adicionada abaixo
                     break;
                 case 'arrived_pickup':
                     message = `Seu motorista chegou!`;
@@ -979,8 +1125,8 @@
                     break;
             }
 
-            statusMessageEl.innerHTML = message + scheduleInfo + driverInfo; 
-            
+            statusMessageEl.innerHTML = message + distanceInfo + scheduleInfo + driverInfo;
+
             if (ride.request_type === 'scheduled' && ['pending_approval', 'approved', 'scheduled', 'assigned', 'accepted'].includes(ride.status)) {
                 editScheduleBtn.classList.remove('hidden');
             } else {
@@ -1005,54 +1151,55 @@
                     } else {
                         showModal('modal', 'Sua corrida foi cancelada.', checkUserRideStatus);
                     }
-                }, true); 
+                }, true);
             }
         }
 
+        // --- fetchAllData, setupRealtimeSubscriptions, initApp ---
+        // ... (código existente sem alterações) ...
         async function fetchAllData() {
             const { data: users, error: usersError } = await supabaseClient.from('users').select('*');
             if (usersError) console.error('Error fetching users:', usersError); else state.users = users;
-            
+
             const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*');
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
 
         function setupRealtimeSubscriptions() {
             supabaseClient.channel('public:rides').on(
-                'postgres_changes', 
-                { event: '*', schema: 'public', table: 'rides' }, 
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'rides' },
                 payload => {
-                    const relevantRide = payload.new.userId === state.currentUser?.id || payload.old?.userId === state.currentUser?.id;
+                    // Verifica se a mudança é relevante para o usuário atual
+                    const relevantRide = payload.new?.userId === state.currentUser?.id || payload.old?.userId === state.currentUser?.id;
+
                     if (state.currentUser && relevantRide) {
-                       checkUserRideStatus();
+                       // Atualiza os dados locais ANTES de checar o status
+                       fetchAllData().then(() => {
+                            checkUserRideStatus();
+                       });
                     }
                 }
             ).subscribe();
         }
 
         async function initApp() {
-            loadAppIcon();      
-            
+            loadAppIcon();
+
             await fetchAllData();
-            
-            const originInput = document.getElementById('origin');
-            if(originInput) {
-                initAutocomplete(originInput);
-            }
 
             const passengerSelect = document.getElementById('passenger-count');
             if (passengerSelect) {
                 passengerSelect.addEventListener('change', (e) => updateDestinationFields(e.target.value));
-                updateDestinationFields(1);
             }
-            
+
             const loggedInUserJSON = localStorage.getItem('loggedInUser');
             if (loggedInUserJSON) {
                 state.currentUser = JSON.parse(loggedInUserJSON);
                 if (state.currentUser) {
                     document.getElementById('user-welcome-message').textContent = `Olá, ${state.currentUser.name}!`;
                     setupRealtimeSubscriptions();
-                    await showScreen('user-screen');
+                    await showScreen('user-screen'); // Isso vai chamar o initAutocomplete
                 } else {
                     logoutUser();
                 }
@@ -1060,8 +1207,10 @@
                 showScreen(localStorage.getItem('lastScreen') || 'initial-screen');
             }
         }
-        
-        function handleVideoEnd() {
+
+        // --- Vídeo ---
+        // ... (código existente sem alterações) ...
+         function handleVideoEnd() {
             if (document.body.dataset.videoEnded) return;
             document.body.dataset.videoEnded = "true";
 
@@ -1070,35 +1219,79 @@
 
             if (videoContainer) videoContainer.style.display = 'none';
             if (appContainer) appContainer.classList.remove('hidden');
-            
-            initApp();
+
+            initApp(); // Chama o initApp após o vídeo
         }
 
         const video = document.getElementById('intro-video');
         if (video) {
             video.addEventListener('ended', handleVideoEnd);
             video.addEventListener('error', handleVideoEnd);
+            // Timeout de segurança caso o vídeo falhe
             setTimeout(handleVideoEnd, 10000);
         } else {
+            // Se não houver vídeo, inicia imediatamente
             handleVideoEnd();
         }
 
-        function initAutocomplete(inputElement) {
-            if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-                new google.maps.places.Autocomplete(inputElement, { 
-                    types: ['address'], 
-                    componentRestrictions: { 'country': 'br' } 
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - initAutocomplete (Usa Geoapify)
+        // ========================================================================
+        function initAutocomplete(inputElement, onPlaceSelectCallback) {
+            // Verifica se a biblioteca foi carregada
+            if (typeof Autocomplete === 'undefined') {
+                console.error("ERRO: Biblioteca Autocomplete (Geoapify) não carregada.");
+                return;
+            }
+
+            // Evita reinicializar
+            if (inputElement.geoapify_autocomplete_instance) {
+                 inputElement.geoapify_autocomplete_instance.destroy();
+                 inputElement.geoapify_autocomplete_instance = null;
+            }
+
+            try {
+                const autocomplete = new Autocomplete(inputElement, {
+                    apiKey: GEOAPIFY_API_KEY,
+                    filter: { countrycode: ['br'] },
+                    lang: 'pt',
+                    placeholder: inputElement.placeholder,
+                    allowNonVerifiedHouseNumber: true,
+                    allowNonVerifiedStreet: true
                 });
+
+                autocomplete.on('select', (feature) => {
+                    if (feature && onPlaceSelectCallback) {
+                        // **AJUSTE:** Garante que .properties tenha lat/lon
+                        if (!feature.properties) feature.properties = {};
+                        if (feature.geometry && feature.geometry.coordinates) {
+                             feature.properties.lon = feature.geometry.coordinates[0];
+                             feature.properties.lat = feature.geometry.coordinates[1];
+                        }
+                        onPlaceSelectCallback(feature); // Chama o callback com os dados do local
+                    }
+                });
+
+                inputElement.geoapify_autocomplete_instance = autocomplete;
+
+            } catch (error) {
+                console.error("Erro ao inicializar Geoapify Autocomplete:", error, "no elemento:", inputElement);
             }
         }
-        
+
+
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - updateDestinationFields (Usa Geoapify)
+        // ========================================================================
+        // ... (código existente sem alterações) ...
         function updateDestinationFields(passengerCount) {
             const container = document.getElementById('destinations-container');
-            container.innerHTML = ''; 
+            container.innerHTML = ''; // Limpa campos antigos
+            state.selectedDestinationsData = new Array(parseInt(passengerCount)).fill(null); // Reseta/Cria array
 
             for (let i = 1; i <= passengerCount; i++) {
                 const inputContainer = document.createElement('div');
-                inputContainer.className = 'mb-4 input-and-button-container';
+                inputContainer.className = 'mb-4 input-and-button-container autocomplete-container'; // Adiciona container
 
                 const label = document.createElement('label');
                 label.htmlFor = `destination-${i}`;
@@ -1113,27 +1306,34 @@
                 input.id = `destination-${i}`;
                 input.className = 'w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none';
                 input.placeholder = 'Digite o endereço completo';
-                
+
                 inputContainer.appendChild(label);
                 inputContainer.appendChild(input);
                 container.appendChild(inputContainer);
 
-                initAutocomplete(input);
+                // Inicializa o autocomplete para este novo campo
+                // Usa um índice (i-1) para salvar os dados no array
+                initAutocomplete(input, (feature) => {
+                    state.selectedDestinationsData[i - 1] = feature;
+                });
             }
         }
 
+
+        // --- Funções restantes (translateStatus, loadAppIcon, etc.) ---
+        // ... (código existente sem alterações) ...
         function translateStatus(status) {
             const translations = {
                 'pending_approval': 'AGUARDANDO APROVAÇÃO',
                 'approved': 'APROVADA',
                 'rejected': 'REJEITADA',
-                'requested': 'SOLICITADO', 
-                'assigned': 'DESIGNADO', 
+                'requested': 'SOLICITADO',
+                'assigned': 'DESIGNADO',
                 'accepted': 'ACEITO',
-                'arrived_pickup': 'NO LOCAL', 
+                'arrived_pickup': 'NO LOCAL',
                 'in_progress': 'EM ANDAMENTO',
                 'scheduled': 'AGENDADO',
-                'completed': 'FINALIZADA', 
+                'completed': 'FINALIZADA',
                 'canceled': 'CANCELADA',
             };
             return translations[status] || status.toUpperCase();
@@ -1143,32 +1343,32 @@
             const iconContainer = document.getElementById('app-icon-container');
             iconContainer.innerHTML = `<img src="${state.appIcon}" class="h-full w-full object-contain">`;
         }
-        
+
         async function renderUserRideHistory() {
-            await fetchAllData(); 
+            await fetchAllData();
             const historyContainer = document.getElementById("user-ride-history-modal");
             if (!historyContainer || !state.currentUser) return;
 
-            historyContainer.innerHTML = ''; 
+            historyContainer.innerHTML = '';
             const userRides = state.rides.filter(r => r.userId === state.currentUser.id).sort((a, b) => new Date(b.requestTime) - new Date(a.requestTime));
-            
+
             if (userRides.length === 0) {
                 historyContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum histórico de corrida.</p>';
                 return;
             }
-            
+
             const table = document.createElement('table');
             table.className = 'w-full text-sm text-left';
             table.innerHTML = `
                 <thead class="text-xs text-gray-300 uppercase bg-gray-900/30">
                     <tr>
-                        <th scope="col" class="px-4 py-3">Data e Hora</th> 
+                        <th scope="col" class="px-4 py-3">Data e Hora</th>
                         <th scope="col" class="px-4 py-3">Destino</th>
                         <th scope="col" class="px-4 py-3">Status</th>
                     </tr>
                 </thead>`;
             const tbody = document.createElement('tbody');
-            
+
             userRides.forEach(ride => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-700';
@@ -1176,21 +1376,22 @@
 
                 let historyDestination = ride.destination;
                 try {
+                    // Tenta interpretar o destino como JSON (array de strings)
                     const destinations = JSON.parse(ride.destination);
                     if (Array.isArray(destinations) && destinations.length > 0) {
-                        historyDestination = destinations.find(d => d) || 'N/A';
+                        historyDestination = destinations.join('; '); // Junta múltiplos destinos
                     }
-                } catch (e) { /* Mantém o destino como string se não for JSON */ }
-                
+                } catch (e) { /* Mantém o destino como string se não for JSON válido */ }
+
                 row.innerHTML = `
-                    <td class="px-4 py-3">${dateTimeString}</td> 
+                    <td class="px-4 py-3">${dateTimeString}</td>
                     <td class="px-4 py-3">${historyDestination}</td>
                     <td class="px-4 py-3">${translateStatus(ride.status)}</td>
                 `;
                 tbody.appendChild(row);
             });
-            table.appendChild(tbody); 
-            historyContainer.appendChild(table); 
+            table.appendChild(tbody);
+            historyContainer.appendChild(table);
         }
 
         function showHistoryModal() {
@@ -1202,16 +1403,16 @@
                 }
             });
         }
-        
+
         async function openEditScheduleModal(rideId) {
             const currentRideId = rideId || state.currentUserRideId;
             if (!currentRideId) {
                  showModal('modal', 'Não foi possível identificar a corrida para edição.');
                  return;
             }
-            
+
             await fetchAllData();
-            
+
             const rideToEdit = state.rides.find(r => r.id === currentRideId);
             if (!rideToEdit) {
                 showModal('modal', 'Corrida não encontrada para edição.');
@@ -1223,7 +1424,22 @@
             const timeInput = document.getElementById('schedule-time');
             const confirmBtn = modal.querySelector('button.button-gradient');
 
-            const existingDate = new Date(rideToEdit.scheduled_datetime);
+             // Verifica se a data agendada existe e é válida
+             let existingDate;
+             try {
+                if (rideToEdit.scheduled_datetime) {
+                    existingDate = new Date(rideToEdit.scheduled_datetime);
+                    if (isNaN(existingDate.getTime())) { // Checa se a data é inválida
+                         throw new Error("Data inválida");
+                    }
+                } else {
+                     throw new Error("Sem data agendada");
+                }
+             } catch (e) {
+                 console.warn("Não foi possível carregar a data agendada existente, usando data/hora atual.", e);
+                 existingDate = new Date(); // Usa data/hora atual como fallback
+             }
+
             dateInput.value = existingDate.toISOString().split('T')[0];
             timeInput.value = existingDate.toTimeString().slice(0, 5);
             dateInput.min = new Date().toISOString().split('T')[0];
@@ -1264,12 +1480,13 @@
                 checkUserRideStatus();
             }
         }
-        
+
         function exportUserRidesToExcel() {
+            if (!state.currentUser) return; // Adiciona verificação
             const userRides = state.rides.filter(r => r.userId === state.currentUser.id);
-            if (userRides.length === 0) { 
-                showModal("modal", "Nenhum histórico de corrida para exportar."); 
-                return; 
+            if (userRides.length === 0) {
+                showModal("modal", "Nenhum histórico de corrida para exportar.");
+                return;
             }
 
             const dataToExport = userRides.map(ride => {
@@ -1294,41 +1511,52 @@
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Minhas Corridas");
-            
+
             XLSX.writeFile(workbook, "meu_historico_corridas.xlsx");
         }
 
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - Botão de Solicitar (Usa state e validação)
+        // ========================================================================
         document.getElementById('request-ride-btn').onclick = function() {
             const passengerCount = document.getElementById('passenger-count').value;
-            const destinations = [];
-            let firstDestination = '';
-            
-            const origin = document.getElementById('origin').value.trim();
-            if (!origin) {
-                showModal('modal', 'Por favor, insira o endereço de origem.');
+            const originAddress = document.getElementById('origin').value.trim();
+
+            // Valida origem
+            if (!state.selectedOrigin || !state.selectedOrigin.properties || state.selectedOrigin.properties.formatted !== originAddress) {
+                showModal('modal', 'Endereço de ORIGEM inválido. Por favor, selecione um da lista de sugestões ou use sua localização atual.');
                 return;
             }
 
-            for (let i = 1; i <= passengerCount; i++) {
-                const input = document.getElementById(`destination-${i}`);
-                const destinationValue = input ? input.value.trim() : '';
-                destinations.push(destinationValue);
-                if (i === 1) {
-                    firstDestination = destinationValue;
-                }
-            }
+            // Valida destinos
+            let firstDestinationValid = false;
+             for (let i = 0; i < passengerCount; i++) {
+                 const destInput = document.getElementById(`destination-${i + 1}`);
+                 const destAddress = destInput ? destInput.value.trim() : '';
+                 const selectedData = state.selectedDestinationsData[i];
 
-            if (!firstDestination) {
-                showModal('modal', 'Por favor, insira o destino do primeiro passageiro.');
-                return;
-            }
-            
-            selectedDestinations = destinations; 
+                 if (i === 0) { // Destino 1 é obrigatório
+                     if (!destAddress || !selectedData || !selectedData.properties || selectedData.properties.formatted !== destAddress) {
+                        showModal('modal', 'O destino do primeiro passageiro é obrigatório e precisa ser selecionado da lista.');
+                        return;
+                     }
+                     firstDestinationValid = true;
+                 } else if (destAddress && (!selectedData || !selectedData.properties || selectedData.properties.formatted !== destAddress)) {
+                     // Se digitou algo no destino 2+ mas não selecionou da lista
+                      showModal('modal', `Endereço do DESTINO ${i+1} inválido. Por favor, selecione um da lista de sugestões ou deixe em branco.`);
+                     return;
+                 }
+             }
+
             selectedObservation = document.getElementById('observation').value.trim();
-            
-            showScreen('request-type-screen'); 
+
+            showScreen('request-type-screen');
         };
+
+        // Adiciona listener para o select de passageiros
+        document.getElementById('passenger-count').addEventListener('change', (e) => updateDestinationFields(e.target.value));
+
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyADSCUHjzyFUwjfcui_lk6vDSQ3PU0bu7g&libraries=places" async defer></script>
-</body>
+    
+    </body>
 </html>
