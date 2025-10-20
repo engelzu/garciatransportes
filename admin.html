@@ -2184,8 +2184,35 @@ Gerenciar Motoristas
             }
         }
 
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA (completeRide) - Agora salva a distância
+        // ========================================================================
         async function completeRide(rideId) {
-            const { error } = await supabaseClient.from('rides').update({ status: 'completed' }).eq('id', rideId);
+            // 1. Encontrar a corrida no estado
+            const ride = state.rides.find(r => r.id === rideId);
+            let finalDistance = null;
+
+            // 2. Calcular a distância se a corrida for encontrada
+            if (ride && ride.origin_address && ride.destination) {
+                try {
+                    const distance = await getDrivingDistance(ride.origin_address, ride.destination);
+                    if (distance !== null) {
+                        finalDistance = distance.toFixed(2);
+                    }
+                } catch (e) {
+                    console.error("Erro ao calcular distância final:", e);
+                }
+            }
+
+            // 3. Atualizar o Supabase com status E distância
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ 
+                    status: 'completed', 
+                    distance_km: finalDistance // Salva a distância
+                })
+                .eq('id', rideId);
+            
             if (error) { 
                 console.error("Erro ao completar corrida:", error); 
                 showModal("Não foi possível finalizar a corrida.");
@@ -2279,7 +2306,9 @@ Gerenciar Motoristas
             }
         }
 
-
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA (setupRealtimeSubscriptions) - Remove o "refresh" da tela de Registros
+        // ========================================================================
         function setupRealtimeSubscriptions() {
             supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, payload => {
                 fetchAllData().then(() => { 
@@ -2325,10 +2354,15 @@ Gerenciar Motoristas
                     else if (activeScreenId === 'driver-selection-screen') {
                         populateDriverSelection(); 
                     }
-                     // ATUALIZA REGISTROS SE A TELA ESTIVER ATIVA
+                    // ================== ALTERAÇÃO AQUI ==================
+                    // A tela de Registros é um histórico, não precisa de real-time.
+                    // Isso remove a sensação de "refresh" constante na tela de registros.
+                    /*
                      else if (activeScreenId === 'admin-records-screen') {
                         loadAllRecords();
                     }
+                    */
+                    // ================== FIM DA ALTERAÇÃO ==================
                 });
             }).subscribe();
         }
@@ -2651,19 +2685,19 @@ Gerenciar Motoristas
         }
 
         // ========================================================================
-        // FUNÇÃO CORRIGIDA (loadAllRecords)
+        // FUNÇÃO ATUALIZADA (loadAllRecords) - Lógica de cache de distância
         // ========================================================================
         async function loadAllRecords() {
             const tableBody = document.getElementById('all-records-body');
-            // Colspan atualizado para 9 colunas
             tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>';
 
+            // Pega todos os dados
             const { data, error } = await supabaseClient.from('rides').select('*').order('requestTime', { ascending: false });
             if (error) {
                 tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>';
                 return;
             }
-            state.rides = data;
+            state.rides = data; // Atualiza o estado local
 
             // --- Preencher filtro de empresas ---
             const companySelect = document.getElementById('records-company-filter');
@@ -2672,7 +2706,7 @@ Gerenciar Motoristas
                 const companies = [...new Set(data.map(ride => ride.userCompany || '-').filter(Boolean))];
                 companies.sort().forEach(company => {
                     if (company) { 
-                        companySelect.innerHTML += `<option value="${company}" class="text-white">${company}</option>`; // Adiciona classe text-white
+                        companySelect.innerHTML += `<option value="${company}" class="text-white">${company}</option>`;
                     }
                 });
             }
@@ -2682,37 +2716,71 @@ Gerenciar Motoristas
                 return;
             }
 
-            // Geração das linhas da tabela modificada
+            // Geração das linhas da tabela modificada com OTIMIZAÇÃO
             const rowPromises = data.map(async (ride) => {
-                let distanceKm = 'N/D';
+                let distanceKm = 'N/A';
                 const originAddress = cleanAddressString(ride.origin_address) || '-'; 
-                 // Usa a função formatDestination
                 const destinationAddress = formatDestination(ride.destination);
 
-                // Usa os endereços brutos para calcular a distância
-                if (ride.origin_address && ride.destination) {
-                    // Evita chamar a API se a origem ou destino formatado ainda for o JSON bruto (indicando falha na formatação inicial)
-                    const rawOrigin = ride.origin_address;
-                    const rawDestination = ride.destination;
-                    if(rawOrigin && rawDestination && !rawOrigin.startsWith('[{') && !rawDestination.startsWith('[{')) {
-                        const distance = await getDrivingDistance(rawOrigin, rawDestination); 
-                        if (distance !== null) {
-                            distanceKm = distance.toFixed(2);
-                        } else {
-                            distanceKm = 'Erro';
+                // --- INÍCIO DA OTIMIZAÇÃO ---
+
+                // 1. Verifica se a distância já está salva no banco de dados
+                if (ride.distance_km) {
+                    distanceKm = ride.distance_km;
+                } 
+                // 2. Se não estiver salva, mas a corrida AINDA ESTIVER ATIVA, calcula ao vivo
+                else if (ride.status !== 'completed' && ride.status !== 'canceled') {
+                    const originAddressForCalc = ride.origin_address;
+                    const destinationAddressForCalc = formatDestination(ride.destination);
+
+                    if (originAddressForCalc && destinationAddressForCalc && destinationAddressForCalc !== '-' && originAddressForCalc !== '-') {
+                        try {
+                            const distance = await getDrivingDistance(originAddressForCalc, destinationAddressForCalc); 
+                            if (distance !== null) {
+                                distanceKm = distance.toFixed(2);
+                            } else {
+                                distanceKm = 'Erro'; 
+                            }
+                        } catch (e) {
+                            console.error("Erro ao calcular distância para ride ATIVA", ride.id, e);
+                            distanceKm = 'Erro'; 
                         }
-                    } else {
-                        distanceKm = 'N/A'; // Não calcula se os dados estiverem mal formatados
                     }
                 }
+                // 3. Se não estiver salva E a corrida ESTIVER CONCLUÍDA (ou cancelada)
+                //    Isso é o "BACKFILL" - vai rodar só uma vez por corrida antiga.
+                else if (ride.status === 'completed' || ride.status === 'canceled') {
+                     const originAddressForCalc = ride.origin_address;
+                    const destinationAddressForCalc = formatDestination(ride.destination);
+
+                    if (originAddressForCalc && destinationAddressForCalc && destinationAddressForCalc !== '-' && originAddressForCalc !== '-') {
+                        try {
+                            console.log(`BACKFILL: Calculando e salvando distância para corrida antiga #${ride.id}`);
+                            const distance = await getDrivingDistance(originAddressForCalc, destinationAddressForCalc);
+                            if (distance !== null) {
+                                distanceKm = distance.toFixed(2);
+                                // SALVA NO BANCO (BACKFILL)
+                                // Isso garante que na próxima vez que carregar, será instantâneo
+                                await supabaseClient
+                                    .from('rides')
+                                    .update({ distance_km: distanceKm })
+                                    .eq('id', ride.id);
+                            } else {
+                                distanceKm = 'Erro';
+                            }
+                        } catch(e) {
+                             console.error("Erro ao fazer BACKFILL da distância", ride.id, e);
+                            distanceKm = 'Erro';
+                        }
+                    }
+                }
+                // --- FIM DA OTIMIZAÇÃO ---
 
                 const statusInfo = translateStatus(ride.status);
-                // Usar requestTime para a data exibida na primeira coluna
                 const requestDateTime = ride.requestTime ? new Date(ride.requestTime).toLocaleString('pt-BR') : 'N/A'; 
                 const observation = ride.observation || '-';
-                const requestTimestamp = new Date(ride.requestTime).getTime(); // Mantém para filtro
+                const requestTimestamp = new Date(ride.requestTime).getTime(); 
 
-                // CORREÇÃO: Comentário removido da linha abaixo
                 return `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20" data-request-time="${requestTimestamp}">
                         <td class="px-4 py-3">${requestDateTime}</td> 
@@ -2728,6 +2796,7 @@ Gerenciar Motoristas
                 `;
             });
 
+            // Espera todas as linhas (e cálculos) terminarem e injeta no HTML
             tableBody.innerHTML = (await Promise.all(rowPromises)).join('');
         }
 
@@ -2834,10 +2903,37 @@ Gerenciar Motoristas
             });
         }
 
-
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA (adminCompleteRide) - Agora salva a distância
+        // ========================================================================
         async function adminCompleteRide(rideId) {
             if (!confirm('Tem certeza que deseja finalizar esta corrida?')) return;
-            const { error } = await supabaseClient.from('rides').update({ status: 'completed' }).eq('id', rideId);
+            
+            // 1. Encontrar a corrida no estado
+            const ride = state.rides.find(r => r.id === rideId);
+            let finalDistance = null;
+
+            // 2. Calcular a distância se a corrida for encontrada
+            if (ride && ride.origin_address && ride.destination) {
+                try {
+                    const distance = await getDrivingDistance(ride.origin_address, ride.destination);
+                    if (distance !== null) {
+                        finalDistance = distance.toFixed(2);
+                    }
+                } catch (e) {
+                    console.error("Erro ao calcular distância final (admin):", e);
+                }
+            }
+
+            // 3. Atualizar o Supabase com status E distância
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ 
+                    status: 'completed', 
+                    distance_km: finalDistance // Salva a distância
+                })
+                .eq('id', rideId);
+
             if (error) alert('Não foi possível finalizar a corrida.');
             else alert('Corrida finalizada com sucesso!');
         }
