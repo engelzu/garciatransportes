@@ -14,10 +14,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@2.0.1/dist/themes/minimal.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@geoapify/geocoder-autocomplete@2.0.1/dist/index.min.js"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -27,7 +25,7 @@
         }
         /* GRADIENTE DE FUNDO ALTERADO */
         .main-gradient {
-             background: linear-gradient(to bottom, #a0feff, #c3e6ff, #e6c3ff, #ffc3f2); /* Ciano -> Azul claro -> Roxo claro -> Rosa claro */
+             background: linear-gradient(to bottom, #a0feff, #c3e6ff, #e6c3ff, #ffc3f2);
         }
         .button-gradient {
             background: linear-gradient(to right, #6d28d9, #4f46e5);
@@ -35,14 +33,13 @@
         .button-gradient:hover {
             background: linear-gradient(to right, #4f46e5, #6d28d9);
         }
-        /* Ajuste para botões do admin terem fundo sólido para melhor contraste com novo gradiente */
         #admin-screen button:not([onclick^="logout"]), #admin-screen a {
-            background-color: #374151; /* Cinza escuro */
+            background-color: #374151;
             color: white;
             border: 1px solid #4b5563;
         }
         #admin-screen button:not([onclick^="logout"]):hover, #admin-screen a:hover {
-            background-color: #4b5563; /* Cinza um pouco mais claro */
+            background-color: #4b5563;
         }
         .card-gradient {
              background: linear-gradient(135deg, #1f2937, #374151);
@@ -66,30 +63,60 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* ESTILO PARA O AUTOCOMPLETE DO GEOAPIFY */
-        .geoapify-autocomplete-input {
-             color: white !important;
-             background-color: #1f2937 !important; /* Fundo do input */
-             border: 1px solid #4b5563 !important;
+        /* ESTILO PARA O AUTOCOMPLETE CUSTOMIZADO */
+        .autocomplete-container {
+            position: relative;
         }
-        .geoapify-autocomplete-items {
-            background-color: #374151 !important; /* Fundo da lista dropdown */
-            border: 1px solid #4b5563 !important;
+        
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #374151;
+            border: 1px solid #4b5563;
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1050;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .autocomplete-list.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #4b5563;
             color: white !important;
+            transition: background-color 0.2s ease;
         }
-        .geoapify-autocomplete-items div:hover {
-            background-color: #4b5563 !important; /* Cor do item em hover */
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
         }
-        .geoapify-autocomplete-item {
-             color: white !important;
+
+        .autocomplete-item:hover {
+            background-color: #4b5563;
         }
-        .geoapify-autocomplete-item.active {
-            background-color: #4f46e5 !important; /* Cor do item selecionado */
+
+        .autocomplete-item strong {
+            color: #00ffff;
         }
-        /* FIM DO ESTILO DO AUTOCOMPLETE */
+
+        .loading, .no-results {
+            padding: 10px 12px;
+            text-align: center;
+            color: #9ca3af;
+            font-style: italic;
+        }
         
         #heatmap-canvas {
-            height: 70vh; /* Você já tinha isso, mas garantindo */
+            height: 70vh;
             width: 100%;
             border-radius: 0.5rem;
             border: 2px solid #4f46e5;
@@ -134,50 +161,47 @@
             transform: translateX(26px);
         }
 
-        /* Custom styles for status badges */
         .status-badge {
             padding: 0.25rem 0.75rem;
-            border-radius: 9999px; /* Full rounded corners */
+            border-radius: 9999px;
             font-weight: 600;
-            font-size: 0.875rem; /* text-sm */
+            font-size: 0.875rem;
             text-align: center;
         }
-        .status-requested { background-color: #2563eb; color: #ffffff; } /* Blue */
-        .status-assigned { background-color: #f59e0b; color: #ffffff; } /* Amber */
-        .status-accepted { background-color: #10b981; color: #ffffff; } /* Emerald */
-        .status-arrived_pickup { background-color: #d946ef; color: #ffffff; } /* Fuchsia */
-        .status-in_progress { background-color: #8b5cf6; color: #ffffff; } /* Violet */
-        .status-completed { background-color: #10b981; color: #ffffff; } /* Emerald */
-        .status-canceled { background-color: #ef4444; color: #ffffff; } /* Red */
-        .status-pending_approval { background-color: #a16207; color: #ffffff; } /* Yellow-700 */
-        .status-approved { background-color: #0d9488; color: #ffffff; } /* Teal-600 */
-        .status-rejected { background-color: #991b1b; color: #ffffff; } /* Red-800 */
+        .status-requested { background-color: #2563eb; color: #ffffff; }
+        .status-assigned { background-color: #f59e0b; color: #ffffff; }
+        .status-accepted { background-color: #10b981; color: #ffffff; }
+        .status-arrived_pickup { background-color: #d946ef; color: #ffffff; }
+        .status-in_progress { background-color: #8b5cf6; color: #ffffff; }
+        .status-completed { background-color: #10b981; color: #ffffff; }
+        .status-canceled { background-color: #ef4444; color: #ffffff; }
+        .status-pending_approval { background-color: #a16207; color: #ffffff; }
+        .status-approved { background-color: #0d9488; color: #ffffff; }
+        .status-rejected { background-color: #991b1b; color: #ffffff; }
 
         #initial-screen button[onclick="showScreen('user-login-screen')"],
         #initial-screen button[onclick="showScreen('driver-selection-screen')"] {
             display: none;
         }
 
-        /* Ajuste de cor de texto para melhor leitura no novo fundo */
         body {
-             color: #1f2937; /* Cinza bem escuro para textos gerais */
+             color: #1f2937;
         }
         h1, h2, h3, h4, label, button, a {
-            color: #1f2937; /* Garante que títulos, labels e botões também usem a cor escura */
+            color: #1f2937;
         }
         button[onclick^="showScreen"], #admin-login-screen label, #user-login-screen label, #driver-selection-screen h2, #initial-screen h1, #initial-screen p {
              color: #1f2937;
         }
          #initial-screen button span, #initial-screen button svg {
-            color: white !important; /* Mantém ícones e texto dos botões iniciais brancos */
+            color: white !important;
         }
          button.text-yellow-300 {
-             color: #4f46e5 !important; /* Botões "Voltar" terão cor roxa */
+             color: #4f46e5 !important;
          }
          #admin-login-error, #user-login-error {
-             color: #dc2626; /* Vermelho para erros */
+             color: #dc2626;
          }
-         /* Cor dos textos dentro dos cards e tabelas permanece branca */
          .card-gradient, .card-gradient p, .card-gradient h3, .card-gradient span, .card-gradient label,
          #admin-requests-list span, #admin-requests-list p, #admin-requests-list h4,
          #admin-ongoing-rides-table th, #admin-ongoing-rides-table td,
@@ -191,34 +215,28 @@
              color: white;
          }
          #modal input, #modal select {
-             color: white; /* Garante texto branco nos inputs do modal */
+             color: white;
          }
          #modal input::placeholder {
-             color: #9ca3af; /* Placeholder cinza claro */
+             color: #9ca3af;
          }
          #admin-ongoing-rides-table .text-yellow-300, #admin-requests-list .text-yellow-300 {
-              color: #facc15 !important; /* Amarelo para observações */
+              color: #facc15 !important;
          }
          #admin-ongoing-rides-table .text-red-400, #admin-requests-list .text-red-400 {
-              color: #f87171 !important; /* Vermelho para erros de distância */
+              color: #f87171 !important;
          }
          #user-status-message, #available-drivers-count {
-             color: #1f2937; /* Texto de status do usuário e motoristas disponíveis */
+             color: #1f2937;
          }
          #driver-name-display, #driver-stats-display, #driver-status-label {
-              color: #1f2937; /* Ajusta textos na tela do motorista */
+              color: #1f2937;
          }
-         #driver-status-label.text-green-400 { color: #22c55e !important; } /* Mantém cores de status */
-         #driver-status-label.text-red-400 { color: #ef4444 !important; } /* Mantém cores de status */
+         #driver-status-label.text-green-400 { color: #22c55e !important; }
+         #driver-status-label.text-red-400 { color: #ef4444 !important; }
 
-         /* Estilo para inputs de data/hora */
         input[type="date"], input[type="datetime-local"] {
-            color-scheme: dark; /* Garante que o calendário interno tenha cores escuras */
-        }
-         
-        /* Corrige o input de autocomplete para ficar dentro do card */
-        .autocomplete-container {
-            position: relative;
+            color-scheme: dark;
         }
 
     </style>
@@ -309,12 +327,12 @@
 
                     <div class="mb-4 autocomplete-container">
                         <label for="origin" class="block mb-2 text-sm font-medium">Qual a sua origem?</label>
-                        <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço de partida completo">
+                        <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço de partida completo" readonly>
                     </div>
 
                     <div class="mb-4 autocomplete-container">
                         <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
-                        <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço completo">
+                        <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço completo" readonly>
                     </div>
 
                     <div class="flex items-center mb-4">
@@ -505,30 +523,20 @@ Gerenciar Motoristas
             <h2 class="text-3xl font-bold mb-6 text-center">Cadastro de Usuários</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="space-y-6">
-                    <div class="card-gradient p-4 rounded-lg">
-                        <h3 class="font-semibold mb-2">Importar Usuários (Excel)</h3>
-                        <p class="text-sm text-gray-300 mb-3">Baixe o template, preencha e faça o upload.</p>
-                        <div class="flex gap-2 mb-3">
-                            <button onclick="downloadUserTemplate()" class="w-full py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Baixar Template</button>
-                        </div>
-                        <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
-                        <button onclick="importUsersFromExcel()" class="w-full mt-3 py-2 px-4 font-semibold rounded-lg button-gradient text-white">Importar Arquivo</button>
+                <div class="card-gradient p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Adicionar Novo Usuário</h3>
+                    <input type="text" id="new-user-id" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Matrícula">
+                    <input type="text" id="new-user-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Nome Completo">
+                    <input type="password" id="new-user-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Senha">
+                    <input type="text" id="new-user-company" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Empresa">
+                    
+                    <div class="autocomplete-container mb-2">
+                        <input type="text" id="new-user-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-white" placeholder="Endereço (selecione da lista)" oninput="handleAddressInput(event, 'new-user-addressList')" onfocus="this.removeAttribute('readonly');" readonly>
+                        <div class="autocomplete-list" id="new-user-addressList"></div>
                     </div>
-                     <div class="card-gradient p-4 rounded-lg">
-                        <h3 class="font-semibold mb-2">Adicionar Novo Usuário</h3>
-                        <input type="text" id="new-user-id" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Matrícula">
-                        <input type="text" id="new-user-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Nome Completo">
-                        <input type="password" id="new-user-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Senha">
-                        <input type="text" id="new-user-company" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Empresa">
-                        
-                        <div class="autocomplete-container">
-                            <input type="text" id="new-user-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Endereço">
-                        </div>
-                        
-                        <input type="tel" id="new-user-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Telefone">
-                        <button onclick="addUser()" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient text-white">Adicionar</button>
-                    </div>
+                    
+                    <input type="tel" id="new-user-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Telefone">
+                    <button onclick="addUser()" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient text-white">Adicionar</button>
                 </div>
 
                 <div class="card-gradient p-4 rounded-lg md:col-span-2">
@@ -655,7 +663,8 @@ Gerenciar Motoristas
                 </select>
                 <input type="text" id="modal-input-company" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Empresa">
                 <div class="autocomplete-container">
-                    <input type="text" id="modal-input-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Endereço">
+                    <input type="text" id="modal-input-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Endereço (selecione da lista)" oninput="handleAddressInput(event, 'modal-input-addressList')" onfocus="this.removeAttribute('readonly');" readonly>
+                    <div class="autocomplete-list" id="modal-input-addressList"></div>
                 </div>
                 <input type="password" id="modal-input-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Senha">
                 <input type="password" id="modal-input-admin-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Senha do Admin">
@@ -668,64 +677,42 @@ Gerenciar Motoristas
     </div>
 
     <script>
-        // ========================================================================
-        // NOVA CONSTANTE - CHAVE DA API GEOAPIFY
-        // ========================================================================
         const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38';
 
-        // ========================================================================
-        // FUNÇÃO ATUALIZADA - getDrivingDistance (Usa Geoapify Routing)
-        // ========================================================================
-        // Esta função geocodifica endereços e depois chama getDrivingDistanceByCoords
         async function getDrivingDistance(originAddress, destinationAddress) {
-            
-            // 1. Geocodificar os dois endereços
             let originCoords, destCoords;
             try {
-                // Tenta geocodificar a origem. geocodeAddress AGORA retorna {lat, lon}
                 originCoords = await geocodeAddress(originAddress);
                 if (!originCoords) throw new Error('Falha ao geocodificar origem');
                 
-                // Tenta geocodificar o destino
                 destCoords = await geocodeAddress(destinationAddress);
                 if (!destCoords) throw new Error('Falha ao geocodificar destino');
 
             } catch (error) {
                 console.error('Erro na geocodificação para cálculo de distância:', error);
-                return null; // Retorna nulo se qualquer geocodificação falhar
+                return null;
             }
             
-            // 2. Chamar a nova função com as coordenadas
-            // A função agora espera {lat, lon}, que é o que geocodeAddress retorna
             return await getDrivingDistanceByCoords(originCoords, destCoords);
         }
 
-        // ========================================================================
-        // NOVA FUNÇÃO - getDrivingDistanceByCoords (Usa Geoapify Routing API)
-        // ========================================================================
-        // Esta função calcula a distância de ROTA (carro) usando coordenadas
         async function getDrivingDistanceByCoords(originCoords, destCoords) {
-            // Verifica se as coordenadas são válidas
             if (!originCoords || typeof originCoords.lat === 'undefined' || typeof originCoords.lon === 'undefined' ||
                 !destCoords || typeof destCoords.lat === 'undefined' || typeof destCoords.lon === 'undefined') {
                 console.warn("getDrivingDistanceByCoords: Coordenadas inválidas.", originCoords, destCoords);
                 return null;
             }
 
-            // 1. Formatar os waypoints para a API do Geoapify
             const waypoints = `${originCoords.lat},${originCoords.lon}|${destCoords.lat},${destCoords.lon}`;
-            
-            // 2. Montar a URL da API de Roteamento (Routing API) do Geoapify
             const url = `https://api.geoapify.com/v1/routing?waypoints=${encodeURIComponent(waypoints)}&mode=drive&units=metric&apiKey=${GEOAPIFY_API_KEY}`;
             
             try {
                 const response = await fetch(url);
                 const data = await response.json();
 
-                // 3. Processar a resposta do Geoapify
                 if (data.features && data.features.length > 0) {
                     const distanceInMeters = data.features[0].properties.distance;
-                    return distanceInMeters / 1000; // Converte metros para km
+                    return distanceInMeters / 1000;
                 } else {
                     console.error('Erro na API de Roteamento Geoapify:', data);
                     return null;
@@ -736,65 +723,46 @@ Gerenciar Motoristas
             }
         }
 
-
-        // --- FUNÇÕES AUXILIARES IMPORTANTES ---
-
-        // Função para limpar a string de endereço (remove colchetes e aspas)
         function cleanAddressString(address) {
             if (typeof address !== 'string') return '';
-            // Remove a formatação específica `["..."]`
             return address.replace(/^\["|"\]$/g, '').trim();
         }
 
-        // ========================================================================
-        // NOVA FUNÇÃO AUXILIAR - formatDestination
-        // ========================================================================
         function formatDestination(destinationString) {
             if (typeof destinationString !== 'string' || !destinationString.trim()) return '-';
 
             let formattedAddress = '-';
             const trimmedString = destinationString.trim();
 
-            // Try parsing as complex JSON array [{...}, {...}]
             if (trimmedString.startsWith('[{') && trimmedString.endsWith('}]')) {
                 try {
                     const destinationsArray = JSON.parse(trimmedString);
                     if (Array.isArray(destinationsArray)) {
                         const addresses = destinationsArray
-                            .map(dest => dest.address || '') // Get address from each object
-                            .filter(Boolean); // Remove empty addresses
+                            .map(dest => dest.address || '')
+                            .filter(Boolean);
                         if (addresses.length > 0) {
-                            formattedAddress = addresses.join(' - '); // Join with hyphen
+                            formattedAddress = addresses.join(' - ');
                         }
                     }
                 } catch (e) {
                     console.warn("Could not parse complex destination JSON, falling back:", trimmedString, e);
-                    // Fallback attempt: Try to extract addresses using regex if JSON parse fails
-                     const regexAddresses = trimmedString.match(/"address":"(.*?)"/g);
-                     if (regexAddresses) {
-                         formattedAddress = regexAddresses.map(match => match.replace(/"address":"(.*)"/, '$1')).join(' - ');
-                     } else {
-                         // Final fallback: just clean the string
-                         formattedAddress = trimmedString.replace(/[\[\]\{\}"]/g, '').replace(/name:.*?,address:/g, '').replace(/,/g, ' - ').trim();
-                     }
+                    const regexAddresses = trimmedString.match(/"address":"(.*?)"/g);
+                    if (regexAddresses) {
+                        formattedAddress = regexAddresses.map(match => match.replace(/"address":"(.*)"/,'$1')).join(' - ');
+                    } else {
+                        formattedAddress = trimmedString.replace(/[\[\]\{\}"]/g, '').replace(/name:.*?,address:/g, '').replace(/,/g, ' - ').trim();
+                    }
                 }
             }
-            // Try cleaning as simple format ["address"] or just "address"
             else {
-                 formattedAddress = trimmedString.replace(/^\["|"\]$/g, '').trim();
+                formattedAddress = trimmedString.replace(/^\["|"\]$/g, '').trim();
             }
 
-            // Ensure we don't return an empty string
             return formattedAddress || '-';
         }
 
-
-        // ========================================================================
-        // FUNÇÃO ATUALIZADA - geocodeAddress
-        // ========================================================================
-        // Esta função agora usa a API de Geocoding do Geoapify
         async function geocodeAddress(address) {
-            // Se o endereço for nulo ou inválido, rejeita imediatamente
             if (!address || typeof address !== 'string' || address.trim().length < 3) {
                 console.warn(`Tentativa de geocodificar endereço inválido: ${address}`);
                 return Promise.reject("Endereço inválido");
@@ -808,10 +776,8 @@ Gerenciar Motoristas
 
                 if (data.features && data.features.length > 0) {
                     const coords = data.features[0].geometry.coordinates;
-                    // ATENÇÃO: Geoapify retorna [lng, lat]. Vamos padronizar para {lat, lon}
                     return { lat: coords[1], lon: coords[0] };
                 } else {
-                    // Segunda tentativa, adicionando contexto local (Guaíba)
                     const newAddress = `${address}, Guaíba, RS`;
                     const fallbackUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(newAddress)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
                     
@@ -832,14 +798,106 @@ Gerenciar Motoristas
             }
         }
 
-        // --- FUNÇÕES DE CÁLCULO DE LINHA RETA (HAVERSINE) REMOVIDAS ---
+        let debounceTimer;
 
-        // --- CONFIGURAÇÃO INICIAL E ESTADO DA APLICAÇÃO ---
+        function handleAddressInput(event, listId) {
+            clearTimeout(debounceTimer);
+            const query = event.target.value;
+            debounceTimer = setTimeout(() => {
+                searchAddress(query, listId);
+            }, 300);
+        }
+
+        async function searchAddress(query, listId) {
+            if (query.length < 3) {
+                hideList(listId);
+                return;
+            }
+
+            const list = document.getElementById(listId);
+            if (!list) return;
+            
+            const inputId = listId.replace('List', '');
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.removeAttribute('data-address-valid');
+            }
+            
+            list.innerHTML = '<div class="loading">Buscando...</div>';
+            list.classList.add('show');
+
+            try {
+                const response = await fetch(
+                    `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&lang=pt&limit=5&apiKey=${GEOAPIFY_API_KEY}`
+                );
+                
+                const data = await response.json();
+                
+                if (data.features && data.features.length > 0) {
+                    displayResults(data.features, listId);
+                } else {
+                    list.innerHTML = '<div class="no-results">Nenhum resultado encontrado</div>';
+                }
+            } catch (error) {
+                console.error('Erro ao buscar endereços:', error);
+                list.innerHTML = '<div class="no-results">Erro ao buscar endereços</div>';
+            }
+        }
+
+        function displayResults(features, listId) {
+            const list = document.getElementById(listId);
+            if (!list) return;
+            list.innerHTML = '';
+
+            features.forEach(feature => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                
+                const formatted = feature.properties.formatted;
+                const city = feature.properties.city || '';
+                const state = feature.properties.state || '';
+                
+                item.innerHTML = `
+                    <strong>${formatted}</strong>
+                    ${city || state ? `<br><small style="color: #999;">${city}${city && state ? ', ' : ''}${state}</small>` : ''}
+                `;
+                
+                item.onclick = () => selectAddress(feature, listId);
+                list.appendChild(item);
+            });
+
+            list.classList.add('show');
+        }
+
+        function selectAddress(feature, listId) {
+            const inputId = listId.replace('List', '');
+            const input = document.getElementById(inputId);
+            
+            if (input) {
+                input.value = feature.properties.formatted;
+                input.setAttribute('data-address-valid', 'true');
+            }
+            hideList(listId);
+        }
+
+        function hideList(listId) {
+            const list = document.getElementById(listId);
+            if (list) {
+                list.classList.remove('show');
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-container')) {
+                document.querySelectorAll('.autocomplete-list').forEach(list => list.classList.remove('show'));
+            }
+        });
+
         let driverWatchId = null; 
-        let map; // Será usado pelo Leaflet
-        let heatmap; // Será usado pelo Leaflet.heat
-        let tempDriverId = null; // Armazena temporariamente o ID do motorista para login
-        let driverChart = null; // Referência para o gráfico de pizza dos motoristas
+        let map;
+        let heatmap;
+        let tempDriverId = null;
+        let driverChart = null;
         let countdownInterval = null;
         let countdownSeconds = 5;
         let clockInterval = null;
@@ -848,22 +906,19 @@ Gerenciar Motoristas
             rides: [],
             drivers: [],
             users: [],
-            appIcon: localStorage.getItem('appIcon') || null, // Ícone do app salvo no localStorage
+            appIcon: localStorage.getItem('appIcon') || null,
             currentDriverId: null,
             currentUserRideId: null,
             currentUserId: null,
-            userStatusInterval: null, // Intervalo para checar status da corrida do usuário
-            // Armazena os dados de lat/lon do autocomplete
+            userStatusInterval: null,
             currentUserOrigin: null, 
             currentUserDestination: null
         };
 
-        // --- CONFIGURAÇÃO DO SUPABASE ---
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- LÓGICA DE ÁUDIO (SIRENE) ---
         const adminRingtone = document.getElementById('admin-ringtone');
         let adminRingInterval = null;
         let adminAudioUnlocked = false;
@@ -902,7 +957,6 @@ Gerenciar Motoristas
             playAdminRingSound(); 
             adminRingInterval = setInterval(playAdminRingSound, 6000);
 
-            // Adicionado botão de silenciar ao DOM para poder ser usado
             const silenceBtnContainer = document.querySelector('#admin-requests-screen .lg\\:col-span-1');
             if (silenceBtnContainer && !document.getElementById('admin-silence-btn')) {
                 const silenceBtn = document.createElement('button');
@@ -927,8 +981,6 @@ Gerenciar Motoristas
             document.getElementById('admin-silence-btn')?.classList.add('hidden');
         }
 
-
-        // --- LÓGICA DE MODAL ---
         function showModal(message, onConfirm, showCancel = false, content = {}) {
             document.getElementById('modal-message').textContent = message;
             const confirmBtn = document.getElementById('modal-confirm');
@@ -938,15 +990,12 @@ Gerenciar Motoristas
             Array.from(inputContainer.children).forEach(child => {
                 if (child.tagName === 'INPUT' || child.tagName === 'SELECT' || child.classList.contains('autocomplete-container')) {
                     child.style.display = 'none';
-                    // Limpa inputs, exceto o container do autocomplete
-                    if (child.tagName !== 'DIV') child.value = ''; 
+                    if (child.tagName !== 'DIV') child.value = '';
                 }
             });
 
-            // Limpa o input de endereço dentro do container do modal
             const modalAddressInput = document.getElementById('modal-input-address');
             if (modalAddressInput) modalAddressInput.value = '';
-
 
             if (content.type) {
                 inputContainer.classList.remove('hidden');
@@ -969,17 +1018,18 @@ Gerenciar Motoristas
                     document.getElementById('modal-input-name').style.display = 'block';
                     document.getElementById('modal-input-password').style.display = 'block'; 
                     document.getElementById('modal-input-company').style.display = 'block';
-                    document.getElementById('modal-input-address').parentElement.style.display = 'block'; // Mostra o container do autocomplete
+                    document.getElementById('modal-input-address').parentElement.style.display = 'block';
                     document.getElementById('modal-input-phone').style.display = 'block';
                     
                     document.getElementById('modal-input-matricula').value = content.matricula;
                     document.getElementById('modal-input-name').value = content.name;
                     document.getElementById('modal-input-company').value = content.company;
-                    document.getElementById('modal-input-address').value = content.address; // Define o valor do input de endereço
+                    const modalAddressInput = document.getElementById('modal-input-address');
+                    modalAddressInput.value = content.address;
+                    if (content.address) {
+                        modalAddressInput.setAttribute('data-address-valid', 'true');
+                    }
                     document.getElementById('modal-input-phone').value = content.phone;
-                    
-                    // Inicializa o autocomplete para o modal
-                    initAutocomplete(document.getElementById('modal-input-address'));
 
                 } else if(content.type === 'driver-password') {
                     document.getElementById('modal-input-driver-password').style.display = 'block';
@@ -1007,23 +1057,16 @@ Gerenciar Motoristas
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             Array.from(document.getElementById('modal-input-container').children).forEach(child => {
-                 if (child.tagName === 'INPUT' || child.tagName === 'SELECT') {
+                if (child.tagName === 'INPUT' || child.tagName === 'SELECT') {
                     child.value = '';
                     child.style.display = 'none'; 
                 }
-                 if (child.classList.contains('autocomplete-container')) {
-                     child.style.display = 'none';
-                     // Remove a instância do autocomplete para evitar duplicatas
-                     const input = child.querySelector('input');
-                     if (input && input.geoapify_autocomplete_instance) {
-                         input.geoapify_autocomplete_instance.destroy();
-                         input.geoapify_autocomplete_instance = null;
-                     }
-                 }
+                if (child.classList.contains('autocomplete-container')) {
+                    child.style.display = 'none';
+                }
             });
         }
 
-        // --- FUNÇÕES DE LOGIN E SESSÃO ---
         function logout() {
             state.currentUserId = null;
             state.currentDriverId = null;
@@ -1079,34 +1122,31 @@ Gerenciar Motoristas
             }
         }
 
-        // --- NAVEGAÇÃO ENTRE TELAS ---
         function showScreen(screenId) {
             const body = document.body;
             document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
-            stopRingingAdmin(); // Para a sirene do admin ao trocar de tela
+            stopRingingAdmin();
 
             if(clockInterval) clearInterval(clockInterval);
 
-            // Aplica ou remove padding extra no topo para telas específicas
             const container = document.getElementById('app-container');
             const needsExtraPadding = ['admin-requests-screen', 'admin-driver-crud-screen', 'admin-user-crud-screen', 'admin-heatmap-screen', 'admin-records-screen'];
-             if (needsExtraPadding.includes(screenId)) {
-                container.classList.add('pt-8'); // Adiciona padding top
+            if (needsExtraPadding.includes(screenId)) {
+                container.classList.add('pt-8');
             } else {
-                 container.classList.remove('pt-8'); // Remove padding top
+                container.classList.remove('pt-8');
             }
-
 
             const fullHeightScreens = ['admin-requests-screen', 'admin-driver-crud-screen', 'admin-user-crud-screen', 'admin-heatmap-screen', 'admin-records-screen'];
             if (fullHeightScreens.includes(screenId)) {
                 body.classList.remove('items-center');
-                body.classList.add('justify-start'); // Alinha conteúdo ao topo
+                body.classList.add('justify-start');
             } else {
                 if (!body.classList.contains('items-center')) {
                     body.classList.add('items-center');
                 }
-                 body.classList.remove('justify-start'); // Remove alinhamento ao topo
+                body.classList.remove('justify-start');
             }
 
             if (screenId === 'admin-requests-screen') {
@@ -1115,11 +1155,7 @@ Gerenciar Motoristas
                 startDigitalClock('digital-clock');
             }
             if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
-            if (screenId === 'admin-user-crud-screen') {
-                 renderUserCrudList();
-                 // Inicializa o autocomplete para o formulário "Adicionar Novo Usuário"
-                 initAutocomplete(document.getElementById('new-user-address'));
-            }
+            if (screenId === 'admin-user-crud-screen') renderUserCrudList();
             if (screenId === 'admin-heatmap-screen') initHeatmap();
             if (screenId === 'driver-selection-screen') populateDriverSelection();
             if (screenId === 'driver-screen') {
@@ -1130,19 +1166,12 @@ Gerenciar Motoristas
                 checkUserRideStatus(); 
                 updateAvailableDriversCount(); 
                 renderUserRideHistory(); 
-                // Inicializa o autocomplete para os inputs de origem e destino do usuário
-                initAutocomplete(document.getElementById('origin'), (feature) => {
-                    state.currentUserOrigin = feature; // Salva os dados do local
-                });
-                initAutocomplete(document.getElementById('destination'), (feature) => {
-                    state.currentUserDestination = feature; // Salva os dados do local
-                });
             }
             if (screenId === 'admin-records-screen') {
                 loadAllRecords(); 
                 document.getElementById('records-start-date').value = '';
                 document.getElementById('records-end-date').value = '';
-                 document.getElementById('records-company-filter').value = ''; // Limpa filtro empresa ao entrar
+                document.getElementById('records-company-filter').value = '';
             }
         }
 
@@ -1170,16 +1199,13 @@ Gerenciar Motoristas
 
             confirmBtn.textContent = 'Exportar e Voltar';
             confirmBtn.onclick = () => {
-                // Verificamos se há corridas ANTES de tentar exportar
                 if (state.rides.length === 0) {
                     showModal("Nenhuma corrida para exportar. Voltando ao painel...");
-                    // Aguarda 2 segundos para o usuário ler e depois volta
                     setTimeout(() => {
                         closeModal();
                         showScreen('admin-screen');
                     }, 2000);
                 } else {
-                    // Se houver dados, exporta e volta imediatamente
                     exportDailyReportNow();
                     closeModal();
                     showScreen('admin-screen');
@@ -1189,18 +1215,15 @@ Gerenciar Motoristas
             showModal('Deseja exportar o relatório diário antes de sair?', null, true);
         }
 
-        // --- LÓGICA DO USUÁRIO ---
-
         async function requestRide() {
             const originAddress = document.getElementById('origin').value;
             const destinationAddress = document.getElementById('destination').value;
             
-            // Valida se os dados de autocomplete foram salvos
             if (!state.currentUserOrigin || state.currentUserOrigin.properties.formatted !== originAddress) {
                 showModal('Por favor, selecione um endereço de ORIGEM válido da lista de sugestões.');
                 return;
             }
-             if (!state.currentUserDestination || state.currentUserDestination.properties.formatted !== destinationAddress) {
+            if (!state.currentUserDestination || state.currentUserDestination.properties.formatted !== destinationAddress) {
                 showModal('Por favor, selecione um endereço de DESTINO válido da lista de sugestões.');
                 return;
             }
@@ -1226,22 +1249,19 @@ Gerenciar Motoristas
             document.getElementById('user-status-message').textContent = 'Solicitando corrida...';
 
             try {
-                // Usa as coordenadas salvas do autocomplete
                 const originCoords = state.currentUserOrigin.properties;
-                // Padroniza para {lat, lon}
                 const userLocation = { lat: originCoords.lat, lon: originCoords.lon };
                 const currentUser = state.users.find(u => u.id === state.currentUserId);
 
                 const newRide = {
-                    destination: destinationAddress, // Salva o endereço de destino como texto
-                    origin_address: originAddress,   // Salva o endereço de origem como texto
+                    destination: destinationAddress,
+                    origin_address: originAddress,
                     status: 'requested',
                     userId: currentUser.id,
                     userName: currentUser.name,
                     userCompany: currentUser.company,
                     requestTime: new Date().toISOString(),
-                    // Salva a localização de origem (Geoapify retorna [lon, lat], mas 'select' callback retorna .lat, .lon)
-                    userLocation: userLocation, // Salva no formato padronizado {lat, lon}
+                    userLocation: userLocation,
                     request_type: isScheduled ? 'scheduled' : 'immediate', 
                     scheduled_datetime: scheduledTime 
                 };
@@ -1260,7 +1280,6 @@ Gerenciar Motoristas
                 document.getElementById('user-status-message').textContent = 'Aguardando um motorista aceitar...';
                 startUserStatusCheck();
                 
-                // Limpa os estados de localização após o sucesso
                 state.currentUserOrigin = null;
                 state.currentUserDestination = null;
 
@@ -1272,9 +1291,8 @@ Gerenciar Motoristas
             }
         }
 
-
         function checkUserRideStatus() {
-             if (state.currentUserRideId) {
+            if (state.currentUserRideId) {
                 const myRide = state.rides.find(r => r.id === state.currentUserRideId);
                 if (myRide) {
                     document.getElementById('user-request-form').classList.add('hidden');
@@ -1299,7 +1317,7 @@ Gerenciar Motoristas
                 }
                 const { data: myRide, error } = await supabaseClient.from('rides').select('*').eq('id', state.currentUserRideId).single();
                 if (myRide) {
-                   updateUserStatusMessage(myRide); 
+                    updateUserStatusMessage(myRide); 
                 } else {
                     clearInterval(state.userStatusInterval);
                     state.currentUserRideId = null; 
@@ -1341,12 +1359,10 @@ Gerenciar Motoristas
                 case 'accepted':
                     message = `Motorista ${ride.driverName} está a caminho!`;
                     
-                    // LÓGICA DE CÁLCULO DE DISTÂNCIA (Geoapify Routing)
                     if (ride.driverCurrentLocation && ride.userLocation) {
-                        // Chama a função assíncrona que calcula a distância de ROTA
                         const distance = await getDrivingDistanceByCoords(
-                            ride.userLocation,             // Coordenadas do usuário {lat, lon}
-                            ride.driverCurrentLocation     // Coordenadas do motorista {lat, lon}
+                            ride.userLocation,
+                            ride.driverCurrentLocation
                         );
                         
                         if (distance !== null) {
@@ -1373,16 +1389,16 @@ Gerenciar Motoristas
                     arrivedPickupIconContainer.classList.remove('hidden');
                     break;
                 case 'in_progress':
-                     message = `Viagem para ${formatDestination(ride.destination)} em andamento.`; // Usa destino formatado
-                     const inProgressImg = document.createElement('img');
-                     inProgressImg.src = 'images/destino.png'; 
-                     inProgressImg.alt = 'Viagem Iniciada';
-                     inProgressImg.className = 'h-20 w-20 mx-auto animate-bounce'; 
-                     inProgressIconContainer.appendChild(inProgressImg);
-                     inProgressIconContainer.classList.remove('hidden');
-                     cancelRideBtn.classList.add('hidden');
-                     break;
-                 case 'completed':
+                    message = `Viagem para ${formatDestination(ride.destination)} em andamento.`;
+                    const inProgressImg = document.createElement('img');
+                    inProgressImg.src = 'images/destino.png'; 
+                    inProgressImg.alt = 'Viagem Iniciada';
+                    inProgressImg.className = 'h-20 w-20 mx-auto animate-bounce'; 
+                    inProgressIconContainer.appendChild(inProgressImg);
+                    inProgressIconContainer.classList.remove('hidden');
+                    cancelRideBtn.classList.add('hidden');
+                    break;
+                case 'completed':
                     message = `Viagem finalizada! Obrigado por escolher a GARCIA TAXI.`;
                     clearInterval(state.userStatusInterval); 
                     state.currentUserRideId = null; 
@@ -1397,7 +1413,7 @@ Gerenciar Motoristas
                     message = `Sua viagem foi cancelada.`;
                     clearInterval(state.userStatusInterval); 
                     state.currentUserRideId = null; 
-                     setTimeout(() => {
+                    setTimeout(() => {
                         document.getElementById('user-request-form').classList.remove('hidden');
                         document.getElementById('user-status').classList.add('hidden');
                         document.getElementById('destination').value = ''; 
@@ -1421,10 +1437,6 @@ Gerenciar Motoristas
             }
         }
 
-        // --- LÓGICA DO ADMIN ---
-        // ========================================================================
-        // FUNÇÃO CORRIGIDA (loadAdminRequests)
-        // ========================================================================
         async function loadAdminRequests() {
             const list = document.getElementById('admin-requests-list');
             list.innerHTML = '';
@@ -1433,14 +1445,12 @@ Gerenciar Motoristas
 
             requestedRides.sort((a, b) => new Date((a.request_type === 'scheduled' && a.scheduled_datetime) || a.requestTime) - new Date((b.request_type === 'scheduled' && b.scheduled_datetime) || b.requestTime));
 
-            // --- Cálculos para o painel de status ---
             const solicitadoCount = state.rides.filter(r => ['requested', 'approved', 'pending_approval'].includes(r.status)).length;
             const agendadaCount = state.rides.filter(r => r.status === 'scheduled').length;
             const designadoCount = state.rides.filter(r => r.status === 'assigned').length;
             const emAndamentoCount = state.rides.filter(r => ['accepted', 'arrived_pickup', 'in_progress'].includes(r.status)).length;
             const concluidasCount = state.rides.filter(r => r.status === 'completed').length;
 
-            // --- Atualiza os contadores no painel ---
             document.getElementById('status-agendada-count').textContent = agendadaCount;
             document.getElementById('status-solicitado-count').textContent = solicitadoCount;
             document.getElementById('status-designado-count').textContent = designadoCount;
@@ -1464,19 +1474,8 @@ Gerenciar Motoristas
                     card.className = 'card-gradient p-4 rounded-lg shadow-md';
 
                     const originAddress = cleanAddressString(ride.origin_address);
-                    // Usa a nova função para formatar o destino
                     const destinationAddress = formatDestination(ride.destination);
-                    let distanceInfo = `<p class="text-sm text-gray-500">Distância: Calculando...</p>`;
-
-                    // Usa os endereços brutos para calcular a distância
-                    if (ride.origin_address && ride.destination) {
-                         const distance = await getDrivingDistance(ride.origin_address, ride.destination);
-                         if (distance !== null) {
-                            distanceInfo = `<p class="font-semibold">Distância: <span class="font-normal">${distance.toFixed(1)} km</span></p>`;
-                         } else {
-                            distanceInfo = `<p class="text-sm text-red-400">Distância: Erro ao calcular</p>`;
-                         }
-                    }
+                    const distanceInfo = ride.km ? `<p class="text-sm text-gray-400">Distância: ${ride.km} km</p>` : `<p class="text-sm text-gray-500">Distância será calculada ao finalizar</p>`;
 
                     let rideTypeInfo = '';
                     if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
@@ -1516,7 +1515,6 @@ Gerenciar Motoristas
                         `;
                     }
 
-                    // CORREÇÃO: Comentário removido daqui
                     card.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
                             <h4 class="font-semibold text-lg">Nova Solicitação</h4>
@@ -1536,9 +1534,6 @@ Gerenciar Motoristas
             }
         }
         
-        // ========================================================================
-        // FUNÇÃO CORRIGIDA (renderOngoingRidesTable)
-        // ========================================================================
         async function renderOngoingRidesTable() {
             const tableContainer = document.getElementById('admin-ongoing-rides-table');
             tableContainer.innerHTML = '<div class="loader mx-auto"></div>';
@@ -1550,26 +1545,12 @@ Gerenciar Motoristas
                 return;
             }
 
-            const ridesWithDistancePromises = ongoingRides.map(async (ride) => {
-                let distanceKm = 'N/D';
+            const ridesWithDistance = ongoingRides.map((ride) => {
                 const originAddress = cleanAddressString(ride.origin_address);
-                 // Formata o destino usando a nova função
-                const formattedDestination = formatDestination(ride.destination); 
-
-                // Usa os endereços brutos para calcular a distância
-                if (ride.origin_address && ride.destination) {
-                    const distance = await getDrivingDistance(ride.origin_address, ride.destination); 
-                    if (distance !== null) {
-                        distanceKm = distance.toFixed(1);
-                    } else {
-                        distanceKm = 'Erro';
-                    }
-                }
-                // Retorna o destino formatado
-                return { ...ride, distanceKm, cleanedOrigin: originAddress, formattedDestination: formattedDestination }; 
+                const formattedDestination = formatDestination(ride.destination);
+                const distanceKm = ride.km || 'Ao finalizar';
+                return { ...ride, distanceKm: distanceKm, cleanedOrigin: originAddress, formattedDestination: formattedDestination };
             });
-
-            const ridesWithDistance = await Promise.all(ridesWithDistancePromises);
 
             let tableHTML = `
                 <table class="w-full text-sm text-left">
@@ -1590,7 +1571,6 @@ Gerenciar Motoristas
                     <tbody>
             `;
 
-            // Ordena primeiro por data/hora (agendada ou solicitação)
             ridesWithDistance.sort((a, b) => {
                 const dateA = (a.request_type === 'scheduled' && a.scheduled_datetime) ? new Date(a.scheduled_datetime) : new Date(a.requestTime);
                 const dateB = (b.request_type === 'scheduled' && b.scheduled_datetime) ? new Date(b.scheduled_datetime) : new Date(b.requestTime);
@@ -1607,7 +1587,6 @@ Gerenciar Motoristas
                     rideTypeInfo = '<span class="text-xs font-bold py-1 px-2 rounded-full bg-blue-500 text-white">IMEDIATA</span>';
                 }
 
-                // --- LÓGICA DA DATA/HORA ---
                 let dateTimeString = '';
                 const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
                 if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
@@ -1615,7 +1594,6 @@ Gerenciar Motoristas
                 } else { 
                     dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', options);
                 }
-                // --- FIM DA LÓGICA DA DATA/HORA ---
 
                 let driverCellHTML = ride.driverName || 'N/A';
                 let actionsCellHTML = `<div class="flex items-center gap-2">`;
@@ -1643,7 +1621,6 @@ Gerenciar Motoristas
                     </button>
                 </div>`;
 
-                // CORREÇÃO: Comentários removidos daqui também
                 tableHTML += `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20">
                         <td class="px-4 py-3 font-medium">${ride.userName}</td>
@@ -1665,7 +1642,6 @@ Gerenciar Motoristas
             tableHTML += `</tbody></table>`;
             tableContainer.innerHTML = tableHTML;
         }
-
 
         async function updateRideDriver(rideId) {
             const selectElement = document.getElementById(`ongoing-driver-select-${rideId}`);
@@ -1701,7 +1677,6 @@ Gerenciar Motoristas
             }
         }
 
-
         async function assignDriver(rideId) {
             const selectedDriverId = document.getElementById(`driver-select-${rideId}`).value;
             if (!selectedDriverId) {
@@ -1716,7 +1691,6 @@ Gerenciar Motoristas
             }
         }
 
-        // --- ADMIN CRUD MOTORISTAS ---
         function renderDriverCrudList() {
             const listContainer = document.getElementById('driver-crud-list');
             listContainer.innerHTML = '';
@@ -1855,68 +1829,6 @@ Gerenciar Motoristas
             else { closeModal(); }
         }
 
-        // --- ADMIN CRUD USUÁRIOS ---
-        function downloadUserTemplate() {
-            const headers = [["matricula", "nome", "senha", "empresa", "endereco", "telefone"]];
-            const ws = XLSX.utils.aoa_to_sheet(headers);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
-            XLSX.writeFile(wb, "template_usuarios.xlsx");
-        }
-
-        function importUsersFromExcel() {
-            const fileInput = document.getElementById('excel-file-input');
-            const file = fileInput.files[0];
-            if (!file) { showModal("Por favor, selecione um arquivo Excel."); return; }
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                try {
-                    const data = new Uint8Array(event.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const usersJson = XLSX.utils.sheet_to_json(worksheet);
-
-                    if (usersJson.length === 0) { showModal("O arquivo Excel está vazio."); return; }
-
-                    const header = Object.keys(usersJson[0]);
-                    const expectedHeader = ['matricula', 'nome', 'senha', 'empresa', 'endereco', 'telefone'];
-                    if (JSON.stringify(header.sort()) !== JSON.stringify(expectedHeader.sort())) {
-                        showModal(`Cabeçalho inválido. O esperado é: ${expectedHeader.join(',')}`);
-                        return;
-                    }
-
-                    let importedCount = 0;
-                    usersJson.forEach(user => {
-                        if (user.matricula && user.nome && user.senha && user.telefone) {
-                            state.users.push({
-                                id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, 
-                                matricula: String(user.matricula).trim(),
-                                name: String(user.nome).trim(),
-                                password: String(user.senha).trim(),
-                                company: String(user.empresa || '').trim(),
-                                address: String(user.endereco || '').trim(),
-                                phone: String(user.phone || '').trim()
-                            });
-                            importedCount++;
-                        }
-                    });
-
-                    if (importedCount > 0) {
-                        renderUserCrudList();
-                        showModal(`${importedCount} usuários foram importados com sucesso!`);
-                    } else {
-                        showModal("Nenhum usuário válido encontrado no arquivo para importar.");
-                    }
-                    fileInput.value = '';
-                } catch (error) {
-                    showModal("Ocorreu um erro ao processar o arquivo. Verifique se o formato está correto.");
-                }
-            };
-            reader.onerror = function() { showModal("Ocorreu um erro ao ler o arquivo."); };
-            reader.readAsArrayBuffer(file);
-        }
-
         function renderUserCrudList() {
             const listContainer = document.getElementById('user-crud-list');
             listContainer.innerHTML = ''; 
@@ -1963,16 +1875,40 @@ Gerenciar Motoristas
         }
 
         async function addUser() {
-            const idInput = document.getElementById('new-user-id'); const nameInput = document.getElementById('new-user-name');
-            const passwordInput = document.getElementById('new-user-password'); const companyInput = document.getElementById('new-user-company');
-            const addressInput = document.getElementById('new-user-address'); const phoneInput = document.getElementById('new-user-phone');
-            const matricula = idInput.value.trim(); const name = nameInput.value.trim();
-            const password = passwordInput.value.trim(); const company = companyInput.value.trim();
-            const address = addressInput.value.trim(); const phone = phoneInput.value.trim();
-            if (!matricula || !name || !password || !phone) { showModal('Matrícula, Nome, Senha e Telefone são obrigatórios.'); return; }
+            const idInput = document.getElementById('new-user-id');
+            const nameInput = document.getElementById('new-user-name');
+            const passwordInput = document.getElementById('new-user-password');
+            const companyInput = document.getElementById('new-user-company');
+            const addressInput = document.getElementById('new-user-address');
+            const phoneInput = document.getElementById('new-user-phone');
+            
+            const matricula = idInput.value.trim();
+            const name = nameInput.value.trim();
+            const password = passwordInput.value.trim();
+            const company = companyInput.value.trim();
+            const address = addressInput.value.trim();
+            const phone = phoneInput.value.trim();
+            
+            if (!matricula || !name || !password || !phone) {
+                showModal('Matrícula, Nome, Senha e Telefone são obrigatórios.');
+                return;
+            }
+            
+            if (address && !addressInput.getAttribute('data-address-valid')) {
+                showModal('Por favor, selecione um endereço válido da lista de sugestões.');
+                return;
+            }
+            
             const { error } = await supabaseClient.from('users').insert([{ matricula, name, password, company, address, phone }]);
-            if (error) { console.error('Error adding user:', error); showModal('Erro ao adicionar usuário.'); } 
-            else { idInput.value = nameInput.value = passwordInput.value = companyInput.value = addressInput.value = phoneInput.value = ''; showModal('Usuário adicionado com sucesso!'); }
+            
+            if (error) {
+                console.error('Error adding user:', error);
+                showModal('Erro ao adicionar usuário.');
+            } else {
+                idInput.value = nameInput.value = passwordInput.value = companyInput.value = addressInput.value = phoneInput.value = '';
+                addressInput.removeAttribute('data-address-valid');
+                showModal('Usuário adicionado com sucesso!');
+            }
         }
 
         function editUser(userId) {
@@ -1983,10 +1919,16 @@ Gerenciar Motoristas
                 const newName = document.getElementById('modal-input-name').value.trim();
                 const newPassword = document.getElementById('modal-input-password').value.trim();
                 const newCompany = document.getElementById('modal-input-company').value.trim();
-                const newAddress = document.getElementById('modal-input-address').value.trim();
+                const addressInput = document.getElementById('modal-input-address');
+                const newAddress = addressInput.value.trim();
                 const newPhone = document.getElementById('modal-input-phone').value.trim();
 
                 if (newName && newPhone) {
+                    if (newAddress && !addressInput.getAttribute('data-address-valid')) {
+                        showModal('Por favor, selecione um endereço válido da lista de sugestões.');
+                        return;
+                    }
+                    
                     const updateData = { matricula: newMatricula, name: newName, company: newCompany, address: newAddress, phone: newPhone };
                     if (newPassword) updateData.password = newPassword;
                     const { error } = await supabaseClient.from('users').update(updateData).eq('id', userId);
@@ -2025,18 +1967,16 @@ Gerenciar Motoristas
             XLSX.utils.book_append_sheet(workbook, worksheet, "Lista de Usuários");
 
             worksheet['!cols'] = [
-                { wch: 15 }, // Matrícula
-                { wch: 35 }, // Nome Completo
-                { wch: 20 }, // Empresa
-                { wch: 40 }, // Endereço
-                { wch: 20 }  // Telefone
+                { wch: 15 },
+                { wch: 35 },
+                { wch: 20 },
+                { wch: 40 },
+                { wch: 20 }
             ];
 
             XLSX.writeFile(workbook, "relatorio_usuarios.xlsx");
         }
 
-
-        // --- LÓGICA DO MOTORISTA ---
         function populateDriverSelection() {
             const list = document.getElementById('driver-list-selection');
             const timestampEl = document.getElementById('driver-selection-timestamp');
@@ -2051,7 +1991,6 @@ Gerenciar Motoristas
                     ride.status !== 'canceled'
                 );
                 const button = document.createElement('button');
-                 // Usa card-gradient para o fundo dos botões de motorista
                 button.className = 'w-full py-3 px-6 text-lg font-semibold rounded-lg card-gradient shadow-lg transform hover:scale-105 transition-transform flex justify-between items-center';
                 button.onclick = () => selectDriver(driver.id);
                 button.innerHTML = `
@@ -2097,7 +2036,7 @@ Gerenciar Motoristas
 
             if (myJobs.length === 0) {
                 list.innerHTML = '<p class="text-center text-gray-400">Nenhuma corrida para você no momento.</p>';
-                stopRingingAdmin(); // Usa a função de parar do admin
+                stopRingingAdmin();
                 if (driverWatchId) {
                     navigator.geolocation.clearWatch(driverWatchId);
                     driverWatchId = null;
@@ -2112,7 +2051,7 @@ Gerenciar Motoristas
                 const requestDateTime = new Date(ride.requestTime).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 let content = `
                     <div class="flex justify-between items-start mb-1">
-                        <p class="font-semibold pr-2">Destino Final: <span class="font-normal">${formatDestination(ride.destination)}</span></p> {/* Usa destino formatado */}
+                        <p class="font-semibold pr-2">Destino Final: <span class="font-normal">${formatDestination(ride.destination)}</span></p>
                         <p class="text-sm text-gray-300">Solicitado por: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
                         <p class="text-xs text-gray-400 whitespace-nowrap">${requestDateTime}</p>
                     </div>
@@ -2145,20 +2084,16 @@ Gerenciar Motoristas
             } else { 
                 const ride = state.rides.find(r => r.id === rideId);
                 
-                // Tenta navegar para as coordenadas de origem primeiro
                 if (ride && ride.userLocation && ride.userLocation.lat && ride.userLocation.lon) {
                     const { lat, lon } = ride.userLocation;
-                    // Link do Waze para coordenadas
                     window.open(`waze://?ll=${lat},${lon}&navigate=yes`, '_blank');
                 } else if (ride && ride.origin_address) {
-                    // Fallback para endereço de origem se as coordenadas não estiverem salvas
                     window.open(`waze://?q=${encodeURIComponent(ride.origin_address)}&navigate=yes`, '_blank');
                 } else {
-                     showModal("Não foi possível obter a localização do usuário ou endereço de origem para navegação.");
+                    showModal("Não foi possível obter a localização do usuário ou endereço de origem para navegação.");
                 }
             }
         }
-
 
         async function arriveAtPickup(rideId) {
             const { error } = await supabaseClient.from('rides').update({ status: 'arrived_pickup' }).eq('id', rideId);
@@ -2176,26 +2111,19 @@ Gerenciar Motoristas
                     console.error("Erro ao iniciar viagem:", error);
                     showModal("Não foi possível iniciar a viagem.");
                 } else { 
-                    // Navega para o destino final (usa o valor bruto, não formatado)
-                    // Usa a função de formatação para extrair o endereço de destino principal
                     const destinationAddress = formatDestination(ride.destination);
                     window.open(`waze://?q=${encodeURIComponent(destinationAddress)}&navigate=yes`, '_blank'); 
                 }
             }
         }
 
-        // ========================================================================
-        // FUNÇÃO ATUALIZADA (completeRide) - Agora salva a distância
-        // ========================================================================
         async function completeRide(rideId) {
-            // 1. Encontrar a corrida no estado
             const ride = state.rides.find(r => r.id === rideId);
             let finalDistance = null;
 
-            // 2. Calcular a distância se a corrida for encontrada
             if (ride && ride.origin_address && ride.destination) {
                 try {
-                    const distance = await getDrivingDistance(ride.origin_address, ride.destination);
+                    const distance = await getDrivingDistance(ride.origin_address, formatDestination(ride.destination));
                     if (distance !== null) {
                         finalDistance = distance.toFixed(2);
                     }
@@ -2204,12 +2132,11 @@ Gerenciar Motoristas
                 }
             }
 
-            // 3. Atualizar o Supabase com status E distância
             const { error } = await supabaseClient
                 .from('rides')
                 .update({ 
                     status: 'completed', 
-                    distance_km: finalDistance // Salva a distância
+                    km: finalDistance
                 })
                 .eq('id', rideId);
             
@@ -2224,7 +2151,6 @@ Gerenciar Motoristas
             }
         }
 
-        // --- RASTREAMENTO E CÁLCULO DE DISTÂNCIA ---
         function startDriverTracking(rideId) {
             if (driverWatchId) {
                 navigator.geolocation.clearWatch(driverWatchId);
@@ -2235,14 +2161,12 @@ Gerenciar Motoristas
                 const currentRide = state.rides.find(r => r.id === rideId && r.status !== 'completed' && r.status !== 'canceled');
                 if (currentRide) {
                     await supabaseClient.from('rides').update({ driverCurrentLocation: driverLocation }).eq('id', rideId);
-                } else { // Se a corrida não for encontrada (finalizada/cancelada), para o watch
+                } else {
                     navigator.geolocation.clearWatch(driverWatchId);
                     driverWatchId = null;
                 }
             }, (error) => { 
                 console.error("Erro ao rastrear localização do motorista:", error); 
-                 // Não mostra modal para não interromper o motorista constantemente
-                 // Apenas loga o erro
             }, { 
                 enableHighAccuracy: true, 
                 timeout: 5000, 
@@ -2250,7 +2174,6 @@ Gerenciar Motoristas
             });
         }
 
-        // --- INICIALIZAÇÃO DO APP E SUPABASE ---
         async function fetchAllData() {
             const { data: drivers, error: driversError } = await supabaseClient.from('drivers').select('*');
             if (driversError) console.error('Error fetching drivers:', driversError); else state.drivers = drivers;
@@ -2260,14 +2183,11 @@ Gerenciar Motoristas
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
 
-        // 2. FUNÇÃO DE E-MAIL ATUALIZADA
         async function sendNewRideEmailNotification(ride) {
             console.log('Tentando enviar e-mail para a nova corrida:', ride);
-            // Instancia o Resend com a chave de API
-            const resend = new Resend('re_Qp3oqRvJ_5QKw8pW1zv9VF8kd7pTt6m8V'); // ATENÇÃO: Chave exposta no frontend!
+            const resend = new Resend('re_Qp3oqRvJ_5QKw8pW1zv9VF8kd7pTt6m8V');
 
             try {
-                // Monta o conteúdo do e-mail
                 const subject = `Nova Solicitação de Corrida: ${ride.userName}`;
                 const htmlBody = `
                   <h1>Nova Solicitação de Corrida Recebida</h1>
@@ -2277,7 +2197,7 @@ Gerenciar Motoristas
                     <li><strong>Usuário:</strong> ${ride.userName || 'Não informado'}</li>
                     <li><strong>Empresa:</strong> ${ride.userCompany || 'N/A'}</li>
                     <li><strong>Origem:</strong> ${ride.origin_address || 'Não informada'}</li>
-                    <li><strong>Destino:</strong> ${formatDestination(ride.destination)}</li> {/* Usa destino formatado */}
+                    <li><strong>Destino:</strong> ${formatDestination(ride.destination)}</li>
                     <li><strong>Observação:</strong> ${ride.observation || 'Nenhuma'}</li>
                     <li><strong>Tipo:</strong> ${ride.request_type === 'scheduled' ? `Agendada para ${new Date(ride.scheduled_datetime).toLocaleString('pt-BR')}` : 'Imediata'}</li>
                     <li><strong>Horário da Solicitação:</strong> ${new Date(ride.requestTime).toLocaleString('pt-BR')}</li>
@@ -2285,10 +2205,9 @@ Gerenciar Motoristas
                   <p>Por favor, acesse o painel de administrador para designar um motorista.</p>
                 `;
 
-                // Envia o e-mail
                 const { data, error } = await resend.emails.send({
-                  from: 'GARCIA TRANSPORTES <onboarding@resend.dev>', // Remetente precisa ser um domínio verificado
-                  to: ['engelmobile2020@gmail.com'], // Destinatário(s)
+                  from: 'GARCIA TRANSPORTES <onboarding@resend.dev>',
+                  to: ['engelmobile2020@gmail.com'],
                   subject: subject,
                   html: htmlBody,
                 });
@@ -2306,9 +2225,6 @@ Gerenciar Motoristas
             }
         }
 
-        // ========================================================================
-        // FUNÇÃO ATUALIZADA (setupRealtimeSubscriptions) - Remove o "refresh" da tela de Registros
-        // ========================================================================
         function setupRealtimeSubscriptions() {
             supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, payload => {
                 fetchAllData().then(() => { 
@@ -2320,20 +2236,18 @@ Gerenciar Motoristas
             }).subscribe();
 
             supabaseClient.channel('public:users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, payload => {
-                 fetchAllData().then(() => {
+                fetchAllData().then(() => {
                     if (document.querySelector('.screen.active')?.id === 'admin-user-crud-screen') renderUserCrudList();
-                 });
+                });
             }).subscribe();
 
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
 
                 if (localStorage.getItem('sessionType') === 'admin') {
-                    // Toca o alarme e envia e-mail quando uma nova corrida é INSERIDA
                     if (payload.eventType === 'INSERT' && (payload.new.status === 'requested' || payload.new.status === 'scheduled')) {
                         startRingingAdmin();
                         sendNewRideEmailNotification(payload.new);
                     }
-                    // Toca o alarme quando uma corrida existente é ATUALIZADA para o status 'approved'
                     else if (payload.eventType === 'UPDATE' && payload.new.status === 'approved' && payload.old.status !== 'approved') {
                         startRingingAdmin();
                     }
@@ -2354,20 +2268,10 @@ Gerenciar Motoristas
                     else if (activeScreenId === 'driver-selection-screen') {
                         populateDriverSelection(); 
                     }
-                    // ================== ALTERAÇÃO AQUI ==================
-                    // A tela de Registros é um histórico, não precisa de real-time.
-                    // Isso remove a sensação de "refresh" constante na tela de registros.
-                    /*
-                     else if (activeScreenId === 'admin-records-screen') {
-                        loadAllRecords();
-                    }
-                    */
-                    // ================== FIM DA ALTERAÇÃO ==================
                 });
             }).subscribe();
         }
 
-        // --- FUNÇÕES DE STATUS ---
         function updateDriverStatusButton() {
             const driver = state.drivers.find(d => d.id === state.currentDriverId);
             if (!driver) return;
@@ -2413,7 +2317,6 @@ Gerenciar Motoristas
             });
             const countEl = document.getElementById('available-drivers-count');
             if (countEl) { 
-                // Altera a cor do texto para escuro para melhor contraste
                 countEl.className = 'text-center mb-4 text-lg text-green-800 font-semibold';
                 countEl.textContent = `Motoristas disponíveis agora: ${availableDrivers.length}`;
             }
@@ -2489,7 +2392,7 @@ Gerenciar Motoristas
 
         function exportDailyReportNow() {
             if (state.rides.length === 0) {
-                 showModal("Nenhuma corrida encontrada para exportar.");
+                showModal("Nenhuma corrida encontrada para exportar.");
                 return;
             }
 
@@ -2497,7 +2400,7 @@ Gerenciar Motoristas
                 'ID da Corrida': ride.id,
                 'Usuário': ride.userName,
                 'Empresa': ride.userCompany,
-                'Destino': formatDestination(ride.destination), // Usa destino formatado
+                'Destino': formatDestination(ride.destination),
                 'Motorista': ride.driverName || 'N/A',
                 'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                 'Data do Aceite': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A',
@@ -2510,36 +2413,6 @@ Gerenciar Motoristas
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio de Corridas");
             XLSX.writeFile(workbook, `Relatorio_Diario_${dateStr}.xlsx`);
-        }
-
-
-        function exportRidesToExcel() { // Esta função parece não ser mais usada diretamente, mas a deixo caso precise
-            const startDate = document.getElementById('start-date').value; // Presume que existem inputs com 'start-date' e 'end-date' em algum lugar
-            const endDate = document.getElementById('end-date').value;
-            if (!startDate || !endDate) { showModal("Por favor, selecione a data inicial e final."); return; }
-            const start = new Date(startDate).getTime();
-            const end = new Date(endDate); 
-            end.setHours(23, 59, 59, 999); 
-
-            const filteredRides = state.rides.filter(ride => {
-                const rideTime = new Date(ride.requestTime).getTime();
-                return rideTime >= start && rideTime <= end.getTime();
-            });
-            if (filteredRides.length === 0) { showModal("Nenhuma corrida encontrada no período selecionado."); return; }
-
-            const dataToExport = filteredRides.map(ride => ({
-                'ID da Corrida': ride.id, 'Usuário': ride.userName, 'Empresa': ride.userCompany,
-                'Destino': formatDestination(ride.destination), // Usa destino formatado
-                 'Motorista': ride.driverName || 'N/A',
-                'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
-                'Data do Aceite': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A',
-                'Status': translateStatus(ride.status).text
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio de Corridas");
-            XLSX.writeFile(workbook, `Relatorio_Corridas_${startDate}_a_${end.toISOString().split('T')[0]}.xlsx`);
         }
 
         function uploadAppIcon() {
@@ -2564,16 +2437,15 @@ Gerenciar Motoristas
                 img.src = state.appIcon; img.className = 'h-12 w-12 object-contain';
                 iconContainer.appendChild(img);
             } else {
-                 // Ícone padrão SVG caso nenhum seja carregado
-                 const defaultIconContainer = document.getElementById('app-icon-container');
-                 if (defaultIconContainer.innerHTML === '') { // Adiciona apenas se estiver vazio
+                const defaultIconContainer = document.getElementById('app-icon-container');
+                if (defaultIconContainer.innerHTML === '') {
                     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.setAttribute('class', 'h-12 w-12 text-black'); // Ícone preto
+                    svg.setAttribute('class', 'h-12 w-12 text-black');
                     svg.setAttribute('fill', 'currentColor');
                     svg.setAttribute('viewBox', '0 0 20 20');
-                    svg.innerHTML = `<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />`; // Ícone de usuário simples
+                    svg.innerHTML = `<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />`;
                     defaultIconContainer.appendChild(svg);
-                 }
+                }
             }
         }
 
@@ -2602,7 +2474,7 @@ Gerenciar Motoristas
                 row.className = 'border-b border-gray-700';
                 row.innerHTML = `
                     <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td>
-                    <td class="px-4 py-3">${formatDestination(ride.destination)}</td> {/* Usa destino formatado */}
+                    <td class="px-4 py-3">${formatDestination(ride.destination)}</td>
                     <td class="px-4 py-3">${translateStatus(ride.status).text}</td>
                 `;
                 tbody.appendChild(row);
@@ -2637,7 +2509,7 @@ Gerenciar Motoristas
                 row.innerHTML = `
                     <td class="px-4 py-3">${new Date(ride.requestTime).toLocaleDateString('pt-BR')}</td>
                     <td class="px-4 py-3">${ride.userName}</td>
-                    <td class="px-4 py-3">${formatDestination(ride.destination)}</td> {/* Usa destino formatado */}
+                    <td class="px-4 py-3">${formatDestination(ride.destination)}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -2651,7 +2523,7 @@ Gerenciar Motoristas
 
             const dataToExport = userRides.map(ride => ({
                 'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
-                'Destino': formatDestination(ride.destination), // Usa destino formatado
+                'Destino': formatDestination(ride.destination),
                 'Motorista': ride.driverName || 'N/A',
                 'Status': translateStatus(ride.status).text
             }));
@@ -2670,7 +2542,7 @@ Gerenciar Motoristas
                 'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                 'Usuário': ride.userName,
                 'Empresa': ride.userCompany,
-                'Destino': formatDestination(ride.destination), // Usa destino formatado
+                'Destino': formatDestination(ride.destination),
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -2679,27 +2551,21 @@ Gerenciar Motoristas
             XLSX.writeFile(workbook, "meu_historico_corridas_concluidas.xlsx");
         }
 
-        // --- FUNÇÕES PARA REGISTROS ---
         function openRecordsTab() {
             showScreen('admin-records-screen');
         }
 
-        // ========================================================================
-        // FUNÇÃO ATUALIZADA (loadAllRecords) - Lógica de cache de distância
-        // ========================================================================
         async function loadAllRecords() {
             const tableBody = document.getElementById('all-records-body');
             tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>';
 
-            // Pega todos os dados
             const { data, error } = await supabaseClient.from('rides').select('*').order('requestTime', { ascending: false });
             if (error) {
                 tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>';
                 return;
             }
-            state.rides = data; // Atualiza o estado local
+            state.rides = data;
 
-            // --- Preencher filtro de empresas ---
             const companySelect = document.getElementById('records-company-filter');
             if (companySelect) {
                 companySelect.innerHTML = '<option value="" class="text-gray-400">Todas as Empresas</option>'; 
@@ -2716,66 +2582,10 @@ Gerenciar Motoristas
                 return;
             }
 
-            // Geração das linhas da tabela modificada com OTIMIZAÇÃO
-            const rowPromises = data.map(async (ride) => {
-                let distanceKm = 'N/A';
+            const rowsHTML = data.map((ride) => {
+                let distanceKm = ride.km || 'N/A';
                 const originAddress = cleanAddressString(ride.origin_address) || '-'; 
                 const destinationAddress = formatDestination(ride.destination);
-
-                // --- INÍCIO DA OTIMIZAÇÃO ---
-
-                // 1. Verifica se a distância já está salva no banco de dados
-                if (ride.distance_km) {
-                    distanceKm = ride.distance_km;
-                } 
-                // 2. Se não estiver salva, mas a corrida AINDA ESTIVER ATIVA, calcula ao vivo
-                else if (ride.status !== 'completed' && ride.status !== 'canceled') {
-                    const originAddressForCalc = ride.origin_address;
-                    const destinationAddressForCalc = formatDestination(ride.destination);
-
-                    if (originAddressForCalc && destinationAddressForCalc && destinationAddressForCalc !== '-' && originAddressForCalc !== '-') {
-                        try {
-                            const distance = await getDrivingDistance(originAddressForCalc, destinationAddressForCalc); 
-                            if (distance !== null) {
-                                distanceKm = distance.toFixed(2);
-                            } else {
-                                distanceKm = 'Erro'; 
-                            }
-                        } catch (e) {
-                            console.error("Erro ao calcular distância para ride ATIVA", ride.id, e);
-                            distanceKm = 'Erro'; 
-                        }
-                    }
-                }
-                // 3. Se não estiver salva E a corrida ESTIVER CONCLUÍDA (ou cancelada)
-                //    Isso é o "BACKFILL" - vai rodar só uma vez por corrida antiga.
-                else if (ride.status === 'completed' || ride.status === 'canceled') {
-                     const originAddressForCalc = ride.origin_address;
-                    const destinationAddressForCalc = formatDestination(ride.destination);
-
-                    if (originAddressForCalc && destinationAddressForCalc && destinationAddressForCalc !== '-' && originAddressForCalc !== '-') {
-                        try {
-                            console.log(`BACKFILL: Calculando e salvando distância para corrida antiga #${ride.id}`);
-                            const distance = await getDrivingDistance(originAddressForCalc, destinationAddressForCalc);
-                            if (distance !== null) {
-                                distanceKm = distance.toFixed(2);
-                                // SALVA NO BANCO (BACKFILL)
-                                // Isso garante que na próxima vez que carregar, será instantâneo
-                                await supabaseClient
-                                    .from('rides')
-                                    .update({ distance_km: distanceKm })
-                                    .eq('id', ride.id);
-                            } else {
-                                distanceKm = 'Erro';
-                            }
-                        } catch(e) {
-                             console.error("Erro ao fazer BACKFILL da distância", ride.id, e);
-                            distanceKm = 'Erro';
-                        }
-                    }
-                }
-                // --- FIM DA OTIMIZAÇÃO ---
-
                 const statusInfo = translateStatus(ride.status);
                 const requestDateTime = ride.requestTime ? new Date(ride.requestTime).toLocaleString('pt-BR') : 'N/A'; 
                 const observation = ride.observation || '-';
@@ -2796,13 +2606,9 @@ Gerenciar Motoristas
                 `;
             });
 
-            // Espera todas as linhas (e cálculos) terminarem e injeta no HTML
-            tableBody.innerHTML = (await Promise.all(rowPromises)).join('');
+            tableBody.innerHTML = rowsHTML.join('');
         }
 
-        // ========================================================================
-        // FUNÇÃO filterRecords (sem alteração lógica)
-        // ========================================================================
         function filterRecords() {
             const startDate = document.getElementById('records-start-date').value;
             const endDate = document.getElementById('records-end-date').value;
@@ -2831,19 +2637,14 @@ Gerenciar Motoristas
             });
         }
 
-        // ========================================================================
-        // FUNÇÃO CORRIGIDA (exportRecordsToExcel)
-        // ========================================================================
         function exportRecordsToExcel() {
             const table = document.getElementById('all-records-table');
             const rows = table.querySelectorAll('tbody tr');
             const dataToExport = [];
 
-            // 1. Adiciona os cabeçalhos da tabela
             const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
             dataToExport.push(headers); 
 
-            // 2. Adiciona apenas as linhas visíveis (filtradas)
             let visibleRows = 0;
             rows.forEach(row => {
                 if (row.style.display !== 'none') { 
@@ -2858,65 +2659,52 @@ Gerenciar Motoristas
                 }
             });
 
-            // 3. Verifica se há dados para exportar
             if (visibleRows === 0) {
                 showModal("Nenhum registro (visível) encontrado para exportar. Verifique seus filtros.");
                 return;
             }
 
-            // 4. Cria e baixa o arquivo Excel
             const worksheet = XLSX.utils.aoa_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
 
-            // Define larguras de coluna
             worksheet['!cols'] = [
-                { wch: 20 }, // Data Solicitação
-                { wch: 25 }, // Usuário
-                { wch: 20 }, // Empresa
-                { wch: 40 }, // Origem
-                { wch: 40 }, // Destino
-                { wch: 30 }, // Observação
-                { wch: 25 }, // Motorista
-                { wch: 15 }, // Status
-                { wch: 15 }  // Distância (km)
+                { wch: 20 },
+                { wch: 25 },
+                { wch: 20 },
+                { wch: 40 },
+                { wch: 40 },
+                { wch: 30 },
+                { wch: 25 },
+                { wch: 15 },
+                { wch: 15 }
             ];
 
             XLSX.writeFile(workbook, "relatorio_de_registros.xlsx");
         }
 
-        // ========================================================================
-        // NOVA FUNÇÃO - LIMPAR FILTRO
-        // ========================================================================
         function clearRecordsFilter() {
-            // 1. Limpa os campos de input
             document.getElementById('records-start-date').value = '';
             document.getElementById('records-end-date').value = '';
-            document.getElementById('records-company-filter').value = ''; // Reseta o select
+            document.getElementById('records-company-filter').value = '';
 
-            // 2. Mostra todas as linhas da tabela novamente
             const tableBody = document.getElementById('all-records-body');
             const rows = Array.from(tableBody.querySelectorAll('tr'));
             
             rows.forEach(row => {
-                row.style.display = ''; // Remove o 'display: none'
+                row.style.display = '';
             });
         }
 
-        // ========================================================================
-        // FUNÇÃO ATUALIZADA (adminCompleteRide) - Agora salva a distância
-        // ========================================================================
         async function adminCompleteRide(rideId) {
             if (!confirm('Tem certeza que deseja finalizar esta corrida?')) return;
             
-            // 1. Encontrar a corrida no estado
             const ride = state.rides.find(r => r.id === rideId);
             let finalDistance = null;
 
-            // 2. Calcular a distância se a corrida for encontrada
             if (ride && ride.origin_address && ride.destination) {
                 try {
-                    const distance = await getDrivingDistance(ride.origin_address, ride.destination);
+                    const distance = await getDrivingDistance(ride.origin_address, formatDestination(ride.destination));
                     if (distance !== null) {
                         finalDistance = distance.toFixed(2);
                     }
@@ -2925,12 +2713,11 @@ Gerenciar Motoristas
                 }
             }
 
-            // 3. Atualizar o Supabase com status E distância
             const { error } = await supabaseClient
                 .from('rides')
                 .update({ 
                     status: 'completed', 
-                    distance_km: finalDistance // Salva a distância
+                    km: finalDistance
                 })
                 .eq('id', rideId);
 
@@ -2945,12 +2732,7 @@ Gerenciar Motoristas
             else alert('Corrida excluída com sucesso!');
         }
 
-        // --- FUNÇÃO DE INICIALIZAÇÃO PRINCIPAL ---
         async function initApp() {
-            // Esta função não precisa mais verificar o 'google', 
-            // ela será chamada pelo DOMContentLoaded
-            
-            initAutocomplete(); // Esta função agora está vazia, mas é chamada
             await fetchAllData(); 
             setupRealtimeSubscriptions(); 
             loadAppIcon();
@@ -2982,49 +2764,6 @@ Gerenciar Motoristas
             }
         }
 
-        // ========================================================================
-        // FUNÇÃO ATUALIZADA - initAutocomplete
-        // ========================================================================
-        // Esta função agora inicializa o Geoapify Autocomplete
-        function initAutocomplete(inputElement, onPlaceSelectCallback) {
-            // Se nenhum elemento for passado, a função é encerrada
-            // Isso acontece na chamada antiga de initApp()
-            if (!inputElement) return;
-
-            // Evita reinicializar em um input que já tem
-            if (inputElement.geoapify_autocomplete_instance) {
-                inputElement.geoapify_autocomplete_instance.destroy();
-                inputElement.geoapify_autocomplete_instance = null;
-            }
-
-            const autocomplete = new Autocomplete(inputElement, {
-                apiKey: GEOAPIFY_API_KEY,
-                filter: {
-                    countrycode: ['br'] // Filtra para o Brasil
-                },
-                lang: 'pt', // Define o idioma para Português
-                placeholder: inputElement.placeholder,
-                allowNonVerifiedHouseNumber: true,
-                allowNonVerifiedStreet: true
-            });
-
-            autocomplete.on('select', (feature) => {
-                if (feature) {
-                    // Se um callback foi fornecido (como na tela do usuário),
-                    // chama ele com os dados do local selecionado
-                    if (onPlaceSelectCallback) {
-                        onPlaceSelectCallback(feature);
-                    }
-                }
-            });
-            
-            // Armazena a instância no elemento para referência futura (ex: no modal)
-            inputElement.geoapify_autocomplete_instance = autocomplete;
-        }
-
-        // ========================================================================
-        // FUNÇÃO ATUALIZADA - initHeatmap (agora usa Leaflet)
-        // ========================================================================
         async function initHeatmap() {
             const mapDiv = document.getElementById('heatmap-canvas');
             if (!mapDiv) {
@@ -3032,34 +2771,27 @@ Gerenciar Motoristas
                 return;
             }
 
-            // Remove o mapa Leaflet anterior, se existir, para evitar duplicação
             if (map) {
                 map.remove();
                 map = null;
             }
             
-            // Centro aproximado de Guaíba/Porto Alegre
-            const center = [-30.0346, -51.2177]; // [lat, lng] para Leaflet
+            const center = [-30.0346, -51.2177];
             
             try {
-                // 1. Inicializa o mapa Leaflet
                 map = L.map(mapDiv).setView(center, 12);
 
-                // 2. Adiciona o mapa-base (tile layer) do Geoapify
-                // Usando o estilo "dark-matter" que combina com seu app
                 L.tileLayer(`https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`, {
                     attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a>'
                 }).addTo(map);
 
                 console.log('Mapa Leaflet inicializado, buscando endereços dos usuários...');
 
-                // 3. Busca e geocodifica os endereços (usando a *nova* função geocodeAddress)
                 const geocodePromises = state.users
                     .filter(user => user.address && user.address.trim() !== '')
                     .map(user => {
                         return geocodeAddress(user.address)
                             .then(coords => {
-                                // geocodeAddress retorna {lat, lon}
                                 return coords;
                             })
                             .catch(e => {
@@ -3070,25 +2802,22 @@ Gerenciar Motoristas
 
                 const results = await Promise.all(geocodePromises);
                 
-                // 4. Formata os dados para o Leaflet.heat ([lat, lng])
                 const locationsData = results
-                    .filter(coords => coords) // Filtra os nulos
-                    .map(coords => [coords.lat, coords.lon]); // Formato [lat, lon]
+                    .filter(coords => coords)
+                    .map(coords => [coords.lat, coords.lon]);
 
                 console.log(`Total de coordenadas válidas: ${locationsData.length}`);
 
-                // 5. Adiciona a camada de heatmap
                 if (locationsData.length > 0) {
-                    if (heatmap) heatmap.remove(); // Remove heatmap anterior
+                    if (heatmap) heatmap.remove();
                     
                     heatmap = L.heatLayer(locationsData, {
                         radius: 40,
                         blur: 20,
                         maxZoom: 18,
-                        gradient: {0.4: 'blue', 0.65: 'lime', 1: 'red'} // Gradiente padrão
+                        gradient: {0.4: 'blue', 0.65: 'lime', 1: 'red'}
                     }).addTo(map);
                     
-                    // Ajusta o zoom para incluir todos os pontos
                     const bounds = L.latLngBounds(locationsData);
                     map.fitBounds(bounds);
                 } else {
@@ -3101,17 +2830,11 @@ Gerenciar Motoristas
             }
         }
 
-        // Chama loadAppIcon no final para garantir que o ícone padrão seja carregado se não houver um salvo
         document.addEventListener('DOMContentLoaded', () => {
-             loadAppIcon();
-             // Chama o initApp() DEPOIS que o DOM estiver carregado
-             initApp();
+            loadAppIcon();
+            initApp();
         });
 
     </script>
-   
-   <style>
-    /* Estilo do heatmap já foi movido para o <style> principal no <head> */
-   </style>
 </body>
 </html>
