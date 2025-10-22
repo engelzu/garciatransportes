@@ -192,6 +192,7 @@
                         <div class="autocomplete-container">
                              <input type="text" id="new-user-address" placeholder="Endereço" class="w-full p-2 rounded-lg"
                                     oninput="handleAddressInput(event, 'new-user-addressList')">
+                             <input type="hidden" id="new-user-address-validated">
                              <div class="autocomplete-list" id="new-user-addressList"></div>
                         </div>
                         
@@ -266,8 +267,21 @@
         // NOVAS FUNÇÕES (do mapa.html) - LÓGICA DE AUTOCOMPLETE MANUAL
         // ========================================================================
         
-        // Função para lidar com a digitação e aplicar debounce
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - handleAddressInput
+        // ========================================================================
         function handleAddressInput(event, listId) {
+            // --- MODIFICAÇÃO ---
+            // Se o input for o 'new-user-address' (tela de Gerenciar Usuários),
+            // limpa o valor validado. Isso força o usuário a *selecionar* da lista.
+            if (event.target.id === 'new-user-address') {
+                const hiddenInput = document.getElementById('new-user-address-validated');
+                if (hiddenInput) {
+                    hiddenInput.value = ''; // Limpa o valor validado
+                }
+            }
+            // --- FIM MODIFICAÇÃO ---
+
             clearTimeout(debounceTimer);
             const query = event.target.value;
             debounceTimer = setTimeout(() => {
@@ -331,14 +345,29 @@
             list.classList.add('show');
         }
 
-        // Função 'selectAddress' ADAPTADA para o admin
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - selectAddress
+        // ========================================================================
         function selectAddress(feature, listId) {
             const inputId = listId.replace('List', ''); // Ex: 'address-input-0List' -> 'address-input-0'
             const input = document.getElementById(inputId);
+            const formattedAddress = feature.properties.formatted; // Endereço formatado
             
             if (input) {
-                input.value = feature.properties.formatted; // Apenas preenche o input
+                input.value = formattedAddress; // Apenas preenche o input
             }
+
+            // --- MODIFICAÇÃO ---
+            // Se for o input de 'new-user-address' (Gerenciar Usuários), 
+            // salva o valor validado no input oculto.
+            if (inputId === 'new-user-address') {
+                const hiddenInput = document.getElementById('new-user-address-validated');
+                if (hiddenInput) {
+                    hiddenInput.value = formattedAddress; // Salva o valor exato no input escondido
+                }
+            }
+            // --- FIM MODIFICAÇÃO ---
+
             hideList(listId); // Esconde a lista
         }
 
@@ -617,23 +646,50 @@
         }
 
 
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - handleCollaboratorSelection
+        // ========================================================================
         function handleCollaboratorSelection(event) {
             const selectedUserId = event.target.value;
             const index = event.target.dataset.index; // Pega o índice do input (0, 1, 2...)
             const addressInput = document.getElementById(`address-input-${index}`);
 
+            let selectedUserAddress = ''; // Guarda o endereço para reuso
+
             if (selectedUserId) {
                 const selectedUser = state.allUsers.find(user => user.id == selectedUserId);
                 // Preenche o endereço se o usuário tiver um cadastrado
-                addressInput.value = (selectedUser && selectedUser.address) ? selectedUser.address : '';
+                selectedUserAddress = (selectedUser && selectedUser.address) ? selectedUser.address : '';
+                addressInput.value = selectedUserAddress; 
+                
                 // Opcional: Avisar o admin que o endereço foi preenchido
                 // if (addressInput.value) {
                 //     alert(`Endereço de ${selectedUser.name} preenchido. Confirme ou edite.`);
                 // }
             } else {
                 addressInput.value = ''; // Limpa se desmarcar o colaborador
+                selectedUserAddress = ''; // Garante que está vazio para a lógica abaixo
             }
+
+            // --- INÍCIO DA MODIFICAÇÃO SOLICITADA ---
+            // Verifica se este é o último passageiro
+            const totalPassengers = parseInt(document.getElementById('passenger-quantity-select').value, 10);
+            const lastPassengerIndex = totalPassengers - 1;
+
+            // Se o índice do seletor que mudou for igual ao índice do último passageiro...
+            if (parseInt(index, 10) === lastPassengerIndex) {
+                const destinationInput = document.getElementById('address-input-destination');
+                if (destinationInput) {
+                    // ...atualiza o campo de destino final com o endereço deste passageiro.
+                    destinationInput.value = selectedUserAddress; 
+                }
+            }
+            // --- FIM DA MODIFICAÇÃO SOLICITADA ---
         }
+        // ========================================================================
+        // FIM DA MODIFICAÇÃO
+        // ========================================================================
+
 
         // --- Funções openAdminScheduleModal, closeScheduleModal, confirmAdminSchedule --- (sem alterações)
          function openAdminScheduleModal() {
@@ -1408,6 +1464,9 @@
             `).join('');
         }
 
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - editUserById
+        // ========================================================================
         function editUserById(userId) {
             const user = companyUsersCache.find(u => u.id === userId);
             if (!user) return alert('Usuário não encontrado no cache.');
@@ -1417,6 +1476,10 @@
             document.getElementById('new-user-matricula').value = user.matricula || '';
             document.getElementById('new-user-name').value = user.name || '';
             document.getElementById('new-user-address').value = user.address || '';
+            // --- MODIFICAÇÃO ---
+            // Preenche o campo oculto com o endereço existente (confiando que é válido)
+            document.getElementById('new-user-address-validated').value = user.address || ''; 
+            // --- FIM MODIFICAÇÃO ---
             document.getElementById('new-user-phone').value = user.phone || '';
             document.getElementById('new-user-password').value = ''; // Limpa senha
             document.getElementById('new-user-password').placeholder = 'Nova Senha (deixe em branco para manter)';
@@ -1429,12 +1492,18 @@
              // A chamada initAutocomplete foi removida daqui
         }
 
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - cancelUserEdit
+        // ========================================================================
         function cancelUserEdit() {
             // Limpa o formulário
             document.getElementById('editing-user-id').value = '';
             document.getElementById('new-user-matricula').value = '';
             document.getElementById('new-user-name').value = '';
             document.getElementById('new-user-address').value = '';
+            // --- MODIFICAÇÃO ---
+            document.getElementById('new-user-address-validated').value = ''; // Limpa o campo oculto
+            // --- FIM MODIFICAÇÃO ---
             document.getElementById('new-user-phone').value = '';
             document.getElementById('new-user-password').value = '';
             document.getElementById('new-user-password').placeholder = 'Senha';
@@ -1447,11 +1516,28 @@
         }
 
 
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - addOrUpdateUser
+        // ========================================================================
         async function addOrUpdateUser() {
             const id = document.getElementById('editing-user-id').value;
             const matricula = document.getElementById('new-user-matricula').value.trim();
             const name = document.getElementById('new-user-name').value.trim();
-            const address = document.getElementById('new-user-address').value.trim();
+            
+            // --- MODIFICAÇÃO VALIDAÇÃO ---
+            const addressInput = document.getElementById('new-user-address');
+            const address = addressInput.value.trim();
+            const validatedAddressInput = document.getElementById('new-user-address-validated');
+            // Se o input oculto não existir por algum motivo, assume que o endereço é válido (fallback)
+            const validatedAddress = validatedAddressInput ? validatedAddressInput.value.trim() : address; 
+
+            // Se 'address' foi preenchido, ele *deve* ser igual ao 'validatedAddress'
+            // Se 'address' está vazio, a validação passa (endereço pode ser opcional)
+            if (address && address !== validatedAddress) {
+                return alert('Endereço inválido! Por favor, selecione um endereço da lista de sugestões. Se o endereço não for obrigatório, pode deixar o campo em branco.');
+            }
+            // --- FIM MODIFICAÇÃO VALIDAÇÃO ---
+
             const phone = document.getElementById('new-user-phone').value.trim();
             const password = document.getElementById('new-user-password').value.trim();
 
@@ -1466,7 +1552,7 @@
             let userData = {
                 matricula,
                 name,
-                address,
+                address, // Salva o valor do campo (que agora foi validado)
                 phone,
                 company: state.loggedInCompany.name // Associa à empresa logada
             };
@@ -1517,4 +1603,3 @@
 </body>
 
 </html>
-
