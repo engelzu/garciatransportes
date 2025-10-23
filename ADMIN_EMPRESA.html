@@ -26,8 +26,26 @@
         input:focus, select:focus, textarea:focus { border-color: #00ffff !important; ring: none !important; outline: none !important; box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.5) !important; } /* Foco ciano */
         #company-password-input { font-size: 14px; text-align: center; }
         #company-password-input::placeholder { text-align: center; }
-        #app-container { position: relative; }
-        #admin-access-icon:hover svg { stroke: #fff; }
+        
+        /* --- MODIFICAÇÃO: Layout tela cheia --- */
+        #app-container { 
+            position: relative;
+            width: 100%;
+            max-width: 100%; /* Remove a limitação de 'max-w-md' */
+            padding-left: 1rem; /* Adiciona padding lateral */
+            padding-right: 1rem; /* Adiciona padding lateral */
+            margin: 0 auto;
+        }
+        /* Ajusta o container do formulário de login para não ficar gigante */
+        #company-login-screen, #super-admin-login-screen {
+            max-width: 28rem; /* 448px (md) */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        /* Ajusta a tela de admin para não ficar colada nas bordas em telas menores */
+        #admin-screen {
+            max-width: 100%;
+        }
 
         /* ESTILO PARA O AUTOCOMPLETE (CUSTOMIZADO, IGUAL AO 'mapa.html') */
         .autocomplete-container { /* Container para posicionamento */
@@ -91,11 +109,44 @@
         .admin-sub-screen { display: none; }
         .admin-sub-screen.active { display: block; }
 
+        /* --- ESTILOS PARA A NOVA TABELA DE HISTÓRICO --- */
+        #history-table {
+            border-collapse: collapse; /* Garante que bordas fiquem limpas */
+            width: 100%;
+        }
+
+        #history-table th,
+        #history-table td {
+            border: 1px solid #4b5563; /* Borda cinza escura */
+            padding: 8px 12px;
+            text-align: left;
+            white-space: nowrap; /* Impede quebra de linha, exceto onde eu forçar */
+            font-size: 0.875rem; /* 14px */
+            color: white;
+        }
+
+        #history-table th {
+            background-color: #374151; /* Fundo cinza mais escuro para header */
+            color: #e5e7eb; /* Texto do header */
+        }
+
+        /* Permite quebra de linha na coluna de destinos e observação */
+        #history-table td:nth-child(8), /* Coluna Destinos */
+        #history-table td:nth-child(11) { /* Coluna Observação */
+            white-space: normal;
+            min-width: 250px; /* Largura mínima */
+        }
+        
+        #history-table tbody tr:hover {
+             background-color: #1f2937; /* Cor de hover na linha */
+        }
+
     </style>
 </head>
 <body class="main-gradient text-white min-h-screen flex items-start justify-center p-4 pt-8">
 
-    <div id="app-container" class="w-full max-w-md mx-auto">
+    <!-- MODIFICAÇÃO: 'max-w-md' removido daqui e aplicado css interno -->
+    <div id="app-container" class="mx-auto">
 
         <div id="company-login-screen" class="screen active">
             <div id="admin-access-icon" title="Acesso Super Admin" onclick="showSuperAdminLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem;">
@@ -140,7 +191,8 @@
 
             <div id="request-ride-screen" class="admin-sub-screen active">
                  <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
-                <div id="admin-request-form" class="card-gradient p-6 rounded-lg">
+                <!-- Ajuste para centralizar o formulário de solicitação -->
+                <div id="admin-request-form" class="card-gradient p-6 rounded-lg max-w-2xl mx-auto">
                     <div class="mb-4">
                         <label for="passenger-quantity-select" class="block mb-2 text-sm font-medium">SELECIONE A QUANTIDADE DE PASSAGEIROS</label>
                         <select id="passenger-quantity-select" class="w-full p-3 rounded-lg">
@@ -170,40 +222,117 @@
 
             <div id="approval-ride-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Aprovar Solicitações Pendentes</h2>
-                <div id="pending-rides-container" class="space-y-4">
+                <!-- Ajuste para centralizar e limitar a largura dos cards -->
+                <div id="pending-rides-container" class="space-y-4 max-w-2xl mx-auto">
                     </div>
             </div>
 
+            <!-- ====================================================== -->
+            <!-- INÍCIO: TELA DE HISTÓRICO MODIFICADA -->
+            <!-- ====================================================== -->
             <div id="history-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Histórico de Corridas</h2>
-                <div id="history-rides-container" class="space-y-4">
+                
+                <!-- INÍCIO: Seção de Filtros e Exportação -->
+                <div id="history-filters" class="card-gradient p-4 rounded-lg mb-4 space-y-3 max-w-4xl mx-auto">
+                    <!-- MODIFICAÇÃO: grid-cols-3 para adicionar o novo filtro -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label for="history-filter-start-date" class="block mb-1 text-xs font-medium">Data Inicial</label>
+                            <input type="date" id="history-filter-start-date" class="w-full p-2 rounded-lg" style="color-scheme: dark;">
+                        </div>
+                        <div>
+                            <label for="history-filter-end-date" class="block mb-1 text-xs font-medium">Data Final</label>
+                            <input type="date" id="history-filter-end-date" class="w-full p-2 rounded-lg" style="color-scheme: dark;">
+                        </div>
+                        <!-- NOVO FILTRO: Tipo -->
+                        <div>
+                            <label for="history-filter-type" class="block mb-1 text-xs font-medium">Tipo</label>
+                            <select id="history-filter-type" class="w-full p-2 rounded-lg">
+                                <option value="">-- Todos os Tipos --</option>
+                                <option value="immediate">Imediato</option>
+                                <option value="scheduled">Agendado</option>
+                            </select>
+                        </div>
                     </div>
+                    <div>
+                        <label for="history-filter-status" class="block mb-1 text-xs font-medium">Status</label>
+                        <select id="history-filter-status" class="w-full p-2 rounded-lg">
+                            <option value="">-- Todos os Status --</option>
+                            <!-- Status serão preenchidos via JS -->
+                        </select>
+                    </div>
+                    <div class="flex flex-wrap gap-2 justify-center">
+                        <button onclick="applyHistoryFilter()" class="flex-grow py-2 px-4 font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700">Filtrar</button>
+                        <button onclick="clearHistoryFilter()" class="flex-grow py-2 px-4 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">Limpar</button>
+                    </div>
+                    <button onclick="exportHistoryToExcel('history-table', 'historico_corridas')" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient mt-2">Exportar para Excel</button>
+                    
+                    <p id="history-filter-display" class="text-center text-xs text-gray-400 h-4"></p>
+                </div>
+                <!-- FIM: Seção de Filtros e Exportação -->
+
+                <!-- Container da Tabela com Scroll Horizontal -->
+                <div class="overflow-x-auto rounded-lg border border-gray-700">
+                    <table id="history-table" class="w-full min-w-[1200px]" style="display: none;"> <!-- Aumentei o min-width -->
+                        <thead class="bg-gray-800">
+                            <tr>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">ID</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Solicitante</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Solicitação</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Agendada</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Aceite</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Origem</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Destinos</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Passag.</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motorista</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Observação</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Admin Solicitante</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Tipo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="bg-gray-900 divide-y divide-gray-700">
+                            <!-- Linhas serão preenchidas via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Container de fallback para quando não há dados -->
+                <div id="history-rides-container">
+                    <!-- Esta div será usada para mensagens de 'carregando' ou 'nenhum resultado' -->
+                </div>
             </div>
+            <!-- ====================================================== -->
+            <!-- FIM: TELA DE HISTÓRICO MODIFICADA -->
+            <!-- ====================================================== -->
 
             <div id="user-management-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Gerenciar Usuários</h2>
-                <div class="card-gradient p-4 rounded-lg mb-6">
-                    <h3 id="user-form-title" class="text-lg font-semibold mb-2">Adicionar Usuário</h3>
-                    <input type="hidden" id="editing-user-id">
-                    <div class="space-y-2">
-                        <input type="text" id="new-user-matricula" placeholder="Matrícula" class="w-full p-2 rounded-lg">
-                        <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-2 rounded-lg">
-                        
-                        <div class="autocomplete-container">
-                             <input type="text" id="new-user-address" placeholder="Endereço" class="w-full p-2 rounded-lg"
-                                    oninput="handleAddressInput(event, 'new-user-addressList')">
-                             <input type="hidden" id="new-user-address-validated">
-                             <div class="autocomplete-list" id="new-user-addressList"></div>
+                <!-- Ajuste para centralizar o gerenciamento de usuários -->
+                <div class="max-w-2xl mx-auto">
+                    <div class="card-gradient p-4 rounded-lg mb-6">
+                        <h3 id="user-form-title" class="text-lg font-semibold mb-2">Adicionar Usuário</h3>
+                        <input type="hidden" id="editing-user-id">
+                        <div class="space-y-2">
+                            <input type="text" id="new-user-matricula" placeholder="Matrícula" class="w-full p-2 rounded-lg">
+                            <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-2 rounded-lg">
+                            
+                            <div class="autocomplete-container">
+                                <input type="text" id="new-user-address" placeholder="Endereço" class="w-full p-2 rounded-lg"
+                                        oninput="handleAddressInput(event, 'new-user-addressList')">
+                                <input type="hidden" id="new-user-address-validated">
+                                <div class="autocomplete-list" id="new-user-addressList"></div>
+                            </div>
+                            
+                            <input type="tel" id="new-user-phone" placeholder="Telefone" class="w-full p-2 rounded-lg">
+                            <input type="text" id="new-user-password" placeholder="Senha" class="w-full p-2 rounded-lg">
                         </div>
-                        
-                        <input type="tel" id="new-user-phone" placeholder="Telefone" class="w-full p-2 rounded-lg">
-                        <input type="text" id="new-user-password" placeholder="Senha" class="w-full p-2 rounded-lg">
+                        <button onclick="addOrUpdateUser()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
+                        <button id="cancel-user-edit-btn" onclick="cancelUserEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
                     </div>
-                    <button onclick="addOrUpdateUser()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
-                    <button id="cancel-user-edit-btn" onclick="cancelUserEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                    <div id="user-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                        </div>
                 </div>
-                <div id="user-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                    </div>
             </div>
         </div>
 
@@ -212,17 +341,20 @@
                 <h2 class="text-2xl font-bold">Gerenciar Empresas</h2>
                 <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
             </div>
-            <div class="card-gradient p-4 rounded-lg mb-6">
-                <h3 id="company-form-title" class="text-lg font-semibold mb-2">Adicionar Empresa</h3>
-                <input type="hidden" id="editing-company-id">
-                <div class="flex gap-2 mb-2">
-                    <input type="text" id="new-company-name" placeholder="Nome da Empresa" class="w-full p-2 rounded-lg">
+            <!-- Ajuste para centralizar o gerenciamento de empresas -->
+            <div class="max-w-2xl mx-auto">
+                <div class="card-gradient p-4 rounded-lg mb-6">
+                    <h3 id="company-form-title" class="text-lg font-semibold mb-2">Adicionar Empresa</h3>
+                    <input type="hidden" id="editing-company-id">
+                    <div class="flex gap-2 mb-2">
+                        <input type="text" id="new-company-name" placeholder="Nome da Empresa" class="w-full p-2 rounded-lg">
+                    </div>
+                    <button onclick="addOrUpdateCompany()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar</button>
+                    <button id="cancel-edit-btn" onclick="cancelEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
                 </div>
-                <button onclick="addOrUpdateCompany()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar</button>
-                <button id="cancel-edit-btn" onclick="cancelEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                <div id="company-list-container" class="space-y-3">
+                    </div>
             </div>
-            <div id="company-list-container" class="space-y-3">
-                </div>
         </div>
 
         <div id="admin-management-screen" class="screen">
@@ -302,9 +434,15 @@
 
             try {
                 // Usa a chave API já definida
+                // ========================================================================
+                // CORREÇÃO DO ERRO
+                // ========================================================================
                 const response = await fetch(
                     `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&lang=pt&limit=5&apiKey=${GEOAPIFY_API_KEY}`
                 );
+                // ========================================================================
+                // FIM DA CORREÇÃO
+                // ========================================================================
                 
                 const data = await response.json();
                 
@@ -966,12 +1104,43 @@
         }
 
 
+        // ========================================================================
+        // INÍCIO: SEÇÃO DE HISTÓRICO MODIFICADA
+        // ========================================================================
+
+        // ========================================================================
+        // VARIÁVEIS GLOBAIS PARA HISTÓRICO
+        // ========================================================================
+        let allHistoryRidesCache = [];
+        // Mapeamento de status para texto e cor (agora global no script)
+        const statusMap = {
+            'approved': { text: 'Aprovada', color: 'text-teal-400' },
+            'rejected': { text: 'Rejeitada', color: 'text-red-500' },
+            'scheduled': { text: 'Agendada', color: 'text-orange-400' },
+            'requested': { text: 'Solicitada', color: 'text-blue-400' },
+            'assigned': { text: 'Designada', color: 'text-yellow-400' },
+            'accepted': { text: 'Aceita', color: 'text-lime-400' },
+            'arrived_pickup': { text: 'No Embarque', color: 'text-fuchsia-400' },
+            'in_progress': { text: 'Em Andamento', color: 'text-purple-400' },
+            'completed': { text: 'Concluída', color: 'text-green-500' },
+            'canceled': { text: 'Cancelada (Usuário/Admin)', color: 'text-gray-500' },
+            'canceled_by_driver': { text: 'Cancelada (Motorista)', color: 'text-pink-500' }
+        };
+
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - loadHistoryRides
+        // ========================================================================
         async function loadHistoryRides() {
-            const container = document.getElementById('history-rides-container');
-            container.innerHTML = '<p class="text-center">Carregando histórico...</p>';
+            const container = document.getElementById('history-rides-container'); // Usado para mensagens
+            const tableBody = document.getElementById('history-table-body');
+            const tableElement = document.getElementById('history-table');
+            
+            container.innerHTML = '<p class="text-center mt-4">Carregando histórico...</p>';
+            if (tableBody) tableBody.innerHTML = ''; // Limpa a tabela
+            if (tableElement) tableElement.style.display = 'none'; // Esconde a tabela enquanto carrega
 
             if (!state.loggedInCompany || !state.loggedInCompany.name) {
-                 container.innerHTML = '<p class="text-center text-red-500">Erro: Empresa não identificada.</p>';
+                 container.innerHTML = '<p class="text-center text-red-500 mt-4">Erro: Empresa não identificada.</p>';
                  return;
             }
 
@@ -984,61 +1153,252 @@
                 .order('requestTime', { ascending: false }); // Mais recentes primeiro
 
             if (error) {
-                container.innerHTML = '<p class="text-center text-red-500">Erro ao carregar o histórico.</p>';
+                container.innerHTML = '<p class="text-center text-red-500 mt-4">Erro ao carregar o histórico.</p>';
                 console.error("Erro ao buscar histórico de corridas:", error);
+                allHistoryRidesCache = []; // Limpa o cache em caso de erro
                 return;
             }
 
             if (!rides || rides.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400">Nenhum registro de corrida encontrado.</p>';
+                container.innerHTML = '<p class="text-center text-gray-400 mt-4">Nenhum registro de corrida encontrado.</p>';
+                allHistoryRidesCache = []; // Limpa o cache
+                if (tableElement) tableElement.style.display = 'none';
                 return;
             }
 
-            // Mapeamento de status para texto e cor (igual ao anterior)
-            const statusMap = {
-                'approved': { text: 'Aprovada', color: 'text-teal-400' },
-                'rejected': { text: 'Rejeitada', color: 'text-red-500' },
-                'scheduled': { text: 'Agendada', color: 'text-orange-400' },
-                'requested': { text: 'Solicitada', color: 'text-blue-400' },
-                'assigned': { text: 'Designada', color: 'text-yellow-400' },
-                'accepted': { text: 'Aceita', color: 'text-lime-400' },
-                'arrived_pickup': { text: 'No Embarque', color: 'text-fuchsia-400' },
-                'in_progress': { text: 'Em Andamento', color: 'text-purple-400' },
-                'completed': { text: 'Concluída', color: 'text-green-500' },
-                'canceled': { text: 'Cancelada (Usuário/Admin)', color: 'text-gray-500' },
-                'canceled_by_driver': { text: 'Cancelada (Motorista)', color: 'text-pink-500' }
-            };
+            allHistoryRidesCache = rides; // Salva os dados no cache
 
+            // Popula o filtro de status
+            populateStatusFilter();
 
-            container.innerHTML = rides.map(ride => {
-                const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
-                const scheduledDate = ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : null;
-                const statusInfo = statusMap[ride.status] || { text: ride.status.toUpperCase(), color: 'text-gray-300' };
-                const destinations = parseDestinations(ride.destination); // Usa a função parse
-
-                 let destinationsHtml = destinations.map(destObj => `<p><strong>${destObj.name || 'Destino'}:</strong> ${destObj.address || 'N/A'}</p>`).join('');
-
-                return `
-                    <div class="card-gradient p-4 rounded-lg border border-gray-700 mb-3"> <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <p class="font-bold text-lg">${ride.userName}</p>
-                                <p class="text-xs text-gray-400">Solicitado em: ${requestDate}</p>
-                                ${scheduledDate ? `<p class="text-xs text-orange-400 font-semibold">Agendado para: ${scheduledDate}</p>` : ''}
-                            </div>
-                            <span class="font-bold text-right ${statusInfo.color}">${statusInfo.text}</span>
-                        </div>
-                        <div class="text-sm space-y-1 border-t border-gray-700 pt-2 mt-2">
-                            <p><strong>Origem:</strong> ${ride.origin_address || 'N/A'}</p>
-                            ${destinationsHtml || '<p>Destino: N/A</p>'}
-                            ${ride.observation ? `<p class="mt-2"><strong>Observação:</strong> ${ride.observation}</p>` : ''}
-                            <p class="text-xs text-gray-500 mt-1">Passageiros: ${ride.passenger_count || 1}</p>
-                            ${ride.driverName ? `<p class="text-xs text-gray-400 mt-1">Motorista: ${ride.driverName}</p>` : ''}
-                             ${ride.requested_by_admin_name ? `<p class="text-xs text-gray-500">Solicitado por Admin: ${ride.requested_by_admin_name}</p>` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            // Renderiza a tabela com todos os dados
+            renderHistoryTable();
+            
+            // Limpa a mensagem de 'carregando' e mostra a tabela
+            container.innerHTML = '';
+            if (tableElement) tableElement.style.display = 'table'; // Mostra a tabela
         }
+
+        // ========================================================================
+        // NOVAS FUNÇÕES - LÓGICA DE FILTRO E RENDERIZAÇÃO DA TABELA
+        // ========================================================================
+
+        function formatDateTime(isoString) {
+            if (!isoString) return 'N/A';
+            try {
+                return new Date(isoString).toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return 'Data Inválida';
+            }
+        }
+
+        function populateStatusFilter() {
+            const statusFilter = document.getElementById('history-filter-status');
+            if (!statusFilter) return;
+
+            // Salva a opção "Todos"
+            const firstOption = statusFilter.options[0];
+            statusFilter.innerHTML = '';
+            statusFilter.appendChild(firstOption);
+
+            // Pega status únicos do cache
+            const uniqueStatuses = [...new Set(allHistoryRidesCache.map(ride => ride.status))];
+
+            uniqueStatuses.sort().forEach(statusKey => {
+                const statusInfo = statusMap[statusKey] || { text: statusKey.toUpperCase() };
+                const option = document.createElement('option');
+                option.value = statusKey;
+                option.textContent = statusInfo.text;
+                statusFilter.appendChild(option);
+            });
+        }
+
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - applyHistoryFilter (Adicionado 'type')
+        // ========================================================================
+        function applyHistoryFilter() {
+            const startDate = document.getElementById('history-filter-start-date').value;
+            const endDate = document.getElementById('history-filter-end-date').value;
+            const status = document.getElementById('history-filter-status').value;
+            const type = document.getElementById('history-filter-type').value; // NOVO
+            
+            renderHistoryTable({ startDate, endDate, status, type }); // NOVO
+        }
+
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - clearHistoryFilter (Adicionado 'type')
+        // ========================================================================
+        function clearHistoryFilter() {
+            document.getElementById('history-filter-start-date').value = '';
+            document.getElementById('history-filter-end-date').value = '';
+            document.getElementById('history-filter-status').value = '';
+            document.getElementById('history-filter-type').value = ''; // NOVO
+            
+            renderHistoryTable(); // Renderiza sem filtros
+            document.getElementById('history-filter-display').textContent = '';
+        }
+
+        // ========================================================================
+        // FUNÇÃO MODIFICADA - renderHistoryTable (Adicionado 'type')
+        // ========================================================================
+        function renderHistoryTable(filters = {}) {
+            const tableBody = document.getElementById('history-table-body');
+            const container = document.getElementById('history-rides-container'); // Para mensagens
+            const tableElement = document.getElementById('history-table');
+            const filterDisplay = document.getElementById('history-filter-display');
+            
+            if (!tableBody || !container || !tableElement || !filterDisplay) return; // Segurança
+
+            tableBody.innerHTML = ''; // Limpa a tabela
+
+            let filteredRides = [...allHistoryRidesCache];
+            let filterText = [];
+
+            // 1. Filtrar por Status
+            if (filters.status) {
+                filteredRides = filteredRides.filter(ride => ride.status === filters.status);
+                const statusText = statusMap[filters.status]?.text || filters.status;
+                filterText.push(`Status: ${statusText}`);
+            }
+
+            // 2. NOVO - Filtrar por Tipo
+            if (filters.type) {
+                filteredRides = filteredRides.filter(ride => ride.request_type === filters.type);
+                const typeText = filters.type === 'immediate' ? 'Imediato' : 'Agendado';
+                filterText.push(`Tipo: ${typeText}`);
+            }
+
+            // 3. Filtrar por Data Inicial (com base em 'requestTime')
+            if (filters.startDate) {
+                // Adiciona 'T00:00:00' para garantir que a comparação inclua o dia todo
+                try {
+                    const startDate = new Date(`${filters.startDate}T00:00:00`);
+                    if (!isNaN(startDate)) {
+                        filteredRides = filteredRides.filter(ride => new Date(ride.requestTime) >= startDate);
+                        filterText.push(`De: ${startDate.toLocaleDateString('pt-BR')}`);
+                    }
+                } catch(e) { console.warn("Data inicial inválida"); }
+            }
+
+            // 4. Filtrar por Data Final (com base em 'requestTime')
+            if (filters.endDate) {
+                // Adiciona 'T23:59:59' para garantir que a comparação inclua o dia todo
+                 try {
+                    const endDate = new Date(`${filters.endDate}T23:59:59`);
+                     if (!isNaN(endDate)) {
+                        filteredRides = filteredRides.filter(ride => new Date(ride.requestTime) <= endDate);
+                        filterText.push(`Até: ${endDate.toLocaleDateString('pt-BR')}`);
+                     }
+                 } catch(e) { console.warn("Data final inválida"); }
+            }
+
+            // Atualiza o display de filtros
+            if (filterText.length > 0) {
+                filterDisplay.textContent = `Filtros Ativos: ${filterText.join(', ')}`;
+            } else {
+                filterDisplay.textContent = 'Mostrando todos os resultados.';
+            }
+
+            // Verifica se sobraram resultados
+            if (filteredRides.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 mt-4">Nenhum registro encontrado para os filtros aplicados.</p>';
+                tableElement.style.display = 'none'; // Esconde a tabela
+                return;
+            }
+            
+            // Se havia mensagem de "nenhum resultado", limpa
+            container.innerHTML = '';
+            tableElement.style.display = 'table'; // Garante que a tabela está visível
+
+            // Renderiza as linhas da tabela
+            filteredRides.forEach(ride => {
+                const statusInfo = statusMap[ride.status] || { text: ride.status.toUpperCase(), color: 'text-gray-300' };
+                const destinations = parseDestinations(ride.destination);
+                
+                // Formata os múltiplos destinos para uma única célula
+                let destinationsHtml = destinations
+                    .map(destObj => `<strong>${destObj.name || 'Destino'}:</strong> ${destObj.address || 'N/A'}`)
+                    .join('<br>'); // Usa <br> para quebrar linha dentro da célula
+                
+                // NOVO: Formata o tipo
+                const typeText = ride.request_type === 'immediate' ? 'Imediato' : (ride.request_type === 'scheduled' ? 'Agendado' : (ride.request_type || 'N/A'));
+
+                const row = `
+                    <tr class="hover:bg-gray-800">
+                        <td class="p-3 text-sm">${ride.id}</td>
+                        <td class="p-3 text-sm font-medium ${statusInfo.color}">${statusInfo.text}</td>
+                        <td class="p-3 text-sm">${ride.userName || 'N/A'}</td>
+                        <td class="p-3 text-sm">${formatDateTime(ride.requestTime)}</td>
+                        <td class="p-3 text-sm">${formatDateTime(ride.scheduled_datetime)}</td>
+                        <td class="p-3 text-sm">${formatDateTime(ride.acceptTime)}</td>
+                        <td class="p-3 text-sm">${ride.origin_address || 'N/A'}</td>
+                        <td class="p-3 text-sm">${destinationsHtml || 'N/A'}</td>
+                        <td class="p-3 text-sm">${ride.passenger_count || 1}</td>
+                        <td class="p-3 text-sm">${ride.driverName || 'N/A'}</td>
+                        <td class="p-3 text-sm">${ride.observation || 'N/A'}</td>
+                        <td class="p-3 text-sm">${ride.requested_by_admin_name || 'N/A'}</td>
+                        <td class="p-3 text-sm">${typeText}</td> <!-- MODIFICADO -->
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // ========================================================================
+        // NOVA FUNÇÃO - EXPORTAR TABELA PARA EXCEL
+        // ========================================================================
+        function exportHistoryToExcel(tableID, filename = ''){
+            const table = document.getElementById(tableID);
+            if (!table) {
+                alert('Erro: Tabela não encontrada para exportação.');
+                return;
+            }
+            
+            // Clona a tabela para não modificar a original (ex: remover cores)
+            const tableClone = table.cloneNode(true);
+            
+            // (Opcional) Limpa classes de cor para melhor visualização no Excel
+            tableClone.querySelectorAll('td, th').forEach(cell => {
+                cell.className = ''; // Remove classes de cor
+                // Substitui <br> por algo que o Excel possa entender como quebra de linha se necessário
+                // ou apenas remove para manter em uma linha
+            });
+
+            // Converte o HTML da tabela
+            let tableHTML = tableClone.outerHTML
+                .replace(/<br\s*\/?>/gi, "; "); // Substitui <br> por ponto e vírgula e espaço
+
+            const dataType = 'application/vnd.ms-excel';
+            filename = filename ? filename + '.xls' : 'export_excel.xls';
+
+            // Cria o link de download
+            const downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            
+            if(navigator.msSaveOrOpenBlob){
+                const blob = new Blob(['\ufeff', tableHTML], { type: dataType });
+                navigator.msSaveOrOpenBlob( blob, filename);
+            } else {
+                // Cria o link para o arquivo
+                downloadLink.href = 'data:' + dataType + ', ' + '\ufeff' + encodeURIComponent(tableHTML); // \ufeff para BOM e encode
+                // Define o nome do arquivo
+                downloadLink.download = filename;
+                // Dispara o download
+                downloadLink.click();
+            }
+            document.body.removeChild(downloadLink);
+        }
+
+        // ========================================================================
+        // FIM: SEÇÃO DE HISTÓRICO MODIFICADA
+        // ========================================================================
+
 
          async function approveRide(rideId) {
             if (!confirm('Tem certeza que deseja APROVAR esta solicitação de corrida?')) return;
@@ -1310,22 +1670,25 @@
             }
 
             // Monta a estrutura da tela de gerenciamento de admins
+            // Ajuste para centralizar
             container.innerHTML = `
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">Admins: ${currentManagingCompany.name}</h2>
-                    <button onclick="showScreen('company-management-screen')" class="text-sm bg-gray-600 hover:bg-gray-700 p-2 rounded-lg">← Voltar</button>
-                </div>
-                <div class="card-gradient p-4 rounded-lg mb-6">
-                    <h3 id="admin-form-title" class="text-lg font-semibold mb-2">Adicionar Novo Admin</h3>
-                    <input type="hidden" id="editing-admin-id">
-                    <div class="space-y-2">
-                        <input type="text" id="new-admin-username" placeholder="Usuário" class="w-full p-2 rounded-lg">
-                        <input type="text" id="new-admin-password" placeholder="Senha" class="w-full p-2 rounded-lg">
+                <div class="max-w-2xl mx-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold">Admins: ${currentManagingCompany.name}</h2>
+                        <button onclick="showScreen('company-management-screen')" class="text-sm bg-gray-600 hover:bg-gray-700 p-2 rounded-lg">← Voltar</button>
                     </div>
-                    <button onclick="addOrUpdateCompanyAdmin()" class="w-full mt-3 py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar Admin</button>
-                    <button id="cancel-admin-edit-btn" onclick="cancelCompanyAdminEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                    <div class="card-gradient p-4 rounded-lg mb-6">
+                        <h3 id="admin-form-title" class="text-lg font-semibold mb-2">Adicionar Novo Admin</h3>
+                        <input type="hidden" id="editing-admin-id">
+                        <div class="space-y-2">
+                            <input type="text" id="new-admin-username" placeholder="Usuário" class="w-full p-2 rounded-lg">
+                            <input type="text" id="new-admin-password" placeholder="Senha" class="w-full p-2 rounded-lg">
+                        </div>
+                        <button onclick="addOrUpdateCompanyAdmin()" class="w-full mt-3 py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar Admin</button>
+                        <button id="cancel-admin-edit-btn" onclick="cancelCompanyAdminEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                    </div>
+                    <div id="admin-list-container" class="space-y-3">Carregando admins...</div>
                 </div>
-                <div id="admin-list-container" class="space-y-3">Carregando admins...</div>
             `;
 
             const adminListContainer = document.getElementById('admin-list-container');
@@ -1603,3 +1966,4 @@
 </body>
 
 </html>
+
