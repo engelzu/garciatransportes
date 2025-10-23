@@ -814,17 +814,41 @@
                 `;
             }
 
+            // ======================================================
+            // INÍCIO DA ALTERAÇÃO SOLICITADA
+            // ======================================================
             inputsHtml += `
                 <div class="border border-cyan-400 p-3 rounded-lg mt-4">
                     <p class="font-semibold text-md mb-2 text-cyan-400">Destino Final</p>
+                    
+                    <!-- INÍCIO: CAMPOS DE COLABORADOR ADICIONADOS -->
+                    <div class="mb-2">
+                        <label for="collaborator-select-destination" class="block mb-1 text-xs font-medium">Colaborador (Opcional)</label>
+                        <select id="collaborator-select-destination" data-index="destination" class="w-full p-2 rounded-lg collaborator-selector">
+                            <option value="">-- Selecione --</option>
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-1 mt-3">
+                        <label for="address-input-destination" class="block text-xs font-medium">Endereço de Destino</label>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="use-collab-address-destination" data-index="destination" class="use-collab-address-cb w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500">
+                            <label for="use-collab-address-destination" class="ml-2 text-xs font-medium text-gray-300" style="color: #e5e7eb !important;">USAR ENDEREÇO DO COLABORADOR</label>
+                        </div>
+                    </div>
+                    <!-- FIM: CAMPOS DE COLABORADOR ADICIONADOS -->
+
                     <div class="autocomplete-container">
-                        <label for="address-input-destination" class="block mb-1 text-xs font-medium">Endereço de Destino</label>
                         <input type="text" id="address-input-destination" class="w-full p-2 rounded-lg" placeholder="Digite o endereço de destino da viagem"
                                oninput="handleAddressInput(event, 'address-input-destinationList')">
                         <div class="autocomplete-list" id="address-input-destinationList"></div>
                     </div>
                 </div>
             `;
+            // ======================================================
+            // FIM DA ALTERAÇÃO SOLICITADA
+            // ======================================================
 
             // Adiciona o HTML ao container de uma vez
             container.innerHTML = inputsHtml;
@@ -855,7 +879,7 @@
         // ========================================================================
         function handleCollaboratorSelection(event) {
             const selectedUserId = event.target.value;
-            const index = event.target.dataset.index; // Pega o índice do input (0, 1, 2...)
+            const index = event.target.dataset.index; // Pega o índice do input (0, 1, 2... ou 'destination')
             const addressInput = document.getElementById(`address-input-${index}`);
             const checkbox = document.getElementById(`use-collab-address-${index}`); // Pega o checkbox
 
@@ -903,7 +927,7 @@
             // INÍCIO DA MODIFICAÇÃO SOLICITADA
             // ======================================================
             // Se o índice do seletor que mudou for igual ao índice do último passageiro...
-            if (parseInt(index, 10) === lastPassengerIndex) {
+            if (parseInt(index, 10) === lastPassengerIndex) { // parseInt('destination') vira NaN, o que é seguro aqui
                 const destinationInput = document.getElementById('address-input-destination');
                 if (destinationInput) {
                     // ...NÃO FAZ NADA. Deixa o campo em branco para o usuário.
@@ -2187,4 +2211,3 @@
 </body>
 
 </html>
-
