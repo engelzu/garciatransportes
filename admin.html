@@ -7,23 +7,32 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Carrega a biblioteca Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/resend@3.2.0/dist/index.global.js"></script>
+    
+    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
 
+    <!-- Leaflet (Mapa) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    
+    <!-- Ícones Phosphor -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
+            color: #1f2937; /* Cor de texto principal escura */
         }
         .font-mono {
             font-family: 'Roboto Mono', monospace;
         }
-        /* GRADIENTE DE FUNDO ALTERADO */
+        /* GRADIENTE DE FUNDO (Como no screenshot) */
         .main-gradient {
              background: linear-gradient(to bottom, #a0feff, #c3e6ff, #e6c3ff, #ffc3f2);
         }
@@ -33,17 +42,45 @@
         .button-gradient:hover {
             background: linear-gradient(to right, #4f46e5, #6d28d9);
         }
-        #admin-screen button:not([onclick^="logout"]), #admin-screen a {
-            background-color: #374151;
-            color: white;
-            border: 1px solid #4b5563;
-        }
-        #admin-screen button:not([onclick^="logout"]):hover, #admin-screen a:hover {
-            background-color: #4b5563;
-        }
+        
+        /* Botões de card escuros (Como no screenshot) */
         .card-gradient {
              background: linear-gradient(135deg, #1f2937, #374151);
+             color: white; /* Garante que o texto dentro seja branco */
         }
+        
+        /* Ajuste para ícones Phosphor (NOVO) */
+        [class*="ph-"] {
+            font-size: 1.1em;
+            line-height: 1;
+            vertical-align: -0.1em;
+            margin-right: 0.25em;
+        }
+        .icon-container {
+            width: 40px;
+            height: 40px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .icon-container [class*="ph-"] {
+            font-size: 1.5rem;
+            color: white;
+            vertical-align: 0;
+            margin-right: 0;
+        }
+        
+        /* Links de "Voltar" (NOVO) */
+        .back-link {
+             color: #1f2937;
+             font-weight: 500;
+        }
+        .back-link:hover {
+             color: #000000;
+        }
+
         .screen {
             display: none;
         }
@@ -184,29 +221,36 @@
             display: none;
         }
 
-        body {
-             color: #1f2937;
-        }
+        /* Ajustes de cor globais */
         h1, h2, h3, h4, label, button, a {
-            color: #1f2937;
+            color: #1f2937; /* Texto escuro por padrão */
         }
         button[onclick^="showScreen"], #admin-login-screen label, #user-login-screen label, #driver-selection-screen h2, #initial-screen h1, #initial-screen p {
              color: #1f2937;
         }
          #initial-screen button span, #initial-screen button svg {
-            color: white !important;
+            color: white !important; /* Texto dos botões iniciais branco */
         }
+         
+         /* Cor dos links "Voltar" */
          button.text-yellow-300 {
-             color: #4f46e5 !important;
+             color: #1f2937 !important; /* MUDADO de amarelo para escuro */
+             font-weight: 500;
          }
+         button.text-yellow-300:hover {
+             color: #000000 !important;
+         }
+
          #admin-login-error, #user-login-error {
              color: #dc2626;
          }
-         .card-gradient, .card-gradient p, .card-gradient h3, .card-gradient span, .card-gradient label,
+         
+         /* Texto dentro de cards escuros DEVE ser branco */
+         .card-gradient, .card-gradient p, .card-gradient h3, .card-gradient span, .card-gradient label, .card-gradient button, .card-gradient a,
          #admin-requests-list span, #admin-requests-list p, #admin-requests-list h4,
          #admin-ongoing-rides-table th, #admin-ongoing-rides-table td,
-         #driver-crud-list th, #driver-crud-list td,
-         #user-crud-list th, #user-crud-list td,
+         #driver-crud-list th, #driver-crud-list td, #driver-crud-list h3, #driver-crud-list p, #driver-crud-list button,
+         #user-crud-list th, #user-crud-list td, #user-crud-list h3, #user-crud-list p, #user-crud-list button,
          #driver-jobs-list p, #driver-jobs-list span,
          #user-ride-history th, #user-ride-history td,
          #driver-ride-history th, #driver-ride-history td,
@@ -214,12 +258,24 @@
          #modal p, #modal label, #modal button, #modal select option {
              color: white;
          }
+         /* Corrigir cor do texto dos botões Editar/Excluir DENTRO dos cards */
+         #driver-crud-list .bg-green-600, #user-crud-list .bg-green-600,
+         #driver-crud-list .bg-red-600, #user-crud-list .bg-red-600 {
+             color: white !important;
+         }
+         
          #modal input, #modal select {
              color: white;
          }
          #modal input::placeholder {
              color: #9ca3af;
          }
+         
+         /* Botões do painel admin (texto branco) */
+         #admin-screen .card-gradient span {
+             color: white;
+         }
+
          #admin-ongoing-rides-table .text-yellow-300, #admin-requests-list .text-yellow-300 {
               color: #facc15 !important;
          }
@@ -249,6 +305,7 @@
 
     <div id="app-container" class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
 
+        <!-- TELA INICIAL -->
         <div id="initial-screen" class="screen active text-center">
             <div class="flex justify-center items-center gap-4 mb-2">
                 <div id="app-icon-container" class="h-12 w-12"></div>
@@ -278,6 +335,7 @@
             </div>
         </div>
 
+        <!-- LOGIN ADMIN -->
         <div id="admin-login-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Login Administrador</h2>
@@ -291,6 +349,7 @@
             </div>
         </div>
 
+        <!-- LOGIN USUÁRIO -->
         <div id="user-login-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Login do Usuário</h2>
@@ -308,14 +367,17 @@
             </div>
         </div>
 
+        <!-- SELEÇÃO MOTORISTA -->
         <div id="driver-selection-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-1 text-center">Selecionar Motorista</h2>
             <p id="driver-selection-timestamp" class="text-center text-gray-700 text-sm mb-6"></p>
             <div id="driver-list-selection" class="space-y-3 max-w-md mx-auto">
-                </div>
+                <!-- Conteúdo gerado por JS -->
+            </div>
         </div>
 
+        <!-- TELA USUÁRIO -->
         <div id="user-screen" class="screen">
              <div class="max-w-md mx-auto">
                 <button onclick="logout()" class="mb-4 text-yellow-300">← Sair</button>
@@ -323,7 +385,7 @@
 
                 <div id="user-request-form" class="card-gradient p-4 rounded-lg mb-6">
                     <h3 class="font-semibold mb-2 text-xl">Solicitar uma Viagem</h3>
-                    <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-800 font-semibold"></p>
+                    <p id="available-drivers-count" class="text-center mb-4 text-lg text-green-400 font-semibold"></p>
 
                     <div class="mb-4 autocomplete-container">
                         <label for="origin" class="block mb-2 text-sm font-medium">Qual a sua origem?</label>
@@ -354,11 +416,14 @@
                         <div class="loader mx-auto"></div>
                     </div>
                     <div id="status-icon-en-route" class="hidden mx-auto mb-2">
-                        </div>
+                        <!-- Imagem 'aceitou.png' vai aqui via JS -->
+                    </div>
                     <div id="status-icon-arrived-pickup" class="hidden mx-auto mb-2">
-                        </div>
+                        <!-- Imagem 'final.png' vai aqui via JS -->
+                    </div>
                     <div id="status-icon-in-progress" class="hidden mx-auto mb-2">
-                        </div>
+                        <!-- Imagem 'destino.png' vai aqui via JS -->
+                    </div>
                     <p id="user-status-message" class="mt-4 text-lg"></p>
                     <button id="cancel-ride-btn" onclick="cancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white">CANCELAR SOLICITAÇÃO</button>
                 </div>
@@ -367,71 +432,63 @@
                         <h3 class="font-semibold text-xl">Minhas Solicitações</h3>
                         <button onclick="exportUserRidesToExcel()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white">Exportar</button>
                     </div>
-                    <div id="user-ride-history" class="overflow-x-auto"></div>
+                    <div id="user-ride-history" class="overflow-x-auto">
+                        <!-- Conteúdo gerado por JS -->
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- TELA ADMIN -->
         <div id="admin-screen" class="screen">
-             <img src="logogarcia.jpeg" alt="Logo Garcia Transportes" class="mx-auto mb-6 h-20 w-auto">
-             
-             <button onclick="logout()" class="mb-4 text-yellow-300">← Sair e Voltar à Tela Inicial</button>
-            <h2 class="text-3xl font-bold mb-6 text-center">Painel do Administrador</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    <span>Gerenciar Motoristas</span>
+             <button onclick="showScreen('initial-screen')" class="mb-4 back-link">← Sair</button>
+            <h2 class="text-3xl font-bold mb-2 text-center">Painel do Administrador</h2>
+            <p id="admin-timestamp" class="text-center text-gray-700 text-sm mb-8"></p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <button onclick="showScreen('admin-requests-screen')" class="w-full text-lg font-semibold rounded-lg shadow-lg flex flex-row items-center gap-4 p-5 card-gradient">
+                    <div class="icon-container bg-purple-500"><i class="ph-bold ph-file-text"></i></div>
+                    <span>Solicitações de Corrida</span>
                 </button>
-                <button onclick="showScreen('admin-user-crud-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span>Gerenciar Usuários</span>
+                <button onclick="showScreen('admin-driver-crud-screen')" class="w-full text-lg font-semibold rounded-lg shadow-lg flex flex-row items-center gap-4 p-5 card-gradient">
+                    <div class="icon-container bg-blue-500"><i class="ph-bold ph-steering-wheel"></i></div>
+                    <span>Cadastro de Motoristas</span>
                 </button>
-                <button onclick="showScreen('admin-requests-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <span>Solicitações</span>
+                <button onclick="showScreen('admin-user-crud-screen')" class="w-full text-lg font-semibold rounded-lg shadow-lg flex flex-row items-center gap-4 p-5 card-gradient">
+                    <div class="icon-container bg-pink-500"><i class="ph-bold ph-users"></i></div>
+                    <span>Cadastro de Usuários</span>
                 </button>
-                <button onclick="showScreen('admin-heatmap-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                    <span>Mapa de Calor</span>
+                <button onclick="showScreen('admin-heatmap-screen')" class="w-full text-lg font-semibold rounded-lg shadow-lg flex flex-row items-center gap-4 p-5 card-gradient">
+                    <div class="icon-container bg-green-500"><i class="ph-bold ph-map-pin"></i></div>
+                    <span>Mapa de Usuários</span>
                 </button>
-                <button onclick="showScreen('admin-customize-screen')" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Personalizar</span>
+                <button onclick="openRecordsTab()" class="w-full text-lg font-semibold rounded-lg shadow-lg flex flex-row items-center gap-4 p-5 card-gradient">
+                    <div class="icon-container bg-orange-500"><i class="ph-bold ph-archive"></i></div>
+                    <span>Todos os Registros</span>
                 </button>
-                <button onclick="openRecordsTab()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg flex flex-col items-center gap-2 card-gradient">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Registros</span>
+                <button onclick="showScreen('admin-customize-screen')" class="w-full text-lg font-semibold rounded-lg shadow-lg flex flex-row items-center gap-4 p-5 card-gradient">
+                    <div class="icon-container bg-gray-500"><i class="ph-bold ph-gear"></i></div>
+                    <span>Personalizar App</span>
                 </button>
-                <a href="https://dashboard-with-supabase.lumi.ing" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg text-center flex flex-col items-center gap-2 card-gradient">
+                <a href="https://dashboard-with-supabase.lumi.ing" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-6 text-lg font-semibold rounded-lg shadow-lg text-center flex flex-col items-center gap-2 card-gradient hidden">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>Dashboard</span>
                 </a>
             </div>
-</div>
+        </div>
 
+        <!-- TELA ADMIN CORRIDAS -->
         <div id="admin-requests-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="promptToGoBack()" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
-                <div class="w-32"></div> </div>
+                <div class="w-32"></div> <!-- Spacer -->
+            </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
                  <div class="card-gradient p-3 rounded-lg w-full" style="height: fit-content;">
-<h3 class="font-semibold mb-2 text-center">Status das Corridas</h3>
+                    <h3 class="font-semibold mb-2 text-center">Status das Corridas</h3>
                     <div class="flex justify-around text-center flex-wrap gap-2">
                         <div>
                             <p class="text-2xl font-bold text-orange-400" id="status-agendada-count">0</p>
@@ -456,52 +513,62 @@
                     </div>
                     <div class="mt-4 pt-4 border-t border-gray-600 text-center">
                         <div id="digital-clock" class="text-3xl font-mono text-cyan-300 mb-2">00:00:00</div>
-<button onclick="exportDailyReportNow()" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white">
+                        <button onclick="exportDailyReportNow()" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white">
                             EXPORTAR
                         </button>
-</div>
+                    </div>
                 </div>
                 <div class="card-gradient p-3 rounded-lg w-full lg:col-span-2" style="height: fit-content;">
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <div>
                             <h3 class="font-semibold text-2xl mb-4">Motoristas</h3>
-                    <div class="space-y-1 text-base">
-<p>Total: <span id="total-drivers-count" class="font-bold">0</span></p>
+                            <div class="space-y-1 text-base">
+                                <p>Total: <span id="total-drivers-count" class="font-bold">0</span></p>
                                 <p class="text-green-400">Ativos: <span id="active-drivers-count" class="font-bold">0</span></p>
                                 <p class="text-red-400">Inativos: <span id="inactive-drivers-count" class="font-bold">0</span></p>
                             </div>
                         </div>
                         <div class="flex flex-col items-center gap-4">
-                    <div class="w-32 h-32">
-<canvas id="driver-status-chart"></canvas>
+                            <div class="w-32 h-32">
+                                <canvas id="driver-status-chart"></canvas>
                             </div>
                             <button onclick="showScreen('admin-driver-crud-screen')" class="w-full py-2 px-3 text-sm font-semibold rounded-lg button-gradient text-white">
-Gerenciar Motoristas
+                                Gerenciar Motoristas
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
-<div class="lg:col-span-1">
+                <div class="lg:col-span-1">
                     <h3 class="text-2xl font-bold mb-4">Novas Solicitações</h3>
                     <div id="admin-requests-list" class="space-y-4">
-                        </div>
+                        <!-- Conteúdo gerado por JS -->
+                    </div>
                 </div>
 
                 <div class="lg:col-span-2">
                     <h3 class="text-2xl font-bold mb-4">Corridas em Andamento</h3>
                     <div id="admin-ongoing-rides-table" class="card-gradient p-4 rounded-lg overflow-x-auto">
-                        </div>
+                        <!-- Conteúdo gerado por JS -->
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- TELA CADASTRO MOTORISTAS -->
         <div id="admin-driver-crud-screen" class="screen">
-            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
-            <h2 class="text-3xl font-bold mb-6 text-center">Cadastro de Motoristas</h2>
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="showScreen('admin-screen')" class="back-link">← Voltar</button>
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold text-center text-black">Cadastro de Motoristas</h2>
+                    <p id="driver-count" class="text-gray-700 text-sm mt-1">0 motorista(s) cadastrado(s)</p>
+                </div>
+                <div class="w-24"></div> <!-- Spacer -->
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="card-gradient p-4 rounded-lg">
+                <div class="card-gradient p-4 rounded-lg h-fit">
                     <h3 class="font-semibold mb-2">Adicionar Novo Motorista</h3>
                     <input type="text" id="new-driver-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Nome Completo">
                     <input type="tel" id="new-driver-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Telefone">
@@ -511,19 +578,33 @@ Gerenciar Motoristas
                     <input type="password" id="new-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Senha">
                     <button onclick="addDriver()" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient text-white">Adicionar</button>
                 </div>
-                <div class="card-gradient p-4 rounded-lg md:col-span-2">
-                    <h3 class="font-semibold mb-4">Motoristas Cadastrados</h3>
-                    <div id="driver-crud-list" class="max-h-[60vh] overflow-y-auto"></div>
+                
+                <div class="card-gradient p-4 rounded-lg md:col-span-2 max-h-[80vh] overflow-y-auto">
+                    <h3 class="font-semibold mb-4 text-xl">Motoristas Cadastrados</h3>
+                    <div id="driver-crud-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <!-- Cards de motorista gerados por JS -->
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- TELA CADASTRO USUÁRIOS -->
         <div id="admin-user-crud-screen" class="screen">
-            <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
-            <h2 class="text-3xl font-bold mb-6 text-center">Cadastro de Usuários</h2>
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="showScreen('admin-screen')" class="back-link">← Voltar</button>
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold text-center text-black">Cadastro de Usuários</h2>
+                    <p class="text-gray-700 text-sm mt-1">
+                        <span id="user-count-display">0</span> usuário(s) cadastrado(s)
+                    </p>
+                </div>
+                <button onclick="exportUsersToExcel()" class="py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-sm text-white">
+                    Exportar Excel
+                </button>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="card-gradient p-4 rounded-lg">
+                <div class="card-gradient p-4 rounded-lg h-fit">
                     <h3 class="font-semibold mb-2">Adicionar Novo Usuário</h3>
                     <input type="text" id="new-user-id" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Matrícula">
                     <input type="text" id="new-user-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Nome Completo">
@@ -539,26 +620,25 @@ Gerenciar Motoristas
                     <button onclick="addUser()" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient text-white">Adicionar</button>
                 </div>
 
-                <div class="card-gradient p-4 rounded-lg md:col-span-2">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-semibold text-xl">
-                            Usuários Cadastrados (<span id="user-count">0</span>)
-                        </h3>
-                        <button onclick="exportUsersToExcel()" class="py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-sm text-white">
-                            Exportar Excel
-                        </button>
+                <div class="card-gradient p-4 rounded-lg md:col-span-2 max-h-[80vh] overflow-y-auto">
+                    <h3 class="font-semibold text-xl mb-4">
+                        Usuários Cadastrados
+                    </h3>
+                    <div id="user-crud-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <!-- Cards de usuário gerados por JS -->
                     </div>
-                    <div id="user-crud-list" class="max-h-[60vh] overflow-y-auto"></div>
                 </div>
             </div>
         </div>
 
+        <!-- TELA MAPA DE CALOR -->
         <div id="admin-heatmap-screen" class="screen">
             <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Mapa de Localização de Usuários</h2>
             <div id="heatmap-canvas"></div> 
         </div>
 
+        <!-- TELA PERSONALIZAR -->
         <div id="admin-customize-screen" class="screen">
             <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Personalizar App</h2>
@@ -569,6 +649,7 @@ Gerenciar Motoristas
             </div>
         </div>
 
+        <!-- TELA MOTORISTA -->
         <div id="driver-screen" class="screen">
             <div class="max-w-md mx-auto">
                 <button onclick="showScreen('driver-selection-screen')" class="mb-4 text-yellow-300">← Trocar Motorista</button>
@@ -597,6 +678,7 @@ Gerenciar Motoristas
             </div>
         </div>
 
+        <!-- TELA REGISTROS -->
         <div id="admin-records-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="showScreen('admin-screen')" class="text-yellow-300">← Voltar ao Painel</button>
@@ -629,6 +711,8 @@ Gerenciar Motoristas
                     <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
                         <tr>
                             <th scope="col" class="px-4 py-3">Data Solicitação</th>
+                            <th scope="col" class="px-4 py-3">Data Agendada</th> <!-- NOVO -->
+                            <th scope="col" class="px-4 py-3">Data Aceite</th>   <!-- NOVO -->
                             <th scope="col" class="px-4 py-3">Usuário</th>
                             <th scope="col" class="px-4 py-3">Empresa</th>
                             <th scope="col" class="px-4 py-3">Origem</th>
@@ -640,12 +724,14 @@ Gerenciar Motoristas
                         </tr>
                     </thead>
                     <tbody id="all-records-body">
-                        </tbody>
+                        <!-- Conteúdo gerado por JS -->
+                    </tbody>
                 </table>
             </div>
         </div>
         </div>
 
+    <!-- MODAL -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <p id="modal-message" class="mb-4 text-lg"></p>
@@ -677,221 +763,193 @@ Gerenciar Motoristas
     </div>
 
     <script>
-        const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38';
+        // <!-- Funções de renderização atualizadas -->
+        function showScreen(screenId) {
+            const body = document.body;
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            stopRingingAdmin();
 
-        async function getDrivingDistance(originAddress, destinationAddress) {
-            let originCoords, destCoords;
-            try {
-                originCoords = await geocodeAddress(originAddress);
-                if (!originCoords) throw new Error('Falha ao geocodificar origem');
-                
-                destCoords = await geocodeAddress(destinationAddress);
-                if (!destCoords) throw new Error('Falha ao geocodificar destino');
+            if(clockInterval) clearInterval(clockInterval);
 
-            } catch (error) {
-                console.error('Erro na geocodificação para cálculo de distância:', error);
-                return null;
-            }
-            
-            return await getDrivingDistanceByCoords(originCoords, destCoords);
-        }
-
-        async function getDrivingDistanceByCoords(originCoords, destCoords) {
-            if (!originCoords || typeof originCoords.lat === 'undefined' || typeof originCoords.lon === 'undefined' ||
-                !destCoords || typeof destCoords.lat === 'undefined' || typeof destCoords.lon === 'undefined') {
-                console.warn("getDrivingDistanceByCoords: Coordenadas inválidas.", originCoords, destCoords);
-                return null;
+            const container = document.getElementById('app-container');
+            const needsExtraPadding = ['admin-requests-screen', 'admin-driver-crud-screen', 'admin-user-crud-screen', 'admin-heatmap-screen', 'admin-records-screen', 'admin-screen']; // 'admin-screen' adicionado
+            if (needsExtraPadding.includes(screenId)) {
+                container.classList.add('pt-8');
+            } else {
+                container.classList.remove('pt-8');
             }
 
-            const waypoints = `${originCoords.lat},${originCoords.lon}|${destCoords.lat},${destCoords.lon}`;
-            const url = `https://api.geoapify.com/v1/routing?waypoints=${encodeURIComponent(waypoints)}&mode=drive&units=metric&apiKey=${GEOAPIFY_API_KEY}`;
-            
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.features && data.features.length > 0) {
-                    const distanceInMeters = data.features[0].properties.distance;
-                    return distanceInMeters / 1000;
-                } else {
-                    console.error('Erro na API de Roteamento Geoapify:', data);
-                    return null;
+            const fullHeightScreens = ['admin-requests-screen', 'admin-driver-crud-screen', 'admin-user-crud-screen', 'admin-heatmap-screen', 'admin-records-screen', 'admin-screen']; // 'admin-screen' adicionado
+            if (fullHeightScreens.includes(screenId)) {
+                body.classList.remove('items-center');
+                body.classList.add('justify-start');
+            } else {
+                if (!body.classList.contains('items-center')) {
+                    body.classList.add('items-center');
                 }
-            } catch (error) {
-                console.error('Erro ao buscar a distância (Geoapify):', error);
-                return null;
+                body.classList.remove('justify-start');
             }
-        }
 
-        function cleanAddressString(address) {
-            if (typeof address !== 'string') return '';
-            return address.replace(/^\["|"\]$/g, '').trim();
-        }
-
-        function formatDestination(destinationString) {
-            if (typeof destinationString !== 'string' || !destinationString.trim()) return '-';
-
-            let formattedAddress = '-';
-            const trimmedString = destinationString.trim();
-
-            if (trimmedString.startsWith('[{') && trimmedString.endsWith('}]')) {
-                try {
-                    const destinationsArray = JSON.parse(trimmedString);
-                    if (Array.isArray(destinationsArray)) {
-                        const addresses = destinationsArray
-                            .map(dest => dest.address || '')
-                            .filter(Boolean);
-                        if (addresses.length > 0) {
-                            formattedAddress = addresses.join(' - ');
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Could not parse complex destination JSON, falling back:", trimmedString, e);
-                    const regexAddresses = trimmedString.match(/"address":"(.*?)"/g);
-                    if (regexAddresses) {
-                        formattedAddress = regexAddresses.map(match => match.replace(/"address":"(.*)"/,'$1')).join(' - ');
-                    } else {
-                        formattedAddress = trimmedString.replace(/[\[\]\{\}"]/g, '').replace(/name:.*?,address:/g, '').replace(/,/g, ' - ').trim();
-                    }
+            // Atualizações específicas da tela
+            if (screenId === 'admin-screen') {
+                const timestampEl = document.getElementById('admin-timestamp');
+                if (timestampEl) {
+                    timestampEl.textContent = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 }
             }
-            else {
-                formattedAddress = trimmedString.replace(/^\["|"\]$/g, '').trim();
+            if (screenId === 'admin-requests-screen') {
+                loadAdminRequests();
+                renderOngoingRidesTable();
+                startDigitalClock('digital-clock');
             }
-
-            return formattedAddress || '-';
+            if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
+            if (screenId === 'admin-user-crud-screen') renderUserCrudList();
+            if (screenId === 'admin-heatmap-screen') initHeatmap();
+            if (screenId === 'driver-selection-screen') populateDriverSelection();
+            if (screenId === 'driver-screen') {
+                loadDriverJobs(); 
+                renderDriverRideHistory(); 
+            }
+            if (screenId === 'user-screen') {
+                checkUserRideStatus(); 
+                updateAvailableDriversCount(); 
+                renderUserRideHistory(); 
+            }
+            if (screenId === 'admin-records-screen') {
+                loadAllRecords(); 
+                document.getElementById('records-start-date').value = '';
+                document.getElementById('records-end-date').value = '';
+                document.getElementById('records-company-filter').value = '';
+            }
         }
-
-        async function geocodeAddress(address) {
-            if (!address || typeof address !== 'string' || address.trim().length < 3) {
-                console.warn(`Tentativa de geocodificar endereço inválido: ${address}`);
-                return Promise.reject("Endereço inválido");
-            }
+        function renderDriverCrudList() {
+            const listContainer = document.getElementById('driver-crud-list');
+            listContainer.innerHTML = '';
             
-            const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
-            
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.features && data.features.length > 0) {
-                    const coords = data.features[0].geometry.coordinates;
-                    return { lat: coords[1], lon: coords[0] };
-                } else {
-                    const newAddress = `${address}, Guaíba, RS`;
-                    const fallbackUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(newAddress)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
-                    
-                    const fallbackResponse = await fetch(fallbackUrl);
-                    const fallbackData = await fallbackResponse.json();
-
-                    if (fallbackData.features && fallbackData.features.length > 0) {
-                        const coords = fallbackData.features[0].geometry.coordinates;
-                        return { lat: coords[1], lon: coords[0] };
-                    } else {
-                        console.error(`A segunda geocodificação também falhou para: ${newAddress}`);
-                        throw new Error('ZERO_RESULTS');
-                    }
-                }
-            } catch (error) {
-                console.error(`Geocodificação falhou para: ${address}`, error);
-                throw error;
+            const countEl = document.getElementById('driver-count');
+            if (countEl) {
+                countEl.textContent = `${state.drivers.length} motorista(s) cadastrado(s)`;
             }
-        }
 
-        let debounceTimer;
-
-        function handleAddressInput(event, listId) {
-            clearTimeout(debounceTimer);
-            const query = event.target.value;
-            debounceTimer = setTimeout(() => {
-                searchAddress(query, listId);
-            }, 300);
-        }
-
-        async function searchAddress(query, listId) {
-            if (query.length < 3) {
-                hideList(listId);
+            if (state.drivers.length === 0) {
+                listContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum motorista cadastrado.</p>';
                 return;
             }
 
-            const list = document.getElementById(listId);
-            if (!list) return;
-            
-            const inputId = listId.replace('List', '');
-            const input = document.getElementById(inputId);
-            if (input) {
-                input.removeAttribute('data-address-valid');
-            }
-            
-            list.innerHTML = '<div class="loading">Buscando...</div>';
-            list.classList.add('show');
-
-            try {
-                const response = await fetch(
-                    `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&lang=pt&limit=5&apiKey=${GEOAPIFY_API_KEY}`
-                );
+            state.drivers.forEach(driver => {
+                const card = document.createElement('div');
+                card.className = 'card-gradient p-4 rounded-lg shadow-lg text-white';
                 
-                const data = await response.json();
-                
-                if (data.features && data.features.length > 0) {
-                    displayResults(data.features, listId);
-                } else {
-                    list.innerHTML = '<div class="no-results">Nenhum resultado encontrado</div>';
-                }
-            } catch (error) {
-                console.error('Erro ao buscar endereços:', error);
-                list.innerHTML = '<div class="no-results">Erro ao buscar endereços</div>';
-            }
-        }
-
-        function displayResults(features, listId) {
-            const list = document.getElementById(listId);
-            if (!list) return;
-            list.innerHTML = '';
-
-            features.forEach(feature => {
-                const item = document.createElement('div');
-                item.className = 'autocomplete-item';
-                
-                const formatted = feature.properties.formatted;
-                const city = feature.properties.city || '';
-                const state = feature.properties.state || '';
-                
-                item.innerHTML = `
-                    <strong>${formatted}</strong>
-                    ${city || state ? `<br><small style="color: #999;">${city}${city && state ? ', ' : ''}${state}</small>` : ''}
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-xl">${driver.name}</h3>
+                        <span class="text-xs font-semibold py-1 px-3 rounded-full ${driver.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}">
+                            ${driver.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </span>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-300">
+                        <p><i class="ph ph-phone"></i> ${driver.phone}</p>
+                        <p><i class="ph ph-car"></i> ${driver.plate}</p>
+                        <p><i class="ph ph-lightning"></i> ${driver.car_model || 'N/A'}</p>
+                        <p><i class="ph ph-paint-brush"></i> ${driver.car_color || 'N/A'}</p>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="editDriver(${driver.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700"> <!-- COR VERDE -->
+                            <i class="ph ph-pencil-simple"></i> Editar
+                        </button>
+                        <button onclick="promptDeleteDriver(${driver.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700">
+                            <i class="ph ph-trash-simple"></i> Excluir
+                        </button>
+                    </div>
                 `;
-                
-                item.onclick = () => selectAddress(feature, listId);
-                list.appendChild(item);
+                listContainer.appendChild(card);
             });
+        }
+        function renderUserCrudList() {
+            const listContainer = document.getElementById('user-crud-list');
+            listContainer.innerHTML = ''; 
 
-            list.classList.add('show');
+            const userCountEl = document.getElementById('user-count-display');
+            if (userCountEl) {
+                userCountEl.textContent = state.users.length;
+            }
+
+            if (state.users.length === 0) {
+                listContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum usuário cadastrado.</p>';
+                return;
+            }
+
+            state.users.forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'card-gradient p-4 rounded-lg shadow-lg text-white';
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-xl">${user.name}</h3>
+                        <span class="text-xs font-semibold py-1 px-3 rounded-full bg-purple-600">
+                            ${user.matricula || 'N/A'}
+                        </span>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-300">
+                        <p><i class="ph ph-building"></i> ${user.company || 'N/A'}</p>
+                        <p><i class="ph ph-phone"></i> ${user.phone}</p>
+                        <p><i class="ph ph-map-pin"></i> ${user.address || 'N/A'}</p>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="editUser(${user.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700"> <!-- COR VERDE -->
+                            <i class="ph ph-pencil-simple"></i> Editar
+                        </button>
+                        <button onclick="deleteUser(${user.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700">
+                            <i class="ph ph-trash-simple"></i> Excluir
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+        // <!-- Fim das funções de renderização -->
+
+        const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38';
+        
+        // --- CORREÇÃO: Mover a definição de loadAppIcon e uploadAppIcon para antes do DOMContentLoaded ---
+        function loadAppIcon() {
+            const iconContainer = document.getElementById('app-icon-container');
+            if (!iconContainer) return; // Adiciona verificação
+            iconContainer.innerHTML = ''; 
+            if (state.appIcon) {
+                const img = document.createElement('img');
+                img.src = state.appIcon; img.className = 'h-12 w-12 object-contain';
+                iconContainer.appendChild(img);
+            } else {
+                // Se não houver ícone customizado, mostra um ícone padrão (pode ajustar o SVG se quiser)
+                const defaultIconContainer = document.getElementById('app-icon-container');
+                if (defaultIconContainer.innerHTML === '') { // Evita adicionar múltiplas vezes
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('class', 'h-12 w-12 text-black'); // Ícone preto
+                    svg.setAttribute('fill', 'currentColor');
+                    svg.setAttribute('viewBox', '0 0 20 20');
+                    svg.innerHTML = `<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />`; // Ícone de usuário simples
+                    defaultIconContainer.appendChild(svg);
+                }
+            }
         }
 
-        function selectAddress(feature, listId) {
-            const inputId = listId.replace('List', '');
-            const input = document.getElementById(inputId);
-            
-            if (input) {
-                input.value = feature.properties.formatted;
-                input.setAttribute('data-address-valid', 'true');
-            }
-            hideList(listId);
+        function uploadAppIcon() {
+            const fileInput = document.getElementById('icon-file-input');
+            const file = fileInput.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                state.appIcon = event.target.result;
+                localStorage.setItem('appIcon', state.appIcon);
+                loadAppIcon(); 
+                showModal('Ícone atualizado com sucesso!');
+            };
+            reader.readAsDataURL(file);
         }
+        // --- FIM DA CORREÇÃO ---
 
-        function hideList(listId) {
-            const list = document.getElementById(listId);
-            if (list) {
-                list.classList.remove('show');
-            }
-        }
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.autocomplete-container')) {
-                document.querySelectorAll('.autocomplete-list').forEach(list => list.classList.remove('show'));
-            }
-        });
 
         let driverWatchId = null; 
         let map;
@@ -917,8 +975,11 @@ Gerenciar Motoristas
 
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Define supabaseClient globalmente, mas será inicializado depois
+        let supabaseClient; 
 
+        // --- INÍCIO DAS FUNÇÕES RESTAURADAS ---
         const adminRingtone = document.getElementById('admin-ringtone');
         let adminRingInterval = null;
         let adminAudioUnlocked = false;
@@ -1122,59 +1183,6 @@ Gerenciar Motoristas
             }
         }
 
-        function showScreen(screenId) {
-            const body = document.body;
-            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-            stopRingingAdmin();
-
-            if(clockInterval) clearInterval(clockInterval);
-
-            const container = document.getElementById('app-container');
-            const needsExtraPadding = ['admin-requests-screen', 'admin-driver-crud-screen', 'admin-user-crud-screen', 'admin-heatmap-screen', 'admin-records-screen'];
-            if (needsExtraPadding.includes(screenId)) {
-                container.classList.add('pt-8');
-            } else {
-                container.classList.remove('pt-8');
-            }
-
-            const fullHeightScreens = ['admin-requests-screen', 'admin-driver-crud-screen', 'admin-user-crud-screen', 'admin-heatmap-screen', 'admin-records-screen'];
-            if (fullHeightScreens.includes(screenId)) {
-                body.classList.remove('items-center');
-                body.classList.add('justify-start');
-            } else {
-                if (!body.classList.contains('items-center')) {
-                    body.classList.add('items-center');
-                }
-                body.classList.remove('justify-start');
-            }
-
-            if (screenId === 'admin-requests-screen') {
-                loadAdminRequests();
-                renderOngoingRidesTable();
-                startDigitalClock('digital-clock');
-            }
-            if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
-            if (screenId === 'admin-user-crud-screen') renderUserCrudList();
-            if (screenId === 'admin-heatmap-screen') initHeatmap();
-            if (screenId === 'driver-selection-screen') populateDriverSelection();
-            if (screenId === 'driver-screen') {
-                loadDriverJobs(); 
-                renderDriverRideHistory(); 
-            }
-            if (screenId === 'user-screen') {
-                checkUserRideStatus(); 
-                updateAvailableDriversCount(); 
-                renderUserRideHistory(); 
-            }
-            if (screenId === 'admin-records-screen') {
-                loadAllRecords(); 
-                document.getElementById('records-start-date').value = '';
-                document.getElementById('records-end-date').value = '';
-                document.getElementById('records-company-filter').value = '';
-            }
-        }
-
         function startDigitalClock(elementId) {
             const clockElement = document.getElementById(elementId);
             if (!clockElement) return;
@@ -1214,6 +1222,14 @@ Gerenciar Motoristas
 
             showModal('Deseja exportar o relatório diário antes de sair?', null, true);
         }
+
+        // --- CORREÇÃO: Restaurar a função cleanAddressString ---
+        function cleanAddressString(address) {
+            if (typeof address !== 'string') return '';
+            // Remove colchetes e aspas do início/fim, se presentes
+            return address.replace(/^\["|"\]$/g, '').trim(); 
+        }
+        // --- FIM DA CORREÇÃO ---
 
         async function requestRide() {
             const originAddress = document.getElementById('origin').value;
@@ -1691,53 +1707,6 @@ Gerenciar Motoristas
             }
         }
 
-        function renderDriverCrudList() {
-            const listContainer = document.getElementById('driver-crud-list');
-            listContainer.innerHTML = '';
-            if (state.drivers.length === 0) {
-                listContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum motorista cadastrado.</p>';
-                return;
-            }
-            const table = document.createElement('table');
-            table.className = 'w-full text-sm text-left';
-            table.innerHTML = `
-                <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
-                    <tr>
-                        <th scope="col" class="px-4 py-3">Motorista</th>
-                        <th scope="col" class="px-4 py-3">Placa</th>
-                        <th scope="col" class="px-4 py-3 text-right">Ações</th>
-                    </tr>
-                </thead>`;
-            const tbody = document.createElement('tbody');
-            state.drivers.forEach(driver => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-700 hover:bg-gray-800/20';
-                row.innerHTML = `
-                    <td class="px-4 py-3 font-medium">
-                        <div class="flex items-center gap-3">
-                           <label class="toggle-switch">
-                                <input type="checkbox" onchange="toggleDriverStatusAdmin(${driver.id})" ${driver.status === 'active' ? 'checked' : ''}>
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <div>
-                                <div>${driver.name}</div>
-                                <div class="text-xs text-gray-400">${driver.phone}</div>
-                                <div class="text-xs text-gray-500">${driver.car_model || ''} - ${driver.car_color || ''}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-4 py-3">${driver.plate}</td>
-                    <td class="px-4 py-3 text-right">
-                        <button onclick="editDriver(${driver.id})" class="font-medium text-yellow-400 hover:underline mr-3">Editar</button>
-                        <button onclick="promptDeleteDriver(${driver.id})" class="font-medium text-red-500 hover:underline">Excluir</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-            table.appendChild(tbody);
-            listContainer.appendChild(table);
-        }
-
         async function addDriver() {
             const nameInput = document.getElementById('new-driver-name');
             const phoneInput = document.getElementById('new-driver-phone');
@@ -1827,51 +1796,6 @@ Gerenciar Motoristas
             const { error } = await supabaseClient.from('drivers').delete().eq('id', driverId);
             if (error) { console.error('Error deleting driver:', error); showModal('Erro ao excluir motorista.'); } 
             else { closeModal(); }
-        }
-
-        function renderUserCrudList() {
-            const listContainer = document.getElementById('user-crud-list');
-            listContainer.innerHTML = ''; 
-
-            const userCountEl = document.getElementById('user-count');
-            if (userCountEl) {
-                userCountEl.textContent = state.users.length;
-            }
-
-            if (state.users.length === 0) {
-                listContainer.innerHTML = '<p class="text-center text-gray-400">Nenhum usuário cadastrado.</p>';
-                return;
-            }
-
-            const table = document.createElement('table');
-            table.className = 'w-full text-sm text-left';
-            table.innerHTML = `
-                <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
-                    <tr>
-                        <th scope="col" class="px-4 py-3">Nome</th>
-                        <th scope="col" class="px-4 py-3">Telefone</th>
-                        <th scope="col" class="px-4 py-3 text-right">Ações</th>
-                    </tr>
-                </thead>`;
-            const tbody = document.createElement('tbody');
-            state.users.forEach(user => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-700 hover:bg-gray-800/20';
-                row.innerHTML = `
-                    <td class="px-4 py-3 font-medium">
-                        <div>${user.name}</div>
-                        <div class="text-xs text-gray-400">${user.company || ''}</div>
-                    </td>
-                    <td class="px-4 py-3">${user.phone}</td>
-                    <td class="px-4 py-3 text-right">
-                        <button onclick="editUser(${user.id})" class="font-medium text-yellow-400 hover:underline mr-3">Editar</button>
-                        <button onclick="deleteUser(${user.id})" class="font-medium text-red-500 hover:underline">Excluir</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-            table.appendChild(tbody);
-            listContainer.appendChild(table);
         }
 
         async function addUser() {
@@ -2268,6 +2192,10 @@ Gerenciar Motoristas
                     else if (activeScreenId === 'driver-selection-screen') {
                         populateDriverSelection(); 
                     }
+                    // Adicionado para atualizar a tela de registros se ela estiver ativa
+                    else if (activeScreenId === 'admin-records-screen') {
+                        loadAllRecords();
+                    }
                 });
             }).subscribe();
         }
@@ -2317,7 +2245,7 @@ Gerenciar Motoristas
             });
             const countEl = document.getElementById('available-drivers-count');
             if (countEl) { 
-                countEl.className = 'text-center mb-4 text-lg text-green-800 font-semibold';
+                countEl.className = 'text-center mb-4 text-lg text-green-400 font-semibold';
                 countEl.textContent = `Motoristas disponíveis agora: ${availableDrivers.length}`;
             }
         }
@@ -2344,7 +2272,9 @@ Gerenciar Motoristas
         };
 
         function renderDriverStatusChart(active, inactive) {
-            const ctx = document.getElementById('driver-status-chart').getContext('2d');
+            const chartElement = document.getElementById('driver-status-chart');
+             if (!chartElement) return; // Add check
+             const ctx = chartElement.getContext('2d');
             if (driverChart) driverChart.destroy();
             driverChart = new Chart(ctx, {
                 type: 'doughnut',
@@ -2414,41 +2344,7 @@ Gerenciar Motoristas
             XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio de Corridas");
             XLSX.writeFile(workbook, `Relatorio_Diario_${dateStr}.xlsx`);
         }
-
-        function uploadAppIcon() {
-            const fileInput = document.getElementById('icon-file-input');
-            const file = fileInput.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                state.appIcon = event.target.result;
-                localStorage.setItem('appIcon', state.appIcon);
-                loadAppIcon(); 
-                showModal('Ícone atualizado com sucesso!');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function loadAppIcon() {
-            const iconContainer = document.getElementById('app-icon-container');
-            iconContainer.innerHTML = ''; 
-            if (state.appIcon) {
-                const img = document.createElement('img');
-                img.src = state.appIcon; img.className = 'h-12 w-12 object-contain';
-                iconContainer.appendChild(img);
-            } else {
-                const defaultIconContainer = document.getElementById('app-icon-container');
-                if (defaultIconContainer.innerHTML === '') {
-                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.setAttribute('class', 'h-12 w-12 text-black');
-                    svg.setAttribute('fill', 'currentColor');
-                    svg.setAttribute('viewBox', '0 0 20 20');
-                    svg.innerHTML = `<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />`;
-                    defaultIconContainer.appendChild(svg);
-                }
-            }
-        }
-
+        
         function renderUserRideHistory() {
             const historyContainer = document.getElementById('user-ride-history');
             historyContainer.innerHTML = '';
@@ -2557,11 +2453,11 @@ Gerenciar Motoristas
 
         async function loadAllRecords() {
             const tableBody = document.getElementById('all-records-body');
-            tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>'; // Colspan atualizado para 11
 
             const { data, error } = await supabaseClient.from('rides').select('*').order('requestTime', { ascending: false });
             if (error) {
-                tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>'; // Colspan atualizado
                 return;
             }
             state.rides = data;
@@ -2571,29 +2467,46 @@ Gerenciar Motoristas
                 companySelect.innerHTML = '<option value="" class="text-gray-400">Todas as Empresas</option>'; 
                 const companies = [...new Set(data.map(ride => ride.userCompany || '-').filter(Boolean))];
                 companies.sort().forEach(company => {
-                    if (company) { 
+                    if (company && company !== '-') { // Evita adicionar '-' como opção
                         companySelect.innerHTML += `<option value="${company}" class="text-white">${company}</option>`;
                     }
                 });
             }
             
             if (data.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>'; // Colspan atualizado
                 return;
             }
+            
+            // Função auxiliar para formatar datas
+            const formatRideDate = (dateString) => {
+                if (!dateString) return 'N/A';
+                try {
+                    return new Date(dateString).toLocaleString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                } catch (e) {
+                    return 'Data Inválida';
+                }
+            };
 
             const rowsHTML = data.map((ride) => {
                 let distanceKm = ride.km || 'N/A';
                 const originAddress = cleanAddressString(ride.origin_address) || '-'; 
                 const destinationAddress = formatDestination(ride.destination);
                 const statusInfo = translateStatus(ride.status);
-                const requestDateTime = ride.requestTime ? new Date(ride.requestTime).toLocaleString('pt-BR') : 'N/A'; 
+                const requestDateTime = formatRideDate(ride.requestTime);
+                const scheduledDateTime = formatRideDate(ride.scheduled_datetime); // Formata data agendada
+                const acceptDateTime = formatRideDate(ride.acceptTime);        // Formata data aceite
                 const observation = ride.observation || '-';
-                const requestTimestamp = new Date(ride.requestTime).getTime(); 
+                const requestTimestamp = ride.requestTime ? new Date(ride.requestTime).getTime() : 0; 
 
                 return `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20" data-request-time="${requestTimestamp}">
                         <td class="px-4 py-3">${requestDateTime}</td> 
+                        <td class="px-4 py-3">${scheduledDateTime}</td> <!-- NOVO -->
+                        <td class="px-4 py-3">${acceptDateTime}</td>   <!-- NOVO -->
                         <td class="px-4 py-3">${ride.userName}</td>
                         <td class="px-4 py-3">${ride.userCompany || '-'}</td>
                         <td class="px-4 py-3">${originAddress}</td>
@@ -2621,7 +2534,7 @@ Gerenciar Motoristas
 
             rows.forEach(row => {
                 const requestTimestamp = row.dataset.requestTime;
-                const companyCell = row.cells[2]; 
+                const companyCell = row.cells[4]; // Índice da coluna Empresa atualizado para 4
                 
                 if (requestTimestamp && companyCell) {
                     const recordDate = parseInt(requestTimestamp);
@@ -2630,9 +2543,11 @@ Gerenciar Motoristas
                     if (end && recordDate > end) dateMatch = false;
 
                     const rowCompany = companyCell.textContent.trim();
-                    let companyMatch = (selectedCompany === "" || rowCompany === selectedCompany);
+                    let companyMatch = (selectedCompany === "" || rowCompany === selectedCompany || (selectedCompany === '-' && rowCompany === '-')); // Inclui '-' se selecionado
 
                     row.style.display = (dateMatch && companyMatch) ? '' : 'none';
+                } else {
+                     row.style.display = 'none'; // Esconde linhas sem data ou empresa (ex: linha de loading)
                 }
             });
         }
@@ -2642,13 +2557,15 @@ Gerenciar Motoristas
             const rows = table.querySelectorAll('tbody tr');
             const dataToExport = [];
 
+            // Pega os cabeçalhos da tabela HTML
             const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
             dataToExport.push(headers); 
 
             let visibleRows = 0;
             rows.forEach(row => {
-                if (row.style.display !== 'none') { 
+                if (row.style.display !== 'none') { // Exporta apenas linhas visíveis
                     const cells = Array.from(row.querySelectorAll('td')).map(td => {
+                        // Trata a célula de status para pegar só o texto
                         if (td.querySelector('.status-badge')) {
                             return td.querySelector('.status-badge').textContent.trim();
                         }
@@ -2668,16 +2585,19 @@ Gerenciar Motoristas
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
 
+            // Ajusta a largura das colunas (adiciona larguras para as novas colunas)
             worksheet['!cols'] = [
-                { wch: 20 },
-                { wch: 25 },
-                { wch: 20 },
-                { wch: 40 },
-                { wch: 40 },
-                { wch: 30 },
-                { wch: 25 },
-                { wch: 15 },
-                { wch: 15 }
+                { wch: 20 }, // Data Solicitação
+                { wch: 20 }, // Data Agendada (NOVO)
+                { wch: 20 }, // Data Aceite (NOVO)
+                { wch: 25 }, // Usuário
+                { wch: 20 }, // Empresa
+                { wch: 40 }, // Origem
+                { wch: 40 }, // Destino
+                { wch: 30 }, // Observação
+                { wch: 25 }, // Motorista
+                { wch: 15 }, // Status
+                { wch: 15 }  // Distância (km)
             ];
 
             XLSX.writeFile(workbook, "relatorio_de_registros.xlsx");
@@ -2692,7 +2612,7 @@ Gerenciar Motoristas
             const rows = Array.from(tableBody.querySelectorAll('tr'));
             
             rows.forEach(row => {
-                row.style.display = '';
+                row.style.display = ''; // Mostra todas as linhas
             });
         }
 
@@ -2731,8 +2651,13 @@ Gerenciar Motoristas
             if (error) alert('Não foi possível excluir a corrida.');
             else alert('Corrida excluída com sucesso!');
         }
-
+        
         async function initApp() {
+            // Garante que o supabaseClient está inicializado antes de prosseguir
+            if (!supabaseClient) {
+                 console.error("Supabase client not initialized yet in initApp!");
+                 return; 
+            }
             await fetchAllData(); 
             setupRealtimeSubscriptions(); 
             loadAppIcon();
@@ -2753,9 +2678,13 @@ Gerenciar Motoristas
                 if (driverId && state.drivers.some(d => d.id == driverId)) {
                     state.currentDriverId = parseInt(driverId);
                     const driver = state.drivers.find(d => d.id === state.currentDriverId);
-                    document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
-                    updateDriverStatusButton();
-                    showScreen('driver-screen');
+                    if(driver) { // Adiciona verificação se driver existe
+                         document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
+                         updateDriverStatusButton();
+                         showScreen('driver-screen');
+                    } else {
+                         logout(); // Driver não encontrado, deslogar
+                    }
                 } else {
                     logout();
                 }
@@ -2763,7 +2692,47 @@ Gerenciar Motoristas
                 showScreen('initial-screen');
             }
         }
+        // --- FIM DAS FUNÇÕES RESTAURADAS ---
 
+        // Incluindo a função geocodeAddress modificada
+        async function geocodeAddress(address) {
+            if (!address || typeof address !== 'string' || address.trim().length < 3) {
+                console.warn(`Tentativa de geocodificar endereço inválido ou vazio: '${address}'`);
+                return null; 
+            }
+            
+            const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.features && data.features.length > 0) {
+                    const coords = data.features[0].geometry.coordinates;
+                    return { lat: coords[1], lon: coords[0] };
+                } else {
+                    const newAddress = `${address}, Guaíba, RS`;
+                    console.log(`Primeira tentativa falhou para '${address}', tentando com '${newAddress}'`);
+                    const fallbackUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(newAddress)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
+                    
+                    const fallbackResponse = await fetch(fallbackUrl);
+                    const fallbackData = await fallbackResponse.json();
+
+                    if (fallbackData.features && fallbackData.features.length > 0) {
+                        const coords = fallbackData.features[0].geometry.coordinates;
+                        return { lat: coords[1], lon: coords[0] };
+                    } else {
+                        console.warn(`A segunda geocodificação (fallback) também falhou para: '${newAddress}'. Endereço original: '${address}'`);
+                        return null; 
+                    }
+                }
+            } catch (error) {
+                console.error(`Erro na chamada da API de geocodificação para: '${address}'`, error);
+                return null;
+            }
+        }
+        
+        // Incluindo a função initHeatmap modificada
         async function initHeatmap() {
             const mapDiv = document.getElementById('heatmap-canvas');
             if (!mapDiv) {
@@ -2771,70 +2740,320 @@ Gerenciar Motoristas
                 return;
             }
 
-            if (map) {
+            // Remove o mapa anterior, se existir
+            if (map && map.remove) {
+                map.off();
                 map.remove();
-                map = null;
+                map = null; // Garante que a variável seja limpa
             }
             
-            const center = [-30.0346, -51.2177];
+            const center = [-30.1118, -51.3255]; // Centro de Guaíba
             
             try {
-                map = L.map(mapDiv).setView(center, 12);
+                // Inicializa o mapa Leaflet
+                map = L.map(mapDiv, { preferCanvas: true }).setView(center, 13); // preferCanvas pode ajudar
 
+                // Adiciona a camada base do mapa (tiles)
                 L.tileLayer(`https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`, {
-                    attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a>'
+                    attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a>',
+                    maxZoom: 19 // Definir zoom máximo pode ajudar
                 }).addTo(map);
 
-                console.log('Mapa Leaflet inicializado, buscando endereços dos usuários...');
+                console.log('Mapa Leaflet inicializado, aguardando...');
 
-                const geocodePromises = state.users
-                    .filter(user => user.address && user.address.trim() !== '')
-                    .map(user => {
-                        return geocodeAddress(user.address)
-                            .then(coords => {
-                                return coords;
-                            })
-                            .catch(e => {
-                                console.error(`Erro ao geocodificar ${user.address}:`, e);
-                                return null;
-                            });
-                    });
+                // CORREÇÃO: Adiciona um pequeno delay antes de adicionar o heatmap
+                setTimeout(async () => {
+                    try {
+                        console.log('Buscando endereços dos usuários para heatmap...');
+                        
+                        // Busca e geocodifica os endereços dos usuários
+                        const geocodePromises = state.users
+                            .filter(user => user.address && user.address.trim() !== '')
+                            .map(user => geocodeAddress(user.address)); 
 
-                const results = await Promise.all(geocodePromises);
+                        const results = await Promise.all(geocodePromises);
+                        
+                        // Filtra resultados válidos e formata para o heatmap
+                        const locationsData = results
+                            .filter(coords => coords !== null) 
+                            .map(coords => [coords.lat, coords.lon]);
+
+                        console.log(`Total de coordenadas válidas para o heatmap: ${locationsData.length}`);
+
+                        // Adiciona a camada de calor (heatmap) se houver dados
+                        if (locationsData.length > 0) {
+                            if (heatmap && map.hasLayer(heatmap)) { // Remove o heatmap anterior se existir
+                                map.removeLayer(heatmap);
+                                heatmap = null;
+                            }
+                            
+                            heatmap = L.heatLayer(locationsData, {
+                                radius: 50, 
+                                blur: 25,   
+                                maxZoom: 18, // Manter consistente com o tileLayer
+                                gradient: { 0.2: 'blue', 0.4: 'cyan', 0.6: 'lime', 0.8: 'yellow', 1: 'red' },
+                                minOpacity: 0.1 // Adiciona opacidade mínima
+                            }).addTo(map);
+                            
+                            // Ajusta a visão do mapa para conter os pontos
+                            if (locationsData.length > 1) {
+                                try {
+                                    const bounds = L.latLngBounds(locationsData);
+                                    if(bounds.isValid()){ // Verifica se os bounds são válidos
+                                         map.fitBounds(bounds.pad(0.1)); 
+                                    } else {
+                                         console.warn("Bounds inválidos calculados, centrando no primeiro ponto.");
+                                         map.setView(locationsData[0], 15);
+                                    }
+                                } catch (boundsError) {
+                                     console.warn("Erro ao calcular bounds, mantendo visão inicial:", boundsError);
+                                     map.setView(center, 13);
+                                }
+                            } else if (locationsData.length === 1) {
+                                 map.setView(locationsData[0], 15); // Centraliza no único ponto
+                            } else {
+                                 map.setView(center, 13); // Caso raro, mas seguro
+                            }
+
+                        } else {
+                            console.warn('Nenhuma coordenada válida encontrada para gerar o mapa de calor.');
+                            // showModal('Não foi possível geocodificar nenhum endereço dos usuários para gerar o mapa de calor.'); 
+                        }
+                    } catch (heatmapError) {
+                         console.error('Erro ao processar dados ou adicionar heatmap:', heatmapError);
+                         showModal('Erro ao gerar a camada de calor. Verifique o console.');
+                    }
+                }, 500); // Atraso de 500ms (meio segundo)
+
+            } catch (error) {
+                console.error('Erro ao inicializar o mapa Leaflet:', error);
+                showModal('Erro ao carregar o mapa base. Verifique o console para detalhes.');
+            }
+        }
+        
+        
+        // Incluir getDrivingDistance e formatDestination antes de serem chamadas
+        async function getDrivingDistance(originAddress, destinationAddress) {
+            let originCoords, destCoords;
+            try {
+                 // Limpa os endereços antes de geocodificar
+                 const cleanOrigin = cleanAddressString(originAddress);
+                 const cleanDestination = formatDestination(destinationAddress); // formatDestination já limpa
+                 
+                 if (!cleanOrigin || !cleanDestination || cleanDestination === '-') {
+                      throw new Error('Endereço de origem ou destino inválido após limpeza');
+                 }
+
+                originCoords = await geocodeAddress(cleanOrigin);
+                if (!originCoords) throw new Error(`Falha ao geocodificar origem: ${cleanOrigin}`);
                 
-                const locationsData = results
-                    .filter(coords => coords)
-                    .map(coords => [coords.lat, coords.lon]);
+                destCoords = await geocodeAddress(cleanDestination);
+                if (!destCoords) throw new Error(`Falha ao geocodificar destino: ${cleanDestination}`);
 
-                console.log(`Total de coordenadas válidas: ${locationsData.length}`);
+            } catch (error) {
+                console.error('Erro na geocodificação para cálculo de distância:', error.message);
+                return null;
+            }
+            
+            return await getDrivingDistanceByCoords(originCoords, destCoords);
+        }
 
-                if (locationsData.length > 0) {
-                    if (heatmap) heatmap.remove();
-                    
-                    heatmap = L.heatLayer(locationsData, {
-                        radius: 40,
-                        blur: 20,
-                        maxZoom: 18,
-                        gradient: {0.4: 'blue', 0.65: 'lime', 1: 'red'}
-                    }).addTo(map);
-                    
-                    const bounds = L.latLngBounds(locationsData);
-                    map.fitBounds(bounds);
+        async function getDrivingDistanceByCoords(originCoords, destCoords) {
+            if (!originCoords || typeof originCoords.lat === 'undefined' || typeof originCoords.lon === 'undefined' ||
+                !destCoords || typeof destCoords.lat === 'undefined' || typeof destCoords.lon === 'undefined') {
+                console.warn("getDrivingDistanceByCoords: Coordenadas inválidas.", originCoords, destCoords);
+                return null;
+            }
+
+            const waypoints = `${originCoords.lat},${originCoords.lon}|${destCoords.lat},${destCoords.lon}`;
+            const url = `https://api.geoapify.com/v1/routing?waypoints=${encodeURIComponent(waypoints)}&mode=drive&units=metric&apiKey=${GEOAPIFY_API_KEY}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.features && data.features.length > 0) {
+                    const distanceInMeters = data.features[0].properties.distance;
+                    return distanceInMeters / 1000; // Retorna em KM
                 } else {
-                    console.warn('Nenhuma coordenada válida encontrada para gerar o mapa de calor');
-                    showModal('Não foi possível geocodificar os endereços dos usuários para gerar o mapa de calor');
+                    console.error('Erro na API de Roteamento Geoapify:', data);
+                     // Tenta calcular distância em linha reta como fallback
+                     const R = 6371; // Raio da Terra em km
+                     const dLat = (destCoords.lat - originCoords.lat) * Math.PI / 180;
+                     const dLon = (destCoords.lon - originCoords.lon) * Math.PI / 180;
+                     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                               Math.cos(originCoords.lat * Math.PI / 180) * Math.cos(destCoords.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+                     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+                     const fallbackDistance = R * c;
+                     console.warn(`API de roteamento falhou, usando distância em linha reta: ${fallbackDistance.toFixed(2)} km`);
+                     return fallbackDistance; 
                 }
             } catch (error) {
-                console.error('Erro ao inicializar o mapa de calor:', error);
-                showModal('Erro ao carregar o mapa de calor. Verifique o console para detalhes.');
+                console.error('Erro ao buscar a distância (Geoapify):', error);
+                return null;
+            }
+        }
+        
+        function formatDestination(destinationString) {
+            if (typeof destinationString !== 'string' || !destinationString.trim()) return '-';
+
+            let formattedAddress = '-';
+            const trimmedString = destinationString.trim();
+
+            // Lógica para tratar JSON complexo ou string simples
+            if (trimmedString.startsWith('[{') && trimmedString.endsWith('}]')) {
+                try {
+                    const destinationsArray = JSON.parse(trimmedString);
+                    if (Array.isArray(destinationsArray)) {
+                        const addresses = destinationsArray
+                            .map(dest => dest.address || '')
+                            .filter(Boolean);
+                        if (addresses.length > 0) {
+                            formattedAddress = addresses.join(' - ');
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Could not parse complex destination JSON, falling back:", trimmedString, e);
+                    // Tentativa de fallback mais robusta
+                    const regexAddresses = trimmedString.match(/"address":"(.*?)"/g);
+                    if (regexAddresses) {
+                        formattedAddress = regexAddresses.map(match => match.replace(/"address":"(.*)"/,'$1')).join(' - ');
+                    } else {
+                        // Fallback final: remove caracteres especiais e tenta juntar
+                        formattedAddress = trimmedString.replace(/[\[\]\{\}"]/g, '').replace(/name:.*?,address:/g, '').replace(/,/g, ' - ').trim();
+                    }
+                }
+            } 
+            else { // Trata como string simples, removendo colchetes e aspas se houver
+                formattedAddress = trimmedString.replace(/^\["|"\]$/g, '').trim();
+            }
+
+            return formattedAddress || '-'; // Garante que nunca retorne string vazia
+        }
+        
+        let debounceTimer;
+
+        function handleAddressInput(event, listId) {
+            clearTimeout(debounceTimer);
+            const query = event.target.value;
+            debounceTimer = setTimeout(() => {
+                searchAddress(query, listId);
+            }, 300);
+        }
+
+        async function searchAddress(query, listId) {
+            if (query.length < 3) {
+                hideList(listId);
+                return;
+            }
+
+            const list = document.getElementById(listId);
+            if (!list) return;
+            
+            const inputId = listId.replace('List', '');
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.removeAttribute('data-address-valid');
+            }
+            
+            list.innerHTML = '<div class="loading">Buscando...</div>';
+            list.classList.add('show');
+
+            try {
+                const response = await fetch(
+                    `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&lang=pt&limit=5&apiKey=${GEOAPIFY_API_KEY}`
+                );
+                
+                const data = await response.json();
+                
+                if (data.features && data.features.length > 0) {
+                    displayResults(data.features, listId);
+                } else {
+                    list.innerHTML = '<div class="no-results">Nenhum resultado encontrado</div>';
+                }
+            } catch (error) {
+                console.error('Erro ao buscar endereços:', error);
+                list.innerHTML = '<div class="no-results">Erro ao buscar endereços</div>';
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadAppIcon();
-            initApp();
+        function displayResults(features, listId) {
+            const list = document.getElementById(listId);
+            if (!list) return;
+            list.innerHTML = '';
+
+            features.forEach(feature => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                
+                const formatted = feature.properties.formatted;
+                const city = feature.properties.city || '';
+                const state = feature.properties.state || '';
+                
+                item.innerHTML = `
+                    <strong>${formatted}</strong>
+                    ${city || state ? `<br><small style="color: #999;">${city}${city && state ? ', ' : ''}${state}</small>` : ''}
+                `;
+                
+                item.onclick = () => selectAddress(feature, listId);
+                list.appendChild(item);
+            });
+
+            list.classList.add('show');
+        }
+
+        function selectAddress(feature, listId) {
+            const inputId = listId.replace('List', '');
+            const input = document.getElementById(inputId);
+            
+            if (input) {
+                input.value = feature.properties.formatted;
+                input.setAttribute('data-address-valid', 'true');
+                 // Armazena a feature selecionada no estado global (se for o input de usuário)
+                 if (inputId === 'origin') {
+                     state.currentUserOrigin = feature;
+                 } else if (inputId === 'destination') {
+                     state.currentUserDestination = feature;
+                 }
+            }
+            hideList(listId);
+        }
+
+        function hideList(listId) {
+            const list = document.getElementById(listId);
+            if (list) {
+                list.classList.remove('show');
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-container')) {
+                document.querySelectorAll('.autocomplete-list').forEach(list => list.classList.remove('show'));
+            }
         });
+
+
+        // --- Inicialização do Supabase dentro do DOMContentLoaded ---
+        document.addEventListener('DOMContentLoaded', () => {
+             loadAppIcon(); // Carrega o ícone primeiro
+
+             // Verifica se a biblioteca Supabase foi carregada
+             if (typeof supabase === 'undefined') {
+                 console.error("Supabase library not loaded!");
+                 // Mostra um erro amigável na tela
+                 const container = document.getElementById('app-container') || document.body;
+                 container.innerHTML = `<div class="p-4 text-center text-red-700 bg-red-100 border border-red-400 rounded">Erro crítico: Não foi possível carregar a biblioteca de banco de dados (Supabase). Verifique sua conexão com a internet e atualize a página.</div>`;
+             } else {
+                 // Inicializa o cliente Supabase AQUI, depois que a biblioteca carregou
+                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
+                 
+                 // Só continua a inicialização do app se o Supabase carregou com sucesso
+                 initApp(); 
+             }
+        });
+        // --- FIM DA CORREÇÃO ---
 
     </script>
 </body>
 </html>
+
