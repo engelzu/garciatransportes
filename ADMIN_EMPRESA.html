@@ -24,6 +24,21 @@
         h1, h2, h3, p, button, label, input::placeholder, textarea::placeholder, select, option { color: #ffffff !important; }
         input, select, textarea { background-color: #374151 !important; border-color: #4b5563 !important; color: white !important; /* Garante texto branco */}
         input:focus, select:focus, textarea:focus { border-color: #00ffff !important; ring: none !important; outline: none !important; box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.5) !important; } /* Foco ciano */
+        
+        /* --- MODIFICAÇÃO CHECKBOX --- */
+        /* Garante que o checkbox use a cor ciano */
+        input[type="checkbox"] {
+            color: #00ffff !important;
+            accent-color: #00ffff !important;
+        }
+        /* Garante que o input de endereço desabilitado fique legível */
+        input:disabled, textarea:disabled {
+             background-color: #4b5563 !important; /* Um pouco mais escuro/diferente */
+             color: #9ca3af !important; /* Texto cinza claro */
+             cursor: not-allowed;
+        }
+        /* --- FIM MODIFICAÇÃO CHECKBOX --- */
+
         #company-password-input { font-size: 14px; text-align: center; }
         #company-password-input::placeholder { text-align: center; }
         
@@ -103,6 +118,10 @@
         #schedule-modal { display: none; }
         #schedule-modal.flex { display: flex; }
 
+        /* NOVO MODAL */
+        #no-destination-modal { display: none; }
+        #no-destination-modal.flex { display: flex; }
+
         /* --- CSS PARA ABAS --- */
         .tab-button { background-color: #374151; border: 1px solid #4b5563; padding: 10px 15px; cursor: pointer; transition: all 0.2s ease-in-out; border-radius: 8px; font-weight: 600; color: white !important; }
         .tab-button.active { background-color: #00ffff; color: #000 !important; border-color: #00ffff; }
@@ -148,6 +167,9 @@
     <!-- MODIFICAÇÃO: 'max-w-md' removido daqui e aplicado css interno -->
     <div id="app-container" class="mx-auto">
 
+        <!-- ====================================================== -->
+        <!-- INÍCIO: HTML CORRIGIDO -->
+        <!-- ====================================================== -->
         <div id="company-login-screen" class="screen active">
             <div id="admin-access-icon" title="Acesso Super Admin" onclick="showSuperAdminLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -156,6 +178,7 @@
             </div>
 
             <h2 class="text-3xl font-bold mb-6 text-center">Login da Empresa</h2>
+            <!-- ESTE ELEMENTO ESTAVA FALTANDO NO ARQUIVO QUE CAUSOU O ERRO -->
             <div class="mb-4"><label for="company-login-select" class="block mb-2 text-sm font-medium">Empresa</label><select id="company-login-select" class="w-full p-3 rounded-lg"></select></div>
             <div class="mb-4"><label for="admin-username-input" class="block mb-2 text-sm font-medium">Usuário Admin</label><input type="text" id="admin-username-input" class="w-full p-3 rounded-lg" placeholder="Digite seu usuário"></div>
             <div class="mb-4"><label for="admin-password-input" class="block mb-2 text-sm font-medium">Senha</label><input type="password" id="admin-password-input" class="w-full p-3 rounded-lg" placeholder="Digite sua senha"></div>
@@ -359,7 +382,9 @@
 
         <div id="admin-management-screen" class="screen">
              </div>
-
+        <!-- ====================================================== -->
+        <!-- FIM: HTML CORRIGIDO -->
+        <!-- ====================================================== -->
     </div>
 
     <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4"> <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
@@ -376,6 +401,23 @@
             </div>
         </div>
     </div>
+
+    <!-- ====================================================== -->
+    <!-- INÍCIO: NOVO MODAL DE CONFIRMAÇÃO (LOCAL CORRETO) -->
+    <!-- ====================================================== -->
+    <div id="no-destination-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4">Confirmar Solicitação</h3>
+            <p class="text-lg mb-6">NÃO TERÁ DESTINO FINAL?</p>
+            <div class="flex justify-center gap-4">
+                <button id="no-destination-btn-no" class="py-2 px-8 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">NÃO</button>
+                <button id="no-destination-btn-yes" class="py-2 px-8 font-semibold rounded-lg button-gradient">SIM</button>
+            </div>
+        </div>
+    </div>
+    <!-- ====================================================== -->
+    <!-- FIM: NOVO MODAL DE CONFIRMAÇÃO -->
+    <!-- ====================================================== -->
 
     <script>
         // ========================================================================
@@ -713,7 +755,7 @@
         }
 
         // ========================================================================
-        // FUNÇÃO CORRIGIDA - handlePassengerQuantityChange (Usa implementação manual)
+        // FUNÇÃO MODIFICADA - handlePassengerQuantityChange (Adiciona Checkbox)
         // ========================================================================
         function handlePassengerQuantityChange(event) {
             const quantity = parseInt(event.target.value, 10);
@@ -748,8 +790,22 @@
                                 ${optionsHtml}
                             </select>
                         </div>
+                        
+                        <!-- ====================================================== -->
+                        <!-- INÍCIO: MODIFICAÇÃO SOLICITADA (CHECKBOX) -->
+                        <!-- ====================================================== -->
+                        <div class="flex justify-between items-center mb-1 mt-3">
+                            <label for="address-input-${i}" class="block text-xs font-medium">Endereço</label>
+                            <div class="flex items-center">
+                                <input type="checkbox" id="use-collab-address-${i}" data-index="${i}" class="use-collab-address-cb w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500">
+                                <label for="use-collab-address-${i}" class="ml-2 text-xs font-medium text-gray-300" style="color: #e5e7eb !important;">USAR ENDEREÇO DO COLABORADOR</label>
+                            </div>
+                        </div>
+                        <!-- ====================================================== -->
+                        <!-- FIM: MODIFICAÇÃO SOLICITADA -->
+                        <!-- ====================================================== -->
+
                         <div class="autocomplete-container">
-                            <label for="address-input-${i}" class="block mb-1 text-xs font-medium">Endereço</label>
                             <input type="text" id="address-input-${i}" class="w-full p-2 rounded-lg" placeholder="Endereço autocompletado ou manual"
                                    oninput="handleAddressInput(event, 'address-input-${i}List')">
                             <div class="autocomplete-list" id="address-input-${i}List"></div>
@@ -780,52 +836,143 @@
                 select.removeEventListener('change', handleCollaboratorSelection);
                 select.addEventListener('change', handleCollaboratorSelection);
              });
-             // ---- FIM DA MODIFICAÇÃO ----
+             
+            // ======================================================
+            // INÍCIO: MODIFICAÇÃO SOLICITADA (LISTENER DO CHECKBOX)
+            // ======================================================
+            document.querySelectorAll('.use-collab-address-cb').forEach(checkbox => {
+                checkbox.removeEventListener('change', handleUseCollaboratorAddress); // Evita duplicatas
+                checkbox.addEventListener('change', handleUseCollaboratorAddress);
+            });
+            // ======================================================
+            // FIM: MODIFICAÇÃO SOLICITADA
+            // ======================================================
         }
 
 
         // ========================================================================
-        // FUNÇÃO MODIFICADA - handleCollaboratorSelection
+        // FUNÇÃO MODIFICADA - handleCollaboratorSelection (Respeita o Checkbox)
         // ========================================================================
         function handleCollaboratorSelection(event) {
             const selectedUserId = event.target.value;
             const index = event.target.dataset.index; // Pega o índice do input (0, 1, 2...)
             const addressInput = document.getElementById(`address-input-${index}`);
+            const checkbox = document.getElementById(`use-collab-address-${index}`); // Pega o checkbox
 
             let selectedUserAddress = ''; // Guarda o endereço para reuso
 
             if (selectedUserId) {
                 const selectedUser = state.allUsers.find(user => user.id == selectedUserId);
-                // Preenche o endereço se o usuário tiver um cadastrado
+                // Apenas busca o endereço, não o aplica ainda
                 selectedUserAddress = (selectedUser && selectedUser.address) ? selectedUser.address : '';
-                addressInput.value = selectedUserAddress; 
                 
-                // Opcional: Avisar o admin que o endereço foi preenchido
-                // if (addressInput.value) {
-                //     alert(`Endereço de ${selectedUser.name} preenchido. Confirme ou edite.`);
-                // }
+                // ======================================================
+                // INÍCIO DA MODIFICAÇÃO SOLICITADA
+                // ======================================================
+                
+                // Verifica se o checkbox JÁ ESTÁ MARCADO
+                if (checkbox && checkbox.checked) {
+                    // Se sim, atualiza o campo com o endereço do NOVO colaborador
+                    addressInput.value = selectedUserAddress;
+                    addressInput.disabled = true; // Garante que continue travado
+                } else {
+                    // Se não estiver marcado, garanta que está habilitado
+                    // Não preenchemos nem limpamos o campo, deixamos como está para o usuário digitar.
+                    addressInput.disabled = false;
+                }
+                // ======================================================
+                // FIM DA MODIFICAÇÃO SOLICITADA
+                // ======================================================
+
             } else {
-                addressInput.value = ''; // Limpa se desmarcar o colaborador
+                // Se desmarcou o colaborador (selecionou "-- Selecione --")
+                addressInput.value = ''; // Limpa o endereço
+                addressInput.disabled = false; // Garante que está habilitado
+                if (checkbox) {
+                    checkbox.checked = false; // Desmarca o checkbox também
+                }
                 selectedUserAddress = ''; // Garante que está vazio para a lógica abaixo
             }
 
-            // --- INÍCIO DA MODIFICAÇÃO SOLICITADA ---
+            // --- Lógica existente (sem alteração) ---
             // Verifica se este é o último passageiro
             const totalPassengers = parseInt(document.getElementById('passenger-quantity-select').value, 10);
             const lastPassengerIndex = totalPassengers - 1;
 
+            // ======================================================
+            // INÍCIO DA MODIFICAÇÃO SOLICITADA
+            // ======================================================
             // Se o índice do seletor que mudou for igual ao índice do último passageiro...
             if (parseInt(index, 10) === lastPassengerIndex) {
                 const destinationInput = document.getElementById('address-input-destination');
                 if (destinationInput) {
-                    // ...atualiza o campo de destino final com o endereço deste passageiro.
-                    destinationInput.value = selectedUserAddress; 
+                    // ...NÃO FAZ NADA. Deixa o campo em branco para o usuário.
+                    // destinationInput.value = selectedUserAddress; // <-- LINHA REMOVIDA
                 }
             }
-            // --- FIM DA MODIFICAÇÃO SOLICITADA ---
+            // ======================================================
+            // FIM DA MODIFICAÇÃO SOLICITADA
+            // ======================================================
+        }
+        
+        // ========================================================================
+        // INÍCIO: NOVA FUNÇÃO (Lógica do Checkbox)
+        // ========================================================================
+        function handleUseCollaboratorAddress(event) {
+            const checkbox = event.target;
+            const index = checkbox.dataset.index;
+            const addressInput = document.getElementById(`address-input-${index}`);
+            const collaboratorSelect = document.getElementById(`collaborator-select-${index}`);
+
+            if (!addressInput || !collaboratorSelect) return; // Segurança
+
+            const selectedUserId = collaboratorSelect.value;
+
+            if (checkbox.checked) {
+                // Se marcou o checkbox
+                if (!selectedUserId) {
+                    // Se não tiver colaborador, apenas desmarca o checkbox
+                    // (Evita alerts que travam a UI)
+                    console.warn("Selecione um colaborador primeiro.");
+                    checkbox.checked = false;
+                    return;
+                }
+
+                const selectedUser = state.allUsers.find(user => user.id == selectedUserId);
+                if (selectedUser) {
+                    addressInput.value = selectedUser.address || ''; // Garante o endereço correto
+                    addressInput.disabled = true; // Trava o campo
+                    hideList(`address-input-${index}List`); // Esconde autocomplete se estiver aberto
+                } else {
+                    checkbox.checked = false; // Colaborador não encontrado (não deve acontecer)
+                }
+            } else {
+                // Se desmarcou o checkbox
+                addressInput.disabled = false; // Destrava o campo
+                // ======================================================
+                // INÍCIO DA MODIFICAÇÃO SOLICITADA
+                // ======================================================
+                addressInput.value = ''; // Limpa o campo para o usuário digitar
+                // ======================================================
+                // FIM DA MODIFICAÇÃO SOLICITADA
+                // ======================================================
+            }
         }
         // ========================================================================
-        // FIM DA MODIFICAÇÃO
+        // FIM: NOVA FUNÇÃO
+        // ========================================================================
+
+        // ========================================================================
+        // INÍCIO: NOVAS FUNÇÕES (Modal Destino Final)
+        // ========================================================================
+        function openNoDestinationModal() {
+            document.getElementById('no-destination-modal').classList.add('flex');
+        }
+        function closeNoDestinationModal() {
+            document.getElementById('no-destination-modal').classList.remove('flex');
+        }
+        // ========================================================================
+        // FIM: NOVAS FUNÇÕES
         // ========================================================================
 
 
@@ -869,21 +1016,29 @@
 
 
             adminScheduledDateTime = scheduledDate.toISOString();
-            adminSelectedRequestType = 'scheduled';
+            // adminSelectedRequestType = 'scheduled'; // <-- Movido
 
             closeScheduleModal();
-            adminRequestRide(); // Chama a função que realmente cria a corrida
+            // adminRequestRide(); // <-- Chamada antiga
+            validateAndInitiateRide('scheduled'); // <-- NOVA CHAMADA
         }
 
 
         // ========================================================================
-        // FUNÇÃO ATUALIZADA - adminRequestRide (Usa JSON para múltiplos destinos)
+        // NOVA FUNÇÃO DE VALIDAÇÃO (Etapa 1)
         // ========================================================================
-        async function adminRequestRide() {
+        async function validateAndInitiateRide(requestType) {
+            // Define o tipo de requisição (usado por executeRideRequest)
+            adminSelectedRequestType = requestType;
+            if (requestType === 'immediate') {
+                adminScheduledDateTime = null;
+            }
+            // (Se 'scheduled', adminScheduledDateTime já foi setado por confirmAdminSchedule)
+
+            // Validações que eram do adminRequestRide
             const passengerCount = parseInt(document.getElementById('passenger-quantity-select').value, 10);
             if (!passengerCount || passengerCount < 1) { return alert('Selecione a quantidade de passageiros.'); }
 
-            // Verifica o primeiro colaborador e origem
             const firstCollaboratorId = document.getElementById('collaborator-select-0').value;
             if (!firstCollaboratorId) { return alert('Selecione o Colaborador para a Origem 1.'); }
             const collaborator = state.allUsers.find(u => u.id == firstCollaboratorId);
@@ -892,33 +1047,66 @@
             const originAddress = document.getElementById('address-input-0').value.trim();
             if (!originAddress) { return alert('O Endereço da Origem 1 é obrigatório.'); }
 
-            // Verifica o destino final
-            const destinationAddress = document.getElementById('address-input-destination').value.trim();
-            if (!destinationAddress) { return alert('O Endereço de Destino Final é obrigatório.'); }
-
-            // Coleta os dados das origens adicionais (se houver) e monta o array de destinos
-            const destinationsArray = []; // Array que será salvo no banco
-
-            // Adiciona as origens dos passageiros 2, 3, 4 como "paradas"
+            // Validação dos passageiros 2, 3, 4
             for (let i = 1; i < passengerCount; i++) {
                 const collabId = document.getElementById(`collaborator-select-${i}`)?.value;
                 const addressValue = document.getElementById(`address-input-${i}`)?.value.trim();
 
-                // Valida se ambos foram preenchidos para passageiros adicionais
                 if (!collabId || !addressValue) {
                     return alert(`Preencha o Colaborador e o Endereço para a Origem ${i + 1}.`);
                 }
                 const additionalCollaborator = state.allUsers.find(u => u.id == collabId);
                  if (!additionalCollaborator) return alert(`Colaborador da Origem ${i + 1} não encontrado.`);
+            }
 
-                // Adiciona a parada ao array
+            // ======================================================
+            // INÍCIO DA MODIFICAÇÃO SOLICITADA (Validação Destino)
+            // ======================================================
+            const destinationAddress = document.getElementById('address-input-destination').value.trim();
+            if (!destinationAddress) {
+                // Se o destino está vazio, abre o modal de confirmação
+                openNoDestinationModal();
+                // A função executeRideRequest() será chamada pelo botão "SIM" do modal
+                return; // Para a execução aqui
+            }
+            // ======================================================
+            // FIM DA MODIFICAÇÃO SOLICITADA
+            // ======================================================
+
+            // Se o destino foi preenchido, executa a solicitação imediatamente
+            executeRideRequest();
+        }
+
+
+        // ========================================================================
+        // FUNÇÃO DE SUBMISSÃO (Etapa 2)
+        // (Anteriormente 'adminRequestRide', agora sem validações de destino)
+        // ========================================================================
+        async function executeRideRequest() {
+            // As validações (exceto destino) já foram feitas em validateAndInitiateRide
+            const passengerCount = parseInt(document.getElementById('passenger-quantity-select').value, 10);
+            const firstCollaboratorId = document.getElementById('collaborator-select-0').value;
+            const collaborator = state.allUsers.find(u => u.id == firstCollaboratorId);
+            const originAddress = document.getElementById('address-input-0').value.trim();
+
+            // Pega o destino final (pode estar vazio, foi validado/confirmado)
+            const destinationAddress = document.getElementById('address-input-destination').value.trim();
+
+            const destinationsArray = [];
+
+            // Adiciona as origens dos passageiros 2, 3, 4
+            for (let i = 1; i < passengerCount; i++) {
+                const collabId = document.getElementById(`collaborator-select-${i}`)?.value;
+                const addressValue = document.getElementById(`address-input-${i}`)?.value.trim();
+                const additionalCollaborator = state.allUsers.find(u => u.id == collabId);
+
                 destinationsArray.push({
-                    name: `Origem ${additionalCollaborator.name}`, // Identifica a parada
+                    name: `Origem ${additionalCollaborator.name}`,
                     address: addressValue
                 });
             }
 
-            // Adiciona o destino final ao array
+            // Adiciona o destino final ao array (mesmo se estiver vazio)
             destinationsArray.push({
                 name: 'Destino Final',
                 address: destinationAddress
@@ -939,13 +1127,12 @@
                 requested_by_admin_name: state.loggedInAdmin.username, // Nome do admin que solicitou
             };
 
-            // Define o status e tipo baseado no botão clicado (imediato ou agendado)
+            // Define o status e tipo (variáveis globais setadas em validateAndInitiateRide)
             if (adminSelectedRequestType === 'scheduled' && adminScheduledDateTime) {
-                rideData.status = 'scheduled'; // Status inicial para agendadas
+                rideData.status = 'scheduled'; 
                 rideData.request_type = 'scheduled';
                 rideData.scheduled_datetime = adminScheduledDateTime;
             } else {
-                 // Corridas solicitadas pelo admin já entram como 'approved' para ir direto pro painel do outro admin
                  rideData.status = 'approved';
                 rideData.request_type = 'immediate';
             }
@@ -972,6 +1159,16 @@
 
          async function populateLoginCompanies() {
             const select = document.getElementById('company-login-select');
+            // ======================================================
+            // INÍCIO DA CORREÇÃO
+            // ======================================================
+            if (!select) {
+                console.error("Erro fatal: Elemento 'company-login-select' não encontrado no DOM.");
+                return; // Para a execução se o elemento não existe
+            }
+            // ======================================================
+            // FIM DA CORREÇÃO
+            // ======================================================
             select.innerHTML = '<option value="">Carregando...</option>'; // Valor vazio inicial
             const { data, error } = await supabaseClient
                 .from('companies')
@@ -1462,15 +1659,39 @@
             const immediateBtn = document.getElementById('admin-request-immediate-btn');
             const scheduledBtn = document.getElementById('admin-request-scheduled-btn');
             if (immediateBtn) {
+                // ======================================================
+                // INÍCIO DA MODIFICAÇÃO SOLICITADA
+                // ======================================================
                 immediateBtn.onclick = () => {
-                    adminSelectedRequestType = 'immediate';
-                    adminScheduledDateTime = null;
-                    adminRequestRide();
+                    validateAndInitiateRide('immediate'); // Nova chamada
                 };
+                // ======================================================
+                // FIM DA MODIFICAÇÃO SOLICITADA
+                // ======================================================
             }
             if (scheduledBtn) {
                 scheduledBtn.onclick = openAdminScheduleModal;
             }
+
+            // ======================================================
+            // INÍCIO: NOVOS LISTENERS DO MODAL
+            // ======================================================
+            const noDestNoBtn = document.getElementById('no-destination-btn-no');
+            const noDestYesBtn = document.getElementById('no-destination-btn-yes');
+
+            if (noDestNoBtn) {
+                noDestNoBtn.onclick = closeNoDestinationModal;
+            }
+            if (noDestYesBtn) {
+                noDestYesBtn.onclick = () => {
+                    closeNoDestinationModal();
+                    executeRideRequest(); // Chama a submissão final
+                };
+            }
+            // ======================================================
+            // FIM: NOVOS LISTENERS DO MODAL
+            // ======================================================
+
 
             // Configura subscriptions do Supabase para atualizações em tempo real
              supabaseClient
