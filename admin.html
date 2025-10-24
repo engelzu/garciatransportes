@@ -561,7 +561,7 @@
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
 
-    <audio id="admin-ringtone" preload="auto" src="SOM/somchamada.mp3"></audio>
+    <!-- Elemento de áudio removido - agora usa Web Audio API -->
 
     <div id="countdown-timer" class="fixed top-4 right-4 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full"></div>
 
@@ -1247,68 +1247,135 @@
         // Define supabaseClient globalmente, mas será inicializado depois
         let supabaseClient; 
 
-        // --- INÍCIO DAS FUNÇÕES RESTAURADAS ---
-        const adminRingtone = document.getElementById('admin-ringtone');
+        // --- INÍCIO DAS FUNÇÕES DE ÁUDIO CORRIGIDAS (Web Audio API) ---
         let adminRingInterval = null;
         let adminAudioUnlocked = false;
+        let audioContext = null;
 
+        // Inicializa o AudioContext
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("🎵 AudioContext inicializado");
+            }
+            return audioContext;
+        }
+
+        // Desbloqueia áudio com interação do usuário
         function unlockAdminAudio() {
             if (adminAudioUnlocked) return;
-            if (!adminRingtone) return;
-            adminRingtone.muted = true;
-            adminRingtone.play().then(() => {
-                adminRingtone.pause();
-                adminRingtone.currentTime = 0;
-                adminRingtone.muted = false;
-                adminAudioUnlocked = true;
-                console.log("Áudio do Admin desbloqueado.");
-                document.body.removeEventListener('click', unlockAdminAudio);
-                document.body.removeEventListener('touchstart', unlockAdminAudio);
-            }).catch(() => {
-                adminRingtone.muted = false;
-            });
+            
+            try {
+                const ctx = initAudioContext();
+                // Resume o contexto se estiver suspenso
+                if (ctx.state === 'suspended') {
+                    ctx.resume().then(() => {
+                        adminAudioUnlocked = true;
+                        console.log("✅ Áudio do Admin desbloqueado com sucesso!");
+                        document.body.removeEventListener('click', unlockAdminAudio);
+                        document.body.removeEventListener('touchstart', unlockAdminAudio);
+                    });
+                } else {
+                    adminAudioUnlocked = true;
+                    console.log("✅ Áudio do Admin já estava desbloqueado!");
+                    document.body.removeEventListener('click', unlockAdminAudio);
+                    document.body.removeEventListener('touchstart', unlockAdminAudio);
+                }
+            } catch (error) {
+                console.error("❌ Erro ao desbloquear áudio:", error);
+            }
         }
 
         document.body.addEventListener('click', unlockAdminAudio);
         document.body.addEventListener('touchstart', unlockAdminAudio);
 
+        // Toca som de notificação usando Web Audio API
         function playAdminRingSound() {
             if (!adminAudioUnlocked) {
-                console.warn("Áudio do admin bloqueado, aguardando interação do usuário.");
+                console.warn("⚠️ Áudio bloqueado. Clique na tela para desbloquear.");
                 return;
             }
-            adminRingtone.currentTime = 0;
-            adminRingtone.play().catch(e => console.error("Erro ao tocar som do admin:", e));
+
+            try {
+                const ctx = initAudioContext();
+                
+                // Cria oscilador para som de notificação
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                // Configurações do som (toque de telefone)
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, ctx.currentTime); // Frequência inicial
+                oscillator.frequency.setValueAtTime(1000, ctx.currentTime + 0.1); // Sobe tom
+                
+                // Envelope de volume
+                gainNode.gain.setValueAtTime(0, ctx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                
+                // Toca por 0.5 segundos
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.5);
+                
+                // Segunda nota (cria efeito de campainha)
+                setTimeout(() => {
+                    const osc2 = ctx.createOscillator();
+                    const gain2 = ctx.createGain();
+                    
+                    osc2.connect(gain2);
+                    gain2.connect(ctx.destination);
+                    
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(800, ctx.currentTime);
+                    osc2.frequency.setValueAtTime(1000, ctx.currentTime + 0.1);
+                    
+                    gain2.gain.setValueAtTime(0, ctx.currentTime);
+                    gain2.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.01);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                    
+                    osc2.start(ctx.currentTime);
+                    osc2.stop(ctx.currentTime + 0.5);
+                }, 200);
+                
+                console.log("🔔 Som de notificação tocado!");
+                
+            } catch (error) {
+                console.error("❌ Erro ao tocar som:", error);
+            }
         }
 
         function startRingingAdmin() {
+            console.log("🔔 Iniciando alerta sonoro...");
             stopRingingAdmin(); 
             playAdminRingSound(); 
-            adminRingInterval = setInterval(playAdminRingSound, 6000);
+            adminRingInterval = setInterval(playAdminRingSound, 3000); // Toca a cada 3 segundos
 
             const silenceBtnContainer = document.querySelector('#admin-requests-screen .lg\\:col-span-1');
             if (silenceBtnContainer && !document.getElementById('admin-silence-btn')) {
                 const silenceBtn = document.createElement('button');
                 silenceBtn.id = 'admin-silence-btn';
-                silenceBtn.textContent = 'Silenciar Alerta';
-                silenceBtn.className = 'w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900';
+                silenceBtn.textContent = '🔕 Silenciar Alerta';
+                silenceBtn.className = 'w-full mb-4 py-2 px-4 font-semibold rounded-lg bg-yellow-500 text-gray-900 hover:bg-yellow-600';
                 silenceBtn.onclick = stopRingingAdmin;
                 silenceBtnContainer.prepend(silenceBtn);
             }
-            document.getElementById('admin-silence-btn')?.classList.remove('hidden');
+            const btn = document.getElementById('admin-silence-btn');
+            if (btn) btn.classList.remove('hidden');
         }
 
         function stopRingingAdmin() {
+            console.log("🔕 Parando alerta sonoro...");
             if (adminRingInterval) {
                 clearInterval(adminRingInterval);
                 adminRingInterval = null;
             }
-            if(adminRingtone) {
-                adminRingtone.pause();
-                adminRingtone.currentTime = 0;
-            }
-            document.getElementById('admin-silence-btn')?.classList.add('hidden');
+            const btn = document.getElementById('admin-silence-btn');
+            if (btn) btn.classList.add('hidden');
         }
+        // --- FIM DAS FUNÇÕES DE ÁUDIO CORRIGIDAS ---
 
         function showModal(message, onConfirm, showCancel = false, content = {}) {
             document.getElementById('modal-message').textContent = message;
