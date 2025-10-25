@@ -2488,7 +2488,6 @@
 async function sendNewRideEmailNotification(ride) {
     console.log('Tentando enviar e-mail para a nova corrida:', ride);
     
-    // Obtém o e-mail de destino configurado
     const destinationEmail = getNotificationEmail();
     
     try {
@@ -2507,7 +2506,7 @@ async function sendNewRideEmailNotification(ride) {
             <p>Acesse o painel administrativo para mais detalhes.</p>
         `;
         
-        // ✅ CHAMA A API SERVERLESS SEGURA (sem expor chave)
+        // Chama a API serverless segura
         const response = await fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
