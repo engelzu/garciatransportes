@@ -335,6 +335,64 @@
                 transform: translate(-50%, 0);
             }
         }
+
+        .alarm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .alarm-overlay.active {
+            display: flex;
+        }
+
+        .alarm-box {
+            background: var(--color-surface);
+            padding: var(--space-24);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .alarm-box h2 {
+            color: var(--color-red-500);
+            font-size: 1.5rem;
+            margin-bottom: var(--space-16);
+        }
+
+        .alarm-box p {
+            margin-bottom: var(--space-24);
+        }
+
+        .btn-silence {
+            background: var(--color-red-500);
+            color: white;
+            padding: var(--space-16) var(--space-24);
+            border: none;
+            border-radius: var(--radius-base);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-silence:active {
+            background: var(--color-red-400);
+        }
     </style>
 </head>
 <body>
@@ -356,6 +414,15 @@
 
     <div class="bottom-nav">
         <button class="btn-refresh" onclick="loadRides()">🔄 Atualizar</button>
+    </div>
+
+    <!-- Overlay de Alarme -->
+    <div class="alarm-overlay" id="alarmOverlay">
+        <div class="alarm-box">
+            <h2>🚨 NOVA SOLICITAÇÃO!</h2>
+            <p>Uma nova corrida foi solicitada</p>
+            <button class="btn-silence" onclick="silenceAlarm()">🔕 SILENCIAR</button>
+        </div>
     </div>
 
     <!-- Biblioteca Supabase - DEVE ser carregada ANTES do script principal -->
@@ -709,7 +776,8 @@
 
         // Web Audio API para notificação sonora
         let audioContext = null;
-        let notificationSound = null;
+        let alarmInterval = null;
+        let isAlarmActive = false;
 
         function initAudio() {
             if (!audioContext) {
@@ -717,7 +785,7 @@
             }
         }
 
-        function playNotificationSound() {
+        function playAlarmBeep() {
             try {
                 initAudio();
                 
@@ -759,11 +827,43 @@
                     osc2.start(audioContext.currentTime);
                     osc2.stop(audioContext.currentTime + 0.5);
                 }, 200);
-                
-                console.log('Som de notificação tocado!');
             } catch (error) {
                 console.error('Erro ao tocar som:', error);
             }
+        }
+
+        function startAlarm() {
+            if (isAlarmActive) return;
+            
+            console.log('🚨 Alarme iniciado!');
+            isAlarmActive = true;
+            
+            // Mostra overlay
+            document.getElementById('alarmOverlay').classList.add('active');
+            
+            // Toca som imediatamente
+            playAlarmBeep();
+            
+            // Continua tocando a cada 2 segundos
+            alarmInterval = setInterval(() => {
+                if (isAlarmActive) {
+                    playAlarmBeep();
+                }
+            }, 2000);
+        }
+
+        function silenceAlarm() {
+            console.log('🔕 Alarme silenciado');
+            isAlarmActive = false;
+            
+            // Para o intervalo
+            if (alarmInterval) {
+                clearInterval(alarmInterval);
+                alarmInterval = null;
+            }
+            
+            // Esconde overlay
+            document.getElementById('alarmOverlay').classList.remove('active');
         }
 
         let previousRideCount = 0;
@@ -801,7 +901,7 @@
                     // Verifica se há novas corridas
                     if (rides.length > previousRideCount) {
                         console.log('Nova solicitação detectada!');
-                        playNotificationSound();
+                        startAlarm();
                     }
                     previousRideCount = rides.length;
                     
@@ -831,7 +931,7 @@
                         console.log('Mudança detectada na tabela rides:', payload);
                         if (payload.eventType === 'INSERT') {
                             console.log('Nova corrida inserida!');
-                            playNotificationSound();
+                            startAlarm();
                         }
                         loadRides();
                     }
