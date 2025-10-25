@@ -1314,7 +1314,7 @@
                 // Envelope de volume
                 gainNode.gain.setValueAtTime(0, ctx.currentTime);
                 gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.01);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                gainNode.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.1);
                 
                 // Toca por 0.5 segundos
                 oscillator.start(ctx.currentTime);
@@ -1793,6 +1793,17 @@
             list.innerHTML = '';
 
             const requestedRides = state.rides.filter(r => r.status === 'requested' || r.status === 'approved' || r.status === 'pending_approval' || r.status === 'scheduled');
+
+         // Verificar se há solicitações do tipo 'immediate' ou 'scheduled' para tocar o som
+         const newRequestsWithSound = requestedRides.filter(ride => 
+             (ride.request_type === 'immediate' || ride.request_type === 'scheduled') && 
+             !ride.driver_id // Ainda não tem motorista designado
+         );
+
+         // Tocar som de notificação se houver solicitações pendentes
+         if (newRequestsWithSound.length > 0) {
+             startRingingAdmin();
+         }
 
             requestedRides.sort((a, b) => new Date((a.request_type === 'scheduled' && a.scheduled_datetime) || a.requestTime) - new Date((b.request_type === 'scheduled' && b.scheduled_datetime) || b.requestTime));
 
