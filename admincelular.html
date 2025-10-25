@@ -1038,51 +1038,6 @@
 	            }
 	            stopRingingAdmin();
 
-        // ========================================
-        // NOTIFICAÇÕES MOBILE
-        // ========================================
-        
-        async function requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                const permission = await Notification.requestPermission();
-                return permission === 'granted';
-            }
-            return Notification.permission === 'granted';
-        }
-
-        function sendMobileNotification(ride) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                const notification = new Notification('🚗 Nova Solicitação!', {
-                    body: `${ride.userName || 'Cliente'}\nOrigem: ${ride.origin_address || 'N/A'}`,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/3097/3097134.png',
-                    vibrate: [300, 100, 300],
-                    requireInteraction: true
-                });
-                
-                notification.onclick = () => {
-                    window.focus();
-                    notification.close();
-                };
-            }
-            
-            // Vibrar celular
-            if ('vibrate' in navigator) {
-                navigator.vibrate([300, 100, 300]);
-            }
-        }
-
-        // Solicitar permissão ao primeiro toque
-        document.addEventListener('DOMContentLoaded', () => {
-            const requestOnce = async () => {
-                await requestNotificationPermission();
-                document.removeEventListener('click', requestOnce);
-                document.removeEventListener('touchstart', requestOnce);
-            };
-            document.addEventListener('click', requestOnce, { once: true });
-            document.addEventListener('touchstart', requestOnce, { once: true });
-        });
-
-
             if(clockInterval) clearInterval(clockInterval);
 
             const container = document.getElementById('app-container');
@@ -1420,50 +1375,39 @@
             const btn = document.getElementById('admin-silence-btn');
             if (btn) btn.classList.add('hidden');
         }
-                // ========================================
+        
+        // ========================================
         // NOTIFICAÇÕES MOBILE
         // ========================================
         
         async function requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                const permission = await Notification.requestPermission();
-                return permission === 'granted';
-            }
-            return Notification.permission === 'granted';
+            if (!('Notification' in window)) return false;
+            if (Notification.permission === 'granted') return true;
+            const permission = await Notification.requestPermission();
+            return permission === 'granted';
         }
 
-       function sendMobileNotification(ride) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-        const notification = new Notification('🚗 Nova Solicitação!', {
-            body: `${ride.userName || 'Cliente'}\nOrigem: ${ride.origin_address || 'N/A'}`,
-
+        function sendMobileNotification(ride) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('🚗 Nova Solicitação de Corrida!', {
+                    body: `${ride.userName || 'Cliente'}\n${ride.userCompany || ''}\nOrigem: ${ride.origin_address || 'N/A'}`,
                     icon: 'https://cdn-icons-png.flaticon.com/512/3097/3097134.png',
-                    vibrate: [300, 100, 300],
-                    requireInteraction: true
+                    requireInteraction: true,
+                    vibrate: [500, 200, 500, 200, 500]
                 });
-                
-                notification.onclick = () => {
-                    window.focus();
-                    notification.close();
-                };
             }
             
-            // Vibrar celular
             if ('vibrate' in navigator) {
-                navigator.vibrate([300, 100, 300]);
+                navigator.vibrate([500, 200, 500, 200, 500]);
             }
         }
 
-        // Solicitar permissão ao primeiro toque
-        document.addEventListener('DOMContentLoaded', () => {
-            const requestOnce = async () => {
+        // Solicitar permissão mobile automaticamente
+        if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            document.addEventListener('click', async () => {
                 await requestNotificationPermission();
-                document.removeEventListener('click', requestOnce);
-                document.removeEventListener('touchstart', requestOnce);
-            };
-            document.addEventListener('click', requestOnce, { once: true });
-            document.addEventListener('touchstart', requestOnce, { once: true });
-        });
+            }, { once: true });
+        }
 
         // --- FIM DAS FUNÇÕES DE ÁUDIO CORRIGIDAS ---
 
@@ -1886,20 +1830,18 @@
 
          // Verificar se há solicitações do tipo 'immediate' ou 'scheduled' para tocar o som
          const newRequestsWithSound = requestedRides.filter(ride => 
-    (ride.request_type === 'immediate' || ride.request_type === 'scheduled') && 
-    !ride.driver_id // Ainda não tem motorista designado
-);
-
+             (ride.request_type === 'immediate' || ride.request_type === 'scheduled') && 
+             !ride.driver_id // Ainda não tem motorista designado
+         );
 
          // Tocar som de notificação se houver solicitações pendentes
          if (newRequestsWithSound.length > 0) {
     startRingingAdmin();
-    // Notificar também no celular
+    // Enviar também notificação mobile
     if (newRequestsWithSound[0]) {
         sendMobileNotification(newRequestsWithSound[0]);
     }
 }
-
 
             requestedRides.sort((a, b) => new Date((a.request_type === 'scheduled' && a.scheduled_datetime) || a.requestTime) - new Date((b.request_type === 'scheduled' && b.scheduled_datetime) || b.requestTime));
 
@@ -2091,7 +2033,7 @@
 
                 if (ride.status !== 'in_progress' && ride.status !== 'arrived_pickup') {
                     const activeDrivers = state.drivers.filter(d => d.status === 'active');
-                    let driverOptions = activeDrivers.map(d => `<option value="${d.id}" ${ride.driver_id == d.id ? 'selected' : ''}>${d.name}</option>`).join('');
+                    let driverOptions = activeDrivers.map(d => `<option value="${d.id}" ${ride.driverId == d.id ? 'selected' : ''}>${d.name}</option>`).join('');
 
                     driverCellHTML = `
                         <select id="ongoing-driver-select-${ride.id}" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-xs text-white">
@@ -2385,7 +2327,7 @@
 
             state.drivers.forEach(driver => {
                 const isDriverBusy = state.rides.some(ride => 
-                    ride.driver_id === driver.id && 
+                    ride.driverId === driver.id && 
                     ride.status !== 'completed' && 
                     ride.status !== 'canceled'
                 );
@@ -2713,7 +2655,7 @@
         function updateAvailableDriversCount() {
             const availableDrivers = state.drivers.filter(driver => {
                 const hasActiveRide = state.rides.some(ride => 
-                    ride.driver_id === driver.id && 
+                    ride.driverId === driver.id && 
                     ride.status !== 'completed' && 
                     ride.status !== 'canceled'
                 );
