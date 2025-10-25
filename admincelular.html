@@ -1053,7 +1053,7 @@
         function sendMobileNotification(ride) {
             if ('Notification' in window && Notification.permission === 'granted') {
                 const notification = new Notification('🚗 Nova Solicitação!', {
-                    body: `${ride.userName || 'Cliente'}\nOrigem: ${ride.originaddress || 'N/A'}`,
+                    body: `${ride.userName || 'Cliente'}\nOrigem: ${ride.origin_address || 'N/A'}`,
                     icon: 'https://cdn-icons-png.flaticon.com/512/3097/3097134.png',
                     vibrate: [300, 100, 300],
                     requireInteraction: true
@@ -1432,10 +1432,11 @@
             return Notification.permission === 'granted';
         }
 
-        function sendMobileNotification(ride) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                const notification = new Notification('🚗 Nova Solicitação!', {
-                    body: `${ride.userName || 'Cliente'}\nOrigem: ${ride.pickupAddress || 'N/A'}`,
+       function sendMobileNotification(ride) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification('🚗 Nova Solicitação!', {
+            body: `${ride.userName || 'Cliente'}\nOrigem: ${ride.origin_address || 'N/A'}`,
+
                     icon: 'https://cdn-icons-png.flaticon.com/512/3097/3097134.png',
                     vibrate: [300, 100, 300],
                     requireInteraction: true
@@ -1885,9 +1886,10 @@
 
          // Verificar se há solicitações do tipo 'immediate' ou 'scheduled' para tocar o som
          const newRequestsWithSound = requestedRides.filter(ride => 
-             (ride.request_type === 'immediate' || ride.request_type === 'scheduled') && 
-             !ride.driver_id // Ainda não tem motorista designado
-         );
+    (ride.request_type === 'immediate' || ride.request_type === 'scheduled') && 
+    !ride.driver_id // Ainda não tem motorista designado
+);
+
 
          // Tocar som de notificação se houver solicitações pendentes
          if (newRequestsWithSound.length > 0) {
@@ -2089,7 +2091,7 @@
 
                 if (ride.status !== 'in_progress' && ride.status !== 'arrived_pickup') {
                     const activeDrivers = state.drivers.filter(d => d.status === 'active');
-                    let driverOptions = activeDrivers.map(d => `<option value="${d.id}" ${ride.driverId == d.id ? 'selected' : ''}>${d.name}</option>`).join('');
+                    let driverOptions = activeDrivers.map(d => `<option value="${d.id}" ${ride.driver_id == d.id ? 'selected' : ''}>${d.name}</option>`).join('');
 
                     driverCellHTML = `
                         <select id="ongoing-driver-select-${ride.id}" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-xs text-white">
@@ -2383,7 +2385,7 @@
 
             state.drivers.forEach(driver => {
                 const isDriverBusy = state.rides.some(ride => 
-                    ride.driverId === driver.id && 
+                    ride.driver_id === driver.id && 
                     ride.status !== 'completed' && 
                     ride.status !== 'canceled'
                 );
@@ -2711,7 +2713,7 @@
         function updateAvailableDriversCount() {
             const availableDrivers = state.drivers.filter(driver => {
                 const hasActiveRide = state.rides.some(ride => 
-                    ride.driverId === driver.id && 
+                    ride.driver_id === driver.id && 
                     ride.status !== 'completed' && 
                     ride.status !== 'canceled'
                 );
