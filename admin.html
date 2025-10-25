@@ -2485,48 +2485,51 @@
             const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*');
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
+async function sendNewRideEmailNotification(ride) {
+    console.log('Tentando enviar e-mail para a nova corrida:', ride);
+    
+    // Obtém o e-mail de destino configurado
+    const destinationEmail = getNotificationEmail();
+    
+    try {
+        const subject = `Nova Solicitação de Corrida: ${ride.userName}`;
+        const htmlBody = `
+            <h2>Nova Solicitação de Corrida</h2>
+            <p>Uma nova solicitação de corrida foi registrada no sistema:</p>
+            <ul>
+                <li><strong>Usuário:</strong> ${ride.userName} (${ride.userCompany || 'N/A'})</li>
+                <li><strong>Origem:</strong> ${ride.origin_address}</li>
+                <li><strong>Destino:</strong> ${formatDestination(ride.destination)}</li>
+                <li><strong>Tipo:</strong> ${ride.request_type === 'scheduled' ? 'Agendada' : 'Imediata'}</li>
+                ${ride.scheduled_datetime ? `<li><strong>Data/Hora Agendada:</strong> ${new Date(ride.scheduled_datetime).toLocaleString('pt-BR')}</li>` : ''}
+                <li><strong>Observação:</strong> ${ride.observation || 'Nenhuma'}</li>
+            </ul>
+            <p>Acesse o painel administrativo para mais detalhes.</p>
+        `;
+        
+        // ✅ CHAMA A API SERVERLESS SEGURA (sem expor chave)
+        const response = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                to: destinationEmail,
+                subject: subject,
+                html: htmlBody
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            console.log('✅ E-mail enviado com sucesso:', result);
+        } else {
+            console.error('❌ Erro ao enviar e-mail:', result);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao enviar notificação por e-mail:', error);
+    }
+}
 
-	        async function sendNewRideEmailNotification(ride) {
-	            console.log('Tentando enviar e-mail para a nova corrida:', ride);
-	            
-	            // 1. Usa a chave API fornecida pelo usuário e inicializa o cliente Resend
-	           
-	
-	            // 2. Obtém o e-mail de destino configurado (ou o padrão)
-	            const destinationEmail = getNotificationEmail();
-	
-	            try {
-	                const subject = `Nova Solicitação de Corrida: ${ride.userName}`;
-	                const htmlBody = `
-	                    <p>Uma nova solicitação de corrida foi registrada no sistema:</p>
-	                    <ul>
-	                        <li><strong>Usuário:</strong> ${ride.userName} (${ride.userCompany || 'N/A'})</li>
-	                        <li><strong>Origem:</strong> ${ride.origin_address}</li>
-	                        <li><strong>Destino:</strong> ${formatDestination(ride.destination)}</li>
-	                        <li><strong>Tipo:</strong> ${ride.request_type === 'scheduled' ? 'Agendada' : 'Imediata'}</li>
-	                        ${ride.scheduled_datetime ? `<li><strong>Data/Hora Agendada:</strong> ${new Date(ride.scheduled_datetime).toLocaleString('pt-BR')}</li>` : ''}
-	                        <li><strong>Observação:</strong> ${ride.observation || 'Nenhuma'}</li>
-	                    </ul>
-	                    <p>Acesse o painel administrativo para designar um motorista.</p>
-	                `;
-	                
-	                const { data, error } = await resend.emails.send({
-	                    from: 'Sistema de Notificação <onboarding@resend.dev>', // Use um e-mail verificado no Resend
-	                    to: destinationEmail,
-	                    subject: subject,
-	                    html: htmlBody,
-	                });
-	
-	                if (error) {
-	                    console.error('Erro ao enviar e-mail pelo Resend:', error);
-	                } else {
-	                    console.log('E-mail de notificação enviado com sucesso:', data);
-	                }
-	
-	            } catch (error) {
-	                console.error('Erro ao tentar enviar e-mail:', error);
-	            }
-	        }
 
         function setupRealtimeSubscriptions() {
             supabaseClient.channel('public:drivers').on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, payload => {
