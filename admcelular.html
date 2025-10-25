@@ -536,13 +536,16 @@
         <h1>Painel de Corridas</h1>
     </header>
 
-    <div class="filter-bar">
-        <select id="statusFilter" onchange="filterRides()">
-            <option value="">Todos os Status</option>
-            <option value="scheduled">Agendada</option>
-            <option value="immediate">Imediata</option>
-        </select>
-    </div>
+    <div class="filter-bar" style="display: flex; gap: 8px; flex-wrap: wrap;">
+  <select id="statusFilter" onchange="filterRides()">
+    <option value="">Todos os Status</option>
+    <option value="scheduled">Agendada</option>
+    <option value="immediate">Imediata</option>
+  </select>
+  <input type="date" id="startDateFilter" onchange="filterRides()" style="flex:1; min-width: 120px;" />
+  <input type="date" id="endDateFilter" onchange="filterRides()" style="flex:1; min-width: 120px;" />
+</div>
+
 
     <div class="rides-container" id="ridesContainer">
         <div class="loading">Carregando corridas...</div>
@@ -710,21 +713,28 @@
         }
 
         function filterRides() {
-            const status = document.getElementById('statusFilter').value.toLowerCase();
-            
-            if (!status) {
-                renderRides(allRides);
-                return;
-            }
+  const status = document.getElementById('statusFilter').value.toLowerCase();
+  const start = document.getElementById('startDateFilter').value;
+  const end = document.getElementById('endDateFilter').value;
 
-            const filtered = allRides.filter(ride => {
-                const rideStatus = (ride.status || '').toLowerCase();
-                return rideStatus === status;
-            });
-            
-            console.log(`Filtrando por: ${status}, encontrados: ${filtered.length}`);
-            renderRides(filtered);
-        }
+  const startDate = start ? new Date(start + 'T00:00:00') : null;
+  const endDate = end ? new Date(end + 'T23:59:59.999') : null;
+
+  let filtered = allRides;
+
+  if (status) {
+    filtered = filtered.filter(ride => (ride.status || '').toLowerCase() === status);
+  }
+  if (startDate) {
+    filtered = filtered.filter(ride => ride.requestTime && new Date(ride.requestTime) >= startDate);
+  }
+  if (endDate) {
+    filtered = filtered.filter(ride => ride.requestTime && new Date(ride.requestTime) <= endDate);
+  }
+
+  renderRides(filtered);
+}
+
 
         async function saveRide(rideId) {
             const driverSelect = document.getElementById(`driver-${rideId}`);
