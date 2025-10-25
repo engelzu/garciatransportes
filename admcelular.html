@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Painel Corridas">
+    <meta name="theme-color" content="#21808d">
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiUGFpbmVsIGRlIENvcnJpZGFzIC0gR2FyY2lhIFRyYW5zcG9ydGVzIiwic2hvcnRfbmFtZSI6IlBhaW5lbCBDb3JyaWRhcyIsInN0YXJ0X3VybCI6Ii8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjZmNmY2Y5IiwidGhlbWVfY29sb3IiOiIjMjE4MDhkIiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb0FBQUFOU1VoRVVnQUFBSUFBQUFDQUNBWUFBQUNzY1FFQUFBQUFCbUpMUjBRQS93RC9BUCtndmFlVEFBQUFDWEJJV1hNQUFBc1RBQUFMRXdFQW1wd1lBQUFBQjNSSlRVVUg1d0VDRndhQXIycFR3QUFBQTB4U1VSQlZIamE3ZG94RElOUkRJVHhvL1ZtQWtBQUFBQkpSVTVFcmtKZ2dnPT0iLCJzaXplcyI6IjEyOHgxMjgiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dfQ==">
     <title>Painel de Corridas - Garcia Transportes</title>
     <style>
         :root {
@@ -393,6 +399,136 @@
         .btn-silence:active {
             background: var(--color-red-400);
         }
+
+        .install-prompt {
+            position: fixed;
+            bottom: 80px;
+            left: var(--space-12);
+            right: var(--space-12);
+            background: var(--color-primary);
+            color: white;
+            padding: var(--space-16);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            z-index: 1500;
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
+
+        .install-prompt.show {
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .install-prompt h3 {
+            margin-bottom: var(--space-8);
+            font-size: 1rem;
+        }
+
+        .install-prompt p {
+            margin-bottom: var(--space-16);
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .install-prompt-buttons {
+            display: flex;
+            gap: var(--space-8);
+        }
+
+        .btn-install {
+            flex: 1;
+            padding: var(--space-12);
+            background: white;
+            color: var(--color-primary);
+            border: none;
+            border-radius: var(--radius-base);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-dismiss {
+            padding: var(--space-12) var(--space-16);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: var(--radius-base);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .permission-prompt {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2500;
+            padding: var(--space-24);
+        }
+
+        .permission-prompt.show {
+            display: flex;
+        }
+
+        .permission-box {
+            background: var(--color-surface);
+            padding: var(--space-24);
+            border-radius: var(--radius-lg);
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .permission-box h2 {
+            color: var(--color-primary);
+            margin-bottom: var(--space-16);
+        }
+
+        .permission-box p {
+            margin-bottom: var(--space-24);
+            line-height: 1.6;
+        }
+
+        .permission-box ul {
+            text-align: left;
+            margin-bottom: var(--space-24);
+            padding-left: var(--space-24);
+        }
+
+        .permission-box li {
+            margin-bottom: var(--space-8);
+        }
+
+        .btn-grant {
+            width: 100%;
+            padding: var(--space-16);
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-base);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-grant:active {
+            background: var(--color-primary-hover);
+        }
     </style>
 </head>
 <body>
@@ -422,6 +558,30 @@
             <h2>🚨 NOVA SOLICITAÇÃO!</h2>
             <p>Uma nova corrida foi solicitada</p>
             <button class="btn-silence" onclick="silenceAlarm()">🔕 SILENCIAR</button>
+        </div>
+    </div>
+
+    <!-- Prompt de Instalação -->
+    <div class="install-prompt" id="installPrompt">
+        <h3>📱 Instalar App</h3>
+        <p>Adicione à tela inicial para melhor experiência e notificações</p>
+        <div class="install-prompt-buttons">
+            <button class="btn-install" onclick="installApp()">Instalar</button>
+            <button class="btn-dismiss" onclick="dismissInstallPrompt()">Agora não</button>
+        </div>
+    </div>
+
+    <!-- Prompt de Permissões -->
+    <div class="permission-prompt" id="permissionPrompt">
+        <div class="permission-box">
+            <h2>🔔 Permissões Necessárias</h2>
+            <p>Para receber alertas de novas corridas, precisamos de:</p>
+            <ul>
+                <li>🔊 <strong>Áudio:</strong> Para tocar alarme sonoro</li>
+                <li>📱 <strong>Notificações:</strong> Para alertas em segundo plano</li>
+                <li>🌐 <strong>Segundo plano:</strong> Para funcionar com tela bloqueada</li>
+            </ul>
+            <button class="btn-grant" onclick="requestPermissions()">Conceder Permissões</button>
         </div>
     </div>
 
@@ -778,10 +938,106 @@
         let audioContext = null;
         let alarmInterval = null;
         let isAlarmActive = false;
+        let deferredInstallPrompt = null;
+        let permissionsGranted = false;
 
         function initAudio() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // PWA Installation
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            
+            // Mostra prompt de instalação após 3 segundos
+            setTimeout(() => {
+                if (!localStorage.getItem('installDismissed')) {
+                    document.getElementById('installPrompt').classList.add('show');
+                }
+            }, 3000);
+        });
+
+        async function installApp() {
+            if (!deferredInstallPrompt) {
+                alert('Para instalar:\n\n1. Toque no menu do navegador (⋮)\n2. Selecione "Adicionar à tela inicial"\n3. Toque em "Adicionar"');
+                return;
+            }
+
+            deferredInstallPrompt.prompt();
+            const { outcome } = await deferredInstallPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('App instalado');
+                localStorage.setItem('appInstalled', 'true');
+            }
+            
+            deferredInstallPrompt = null;
+            document.getElementById('installPrompt').classList.remove('show');
+        }
+
+        function dismissInstallPrompt() {
+            document.getElementById('installPrompt').classList.remove('show');
+            localStorage.setItem('installDismissed', 'true');
+        }
+
+        // Permissões
+        async function requestPermissions() {
+            try {
+                // Solicita permissão de notificação
+                if ('Notification' in window) {
+                    const permission = await Notification.requestPermission();
+                    console.log('Permissão de notificação:', permission);
+                }
+
+                // Inicializa áudio
+                initAudio();
+                
+                // Testa o som
+                playAlarmBeep();
+                
+                permissionsGranted = true;
+                document.getElementById('permissionPrompt').classList.remove('show');
+                
+                showNotification('Permissões concedidas! Você receberá alertas de novas corridas.');
+                
+                localStorage.setItem('permissionsGranted', 'true');
+            } catch (error) {
+                console.error('Erro ao solicitar permissões:', error);
+                alert('Por favor, permita notificações e áudio nas configurações do navegador.');
+            }
+        }
+
+        function checkPermissions() {
+            const granted = localStorage.getItem('permissionsGranted') === 'true';
+            
+            if (!granted) {
+                // Mostra prompt de permissões após 5 segundos
+                setTimeout(() => {
+                    document.getElementById('permissionPrompt').classList.add('show');
+                }, 5000);
+            } else {
+                permissionsGranted = true;
+                initAudio();
+            }
+        }
+
+        // Notificações do sistema
+        function showSystemNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    new Notification(title, {
+                        body: body,
+                        icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+cBAgYXArM4TwAAAAlwSFlzAAALEwAACxMBAJqcGAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAILSURBVHja7doxDINRDITxo/VmAkAAAABJRU5ErkJggg==',
+                        tag: 'new-ride',
+                        vibrate: [200, 100, 200],
+                        requireInteraction: true
+                    });
+                } catch (error) {
+                    console.error('Erro ao mostrar notificação:', error);
+                }
             }
         }
 
@@ -840,6 +1096,9 @@
             
             // Mostra overlay
             document.getElementById('alarmOverlay').classList.add('active');
+            
+            // Mostra notificação do sistema
+            showSystemNotification('🚨 Nova Corrida!', 'Uma nova solicitação de corrida foi recebida');
             
             // Toca som imediatamente
             playAlarmBeep();
@@ -941,6 +1200,9 @@
             // Desbloqueia áudio com primeiro toque do usuário (necessário no mobile)
             document.body.addEventListener('click', initAudio, { once: true });
             document.body.addEventListener('touchstart', initAudio, { once: true });
+            
+            // Verifica permissões
+            checkPermissions();
         }
 
         // Aguarda o DOM carregar
@@ -948,6 +1210,13 @@
             document.addEventListener('DOMContentLoaded', init);
         } else {
             init();
+        }
+
+        // Service Worker para funcionar offline e background
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:text/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdpbnN0YWxsJywgKGV2ZW50KSA9PiB7CiAgY29uc29sZS5sb2coJ1NlcnZpY2UgV29ya2VyIGluc3RhbGFkbycpOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignYWN0aXZhdGUnLCAoZXZlbnQpID0+IHsKICBjb25zb2xlLmxvZygnU2VydmljZSBXb3JrZXIgYXRpdmFkbycpOwp9KTs=')
+                .then(reg => console.log('Service Worker registrado'))
+                .catch(err => console.log('Erro ao registrar Service Worker:', err));
         }
     </script>
 </body>
