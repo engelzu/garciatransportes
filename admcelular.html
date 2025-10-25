@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Painel de Corridas - Garcia Transportes</title>
+    <style>
+        :root {
+            --color-white: rgba(255, 255, 255, 1);
+            --color-black: rgba(0, 0, 0, 1);
+            --color-cream-50: rgba(252, 252, 249, 1);
+            --color-cream-100: rgba(255, 255, 253, 1);
+            --color-gray-200: rgba(245, 245, 245, 1);
+            --color-gray-300: rgba(167, 169, 169, 1);
+            --color-gray-400: rgba(119, 124, 124, 1);
+            --color-slate-500: rgba(98, 108, 113, 1);
+            --color-brown-600: rgba(94, 82, 64, 1);
+            --color-charcoal-700: rgba(31, 33, 33, 1);
+            --color-charcoal-800: rgba(38, 40, 40, 1);
+            --color-slate-900: rgba(19, 52, 59, 1);
+            --color-teal-300: rgba(50, 184, 198, 1);
+            --color-teal-400: rgba(45, 166, 178, 1);
+            --color-teal-500: rgba(33, 128, 141, 1);
+            --color-teal-600: rgba(29, 116, 128, 1);
+            --color-teal-700: rgba(26, 104, 115, 1);
+            --color-red-400: rgba(255, 84, 89, 1);
+            --color-red-500: rgba(192, 21, 47, 1);
+            --color-orange-400: rgba(230, 129, 97, 1);
+            --color-orange-500: rgba(168, 75, 47, 1);
+            --color-bg-1: rgba(59, 130, 246, 0.08);
+            --color-background: var(--color-cream-50);
+            --color-surface: var(--color-cream-100);
+            --color-text: var(--color-slate-900);
+            --color-text-secondary: var(--color-slate-500);
+            --color-primary: var(--color-teal-500);
+            --color-primary-hover: var(--color-teal-600);
+            --color-border: rgba(94, 82, 64, 0.2);
+            --color-card-border: rgba(94, 82, 64, 0.12);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+            --radius-base: 8px;
+            --radius-lg: 12px;
+            --space-8: 8px;
+            --space-12: 12px;
+            --space-16: 16px;
+            --space-24: 24px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-background: var(--color-charcoal-700);
+                --color-surface: var(--color-charcoal-800);
+                --color-text: var(--color-gray-200);
+                --color-text-secondary: rgba(167, 169, 169, 0.7);
+                --color-primary: var(--color-teal-300);
+                --color-primary-hover: var(--color-teal-400);
+                --color-border: rgba(119, 124, 124, 0.3);
+                --color-card-border: rgba(119, 124, 124, 0.2);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-background);
+            color: var(--color-text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 80px;
+        }
+
+        header {
+            background: var(--color-primary);
+            color: white;
+            padding: var(--space-16);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-md);
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .filter-bar {
+            background: var(--color-surface);
+            padding: var(--space-12);
+            border-bottom: 1px solid var(--color-border);
+            position: sticky;
+            top: 58px;
+            z-index: 99;
+        }
+
+        .filter-bar select {
+            width: 100%;
+            padding: var(--space-12);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-base);
+            background: var(--color-background);
+            color: var(--color-text);
+            font-size: 0.95rem;
+        }
+
+        .rides-container {
+            padding: var(--space-12);
+        }
+
+        .ride-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.2), rgba(236, 72, 153, 0.15));
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: var(--radius-lg);
+            padding: var(--space-16);
+            margin-bottom: var(--space-16);
+            box-shadow: 0 4px 15px rgba(147, 51, 234, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ride-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #3b82f6, #a855f7, #ec4899, #f59e0b);
+        }
+
+        .ride-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-12);
+            flex-wrap: wrap;
+            gap: var(--space-8);
+        }
+
+        .ride-user {
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: var(--color-text);
+        }
+
+        .ride-status {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .status-scheduled { background: rgba(59, 130, 246, 0.15); color: #1d4ed8; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .status-immediate { background: rgba(245, 158, 11, 0.15); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .ride-details {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-8);
+            margin-bottom: var(--space-12);
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-8);
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            min-width: 60px;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 0.9rem;
+            color: var(--color-text);
+            flex: 1;
+        }
+
+        .location-box {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.08));
+            padding: var(--space-12);
+            border-radius: var(--radius-base);
+            border-left: 4px solid #a855f7;
+            margin: var(--space-8) 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .location-label {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .location-text {
+            font-size: 0.85rem;
+            color: var(--color-text);
+        }
+
+        .ride-actions {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: var(--space-8);
+            margin-top: var(--space-12);
+        }
+
+        .ride-actions select {
+            padding: var(--space-8);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-base);
+            background: var(--color-background);
+            color: var(--color-text);
+            font-size: 0.85rem;
+        }
+
+        .btn {
+            padding: var(--space-8) var(--space-12);
+            border-radius: var(--radius-base);
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-save {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-save:active {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-delete {
+            background: var(--color-red-500);
+            color: white;
+            width: 40px;
+        }
+
+        .btn-delete:active {
+            opacity: 0.8;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--space-24);
+            color: var(--color-text-secondary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: var(--space-24);
+            color: var(--color-text-secondary);
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+            padding: var(--space-12);
+            display: flex;
+            gap: var(--space-8);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-refresh {
+            width: 100%;
+            padding: var(--space-12);
+            border: 1px solid var(--color-primary);
+            background: white;
+            color: var(--color-primary);
+            border-radius: var(--radius-base);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .btn-refresh:active {
+            background: var(--color-bg-1);
+        }
+
+        @media (max-width: 360px) {
+            .ride-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                display: flex;
+                gap: var(--space-8);
+            }
+            
+            .btn-group .btn-save {
+                flex: 1;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--color-primary);
+            color: white;
+            padding: var(--space-12) var(--space-24);
+            border-radius: var(--radius-base);
+            box-shadow: var(--shadow-md);
+            z-index: 1000;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Painel de Corridas</h1>
+    </header>
+
+    <div class="filter-bar">
+        <select id="statusFilter" onchange="filterRides()">
+            <option value="">Todos os Status</option>
+            <option value="scheduled">Agendada</option>
+            <option value="immediate">Imediata</option>
+        </select>
+    </div>
+
+    <div class="rides-container" id="ridesContainer">
+        <div class="loading">Carregando corridas...</div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="btn-refresh" onclick="loadRides()">🔄 Atualizar</button>
+    </div>
+
+    <!-- Biblioteca Supabase - DEVE ser carregada ANTES do script principal -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
+        
+        let supabaseClient;
+        let allRides = [];
+        let allDrivers = [];
+
+        async function loadRides() {
+            try {
+                console.log('Carregando corridas...');
+                
+                const { data: rides, error } = await supabaseClient
+                    .from('rides')
+                    .select('*')
+                    .order('requestTime', { ascending: false });
+                
+                if (error) {
+                    console.error('Erro Supabase:', error);
+                    throw error;
+                }
+                
+                console.log('Corridas carregadas:', rides?.length || 0);
+                
+                allRides = (rides || []).map(ride => ({
+                    ...ride,
+                    userName: ride.userName || 'Usuário desconhecido',
+                    driverName: ride.driverName || null,
+                    origin: ride.origin_address || ride.originaddress || ride.origin || 'Não informado',
+                    destination: ride.destination || 'Não informado'
+                }));
+                
+                renderRides(allRides);
+            } catch (error) {
+                console.error('Erro:', error);
+                showNotification('Erro ao carregar corridas', 'error');
+            }
+        }
+
+        async function loadDrivers() {
+            try {
+                const { data: drivers, error } = await supabaseClient
+                    .from('drivers')
+                    .select('*')
+                    .eq('status', 'active');
+                
+                if (error) throw error;
+                
+                allDrivers = drivers || [];
+            } catch (error) {
+                console.error('Erro ao carregar motoristas:', error);
+            }
+        }
+
+        function renderRides(rides) {
+            const container = document.getElementById('ridesContainer');
+            
+            if (!rides || rides.length === 0) {
+                container.innerHTML = '<div class="empty-state">Nenhuma corrida encontrada</div>';
+                return;
+            }
+
+            container.innerHTML = rides.map(ride => `
+                <div class="ride-card" data-ride-id="${ride.id}">
+                    <div class="ride-header">
+                        <div class="ride-user">${ride.userName || 'Usuário desconhecido'}</div>
+                        <div class="ride-status status-${(ride.status || '').toLowerCase()}">${getStatusLabel(ride.status)}</div>
+                    </div>
+
+                    <div class="ride-details">
+                        <div class="location-box">
+                            <div class="location-label">📍 ORIGEM</div>
+                            <div class="location-text">${ride.origin}</div>
+                        </div>
+
+                        <div class="location-box">
+                            <div class="location-label">🎯 DESTINO(S)</div>
+                            <div class="location-text">${formatAllDestinations(ride.destination)}</div>
+                        </div>
+
+                        ${ride.observation ? `
+                        <div class="detail-row">
+                            <div class="detail-label">Observação:</div>
+                            <div class="detail-value">${ride.observation}</div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">Distância:</div>
+                            <div class="detail-value">Será calculada ao finalizar</div>
+                        </div>
+
+                        ${ride.userName || ride.username ? `
+                        <div class="detail-row">
+                            <div class="detail-label">De:</div>
+                            <div class="detail-value">${ride.userName || ride.username}</div>
+                        </div>
+                        ` : ''}
+
+                        <div class="detail-row">
+                            <div class="detail-label">Solicitado em:</div>
+                            <div class="detail-value">${formatDateTime(ride.requestTime || ride.requesttime)}</div>
+                        </div>
+                    </div>
+
+                    <div class="ride-actions">
+                        <select id="driver-${ride.id}">
+                            <option value="">Selecione motorista</option>
+                            ${allDrivers.map(driver => `
+                                <option value="${driver.id}" ${ride.driverId === driver.id ? 'selected' : ''}>
+                                    ${driver.name}
+                                </option>
+                            `).join('')}
+                        </select>
+                        <button class="btn btn-save" onclick="saveRide('${ride.id}')">✓</button>
+                        <button class="btn btn-delete" onclick="deleteRide('${ride.id}')">🗑</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterRides() {
+            const status = document.getElementById('statusFilter').value.toLowerCase();
+            
+            if (!status) {
+                renderRides(allRides);
+                return;
+            }
+
+            const filtered = allRides.filter(ride => {
+                const rideStatus = (ride.status || '').toLowerCase();
+                return rideStatus === status;
+            });
+            
+            console.log(`Filtrando por: ${status}, encontrados: ${filtered.length}`);
+            renderRides(filtered);
+        }
+
+        async function saveRide(rideId) {
+            const driverSelect = document.getElementById(`driver-${rideId}`);
+            const driverId = driverSelect.value;
+
+            if (!driverId) {
+                showNotification('Selecione um motorista', 'error');
+                return;
+            }
+
+            try {
+                const driver = allDrivers.find(d => d.id == driverId);
+                
+                const { error } = await supabaseClient
+                    .from('rides')
+                    .update({
+                        driverId: parseInt(driverId),
+                        driverName: driver?.name || null,
+                        status: 'assigned'
+                    })
+                    .eq('id', rideId);
+
+                if (error) throw error;
+
+                showNotification('Motorista atribuído com sucesso!');
+                await loadRides();
+            } catch (error) {
+                console.error('Erro:', error);
+                showNotification('Erro ao salvar', 'error');
+            }
+        }
+
+        async function deleteRide(rideId) {
+            if (!confirm('Tem certeza que deseja excluir esta corrida?')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('rides')
+                    .delete()
+                    .eq('id', rideId);
+
+                if (error) throw error;
+
+                showNotification('Corrida excluída com sucesso!');
+                await loadRides();
+            } catch (error) {
+                console.error('Erro:', error);
+                showNotification('Erro ao excluir', 'error');
+            }
+        }
+
+        function exportToExcel() {
+            const filtered = document.getElementById('statusFilter').value;
+            const ridesToExport = filtered ? allRides.filter(r => r.status === filtered) : allRides;
+
+            if (ridesToExport.length === 0) {
+                showNotification('Nenhuma corrida para exportar', 'error');
+                return;
+            }
+
+            let csv = 'Data/Hora,Usuário,Origem,Destino,Observação,Motorista,Status,Distância\n';
+            
+            ridesToExport.forEach(ride => {
+                const row = [
+                    formatDateTime(ride.scheduledDate),
+                    ride.userName || '',
+                    `"${ride.origin}"`,
+                    `"${ride.destination}"`,
+                    `"${ride.observation || ''}"`,
+                    ride.driverName || '',
+                    getStatusLabel(ride.status),
+                    ride.distance || ''
+                ].join(',');
+                csv += row + '\n';
+            });
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `corridas_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showNotification('Exportação concluída!');
+        }
+
+        function formatAllDestinations(destinationString) {
+            if (!destinationString || typeof destinationString !== 'string') {
+                return '<div style="color: var(--color-text-secondary);">Nenhum destino</div>';
+            }
+            
+            const trimmedString = destinationString.trim();
+            
+            if (trimmedString.startsWith('[') && trimmedString.endsWith(']')) {
+                try {
+                    const destinationsArray = JSON.parse(trimmedString);
+                    if (Array.isArray(destinationsArray) && destinationsArray.length > 0) {
+                        return destinationsArray
+                            .map((dest, index) => `<div style="margin-bottom: 4px;">• ${dest.address || dest.name || 'Endereço não informado'}</div>`)
+                            .join('');
+                    }
+                } catch (e) {
+                    console.error('Erro ao parsear destinos:', e);
+                }
+            }
+            
+            return `<div>${trimmedString.replace(/[\[\]"]/g, '').trim() || 'Não informado'}</div>`;
+        }
+
+        function getStatusLabel(status) {
+            if (!status) return 'Desconhecido';
+            const statusLower = status.toLowerCase();
+            const labels = {
+                'scheduled': 'Agendada',
+                'immediate': 'Imediata',
+                'agendada': 'Agendada',
+                'imediata': 'Imediata'
+            };
+            return labels[statusLower] || status;
+        }
+
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleString('pt-BR', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            
+            if (type === 'error') {
+                notification.style.background = 'var(--color-red-500)';
+            }
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Função para carregar dados de exemplo
+        function loadExampleData() {
+            allRides = [
+                {
+                    id: 1,
+                    userName: 'JORGE LUIS RODRIGUES MACHADO',
+                    status: 'scheduled',
+                    scheduledDate: '2025-10-25T11:00:00',
+                    origin_address: 'QUATRO DE JULHO 176 CAEIRA TAQUARI RS',
+                    destination: '[{"name":"Destino Final","address":"Rua Fernando Ferrari 1450, Centro, Montenegro - RS, 92510-165, Brasil"}]',
+                    observation: 'Nenhuma',
+                    distance: 'Ao finalizar',
+                    driverId: null,
+                    driverName: null
+                },
+                {
+                    id: 2,
+                    userName: 'JORGE LUIS RODRIGUES MACHADO',
+                    status: 'immediate',
+                    scheduledDate: '2025-10-25T16:00:00',
+                    origin_address: 'Rua Fernando Ferrari 1450, Centro, Montenegro - RS',
+                    destination: '[{"name":"Destino","address":"QUATRO DE JULHO 176 CAEIRA TAQUARI RS"}]',
+                    observation: 'EXPOACI',
+                    distance: 'Ao finalizar',
+                    driverId: null,
+                    driverName: null
+                },
+                {
+                    id: 3,
+                    userName: 'MARIA SILVA',
+                    status: 'scheduled',
+                    scheduledDate: '2025-10-26T09:00:00',
+                    origin_address: 'Av. Brasil 1000, Porto Alegre - RS',
+                    destination: '[{"name":"Aeroporto","address":"Av. dos Estados, Aeroporto Salgado Filho"}]',
+                    observation: 'Cliente preferencial',
+                    distance: 'Ao finalizar',
+                    driverId: null,
+                    driverName: null
+                }
+            ];
+            
+            allDrivers = [
+                { id: 1, name: 'João Motorista', status: 'active' },
+                { id: 2, name: 'Pedro Silva', status: 'active' },
+                { id: 3, name: 'Carlos Santos', status: 'active' }
+            ];
+            
+            renderRides(allRides);
+        }
+
+        // Web Audio API para notificação sonora
+        let audioContext = null;
+        let notificationSound = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playNotificationSound() {
+            try {
+                initAudio();
+                
+                // Cria oscilador para som de notificação
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Configuração do som (bip duplo)
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+                
+                // Segunda nota (bip duplo)
+                setTimeout(() => {
+                    const osc2 = audioContext.createOscillator();
+                    const gain2 = audioContext.createGain();
+                    
+                    osc2.connect(gain2);
+                    gain2.connect(audioContext.destination);
+                    
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(800, audioContext.currentTime);
+                    osc2.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+                    
+                    gain2.gain.setValueAtTime(0, audioContext.currentTime);
+                    gain2.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    
+                    osc2.start(audioContext.currentTime);
+                    osc2.stop(audioContext.currentTime + 0.5);
+                }, 200);
+                
+                console.log('Som de notificação tocado!');
+            } catch (error) {
+                console.error('Erro ao tocar som:', error);
+            }
+        }
+
+        let previousRideCount = 0;
+
+        // Inicialização
+        async function init() {
+            console.log('Iniciando aplicação...');
+            
+            // Carrega dados de exemplo primeiro (para preview funcionar sempre)
+            console.log('Carregando dados de exemplo para preview...');
+            loadExampleData();
+            previousRideCount = allRides.length;
+            
+            // Depois tenta conectar ao Supabase
+            if (typeof supabase === 'undefined') {
+                console.warn('Biblioteca Supabase não carregada - usando apenas dados de exemplo');
+                return;
+            }
+            
+            try {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('Cliente Supabase criado com sucesso');
+                
+                // Tenta carregar dados reais do banco
+                await loadDrivers();
+                const { data: rides, error } = await supabaseClient
+                    .from('rides')
+                    .select('*')
+                    .order('requestTime', { ascending: false });
+                
+                // Se conseguir carregar do banco, substitui os dados de exemplo
+                if (!error && rides && rides.length > 0) {
+                    console.log('Dados reais carregados do Supabase');
+                    
+                    // Verifica se há novas corridas
+                    if (rides.length > previousRideCount) {
+                        console.log('Nova solicitação detectada!');
+                        playNotificationSound();
+                    }
+                    previousRideCount = rides.length;
+                    
+                    allRides = rides.map(ride => ({
+                        ...ride,
+                        userName: ride.userName || 'Usuário desconhecido',
+                        origin: ride.origin_address || ride.originaddress || ride.origin || 'Não informado',
+                        destination: ride.destination || 'Não informado'
+                    }));
+                    renderRides(allRides);
+                } else {
+                    console.log('Usando dados de exemplo (banco vazio ou erro)');
+                }
+            } catch (error) {
+                console.log('Erro ao conectar - mantendo dados de exemplo:', error);
+            }
+            
+            // Auto-refresh a cada 30 segundos
+            setInterval(loadRides, 30000);
+            
+            // Realtime subscriptions
+            supabaseClient
+                .channel('rides-changes')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'rides' },
+                    (payload) => {
+                        console.log('Mudança detectada na tabela rides:', payload);
+                        if (payload.eventType === 'INSERT') {
+                            console.log('Nova corrida inserida!');
+                            playNotificationSound();
+                        }
+                        loadRides();
+                    }
+                )
+                .subscribe();
+            
+            // Desbloqueia áudio com primeiro toque do usuário (necessário no mobile)
+            document.body.addEventListener('click', initAudio, { once: true });
+            document.body.addEventListener('touchstart', initAudio, { once: true });
+        }
+
+        // Aguarda o DOM carregar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
