@@ -212,6 +212,16 @@
     <audio id="silent-audio" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="></audio>
 
     <script>
+
+        self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', () => self.clients.claim());
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow('/'));
+});
+
+
+
         // ========================================================================
         // NOVA CONSTANTE - CHAVE DA API GEOAPIFY
         // ========================================================================
