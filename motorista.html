@@ -340,29 +340,29 @@ self.addEventListener('notificationclick', event => {
         document.body.addEventListener('touchstart', unlockAudio, { once: true });
 
         function playRingSound() {
-            if (!audioUnlocked || !ringtone) return;
-            ringtone.currentTime = 0;
-            ringtone.play().catch(e => console.error("Erro ao tocar som:", e));
-        }
-
-        function startRinging() {
-            stopRinging();
-            playRingSound();
-            ringInterval = setInterval(playRingSound, 6000); // Toca a cada 6 segundos
-            document.getElementById('silence-btn').classList.remove('hidden');
-        }
-
-        function stopRinging() {
-            if (ringInterval) {
-                clearInterval(ringInterval);
-                ringInterval = null;
-            }
-             if (ringtone) {
-                ringtone.pause();
-                ringtone.currentTime = 0;
-            }
-            document.getElementById('silence-btn').classList.add('hidden');
-        }
+  if (audioUnlocked && ringtone) {
+    ringtone.currentTime = 0;
+    ringtone.play().catch(e => console.error("Erro ao tocar som:", e));
+  }
+  tocarSomMotorista(); // beep juntos a cada ciclo
+}
+function startRingingMotorista() {
+  stopRingingMotorista();
+  playRingSound();
+  motoristaBeepInterval = setInterval(playRingSound, 4000);
+  document.getElementById('silence-btn').classList.remove('hidden');
+}
+function stopRingingMotorista() {
+  if (motoristaBeepInterval) {
+    clearInterval(motoristaBeepInterval);
+    motoristaBeepInterval = null;
+  }
+  if (ringtone) {
+    ringtone.pause();
+    ringtone.currentTime = 0;
+  }
+  document.getElementById('silence-btn').classList.add('hidden');
+}
 
         // --- LÓGICA PARA MANTER O ECRÃ E APP ATIVOS ---
         // ... (código existente sem alterações) ...
@@ -1673,7 +1673,19 @@ window.addEventListener("load", () => {
   }
   setupMotoristaNotificationIntegration();
 });
-
+function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission().then(function(permission) {
+      if (permission === "granted") {
+        console.log("Permissão para notificações concedida.");
+      }
+    });
+  }
+}
+// Ao identificar nova corrida:
+startRingingMotorista(); // já faz beep + som repetido
+// Para parar (botão silenciar):
+stopRingingMotorista();
 
 
 
