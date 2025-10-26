@@ -255,6 +255,12 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // !! ADICIONE SUA CHAVE PÚBLICA AQUI !!
+        const VAPID_PUBLIC_KEY = 'BMmM1IzYf2T6pENQ23-6oN_-ywAykstHdXwWzZgaD38qSvwktUILBHDYog6ASmojflfdL-MjiTDseOS9HpuQazwI';
+
+
+
+
         // --- LÓGICA DE NOTIFICAÇÕES E ÁUDIO ---
         // ... (código existente sem alterações) ...
         const ringtone = document.getElementById('ringtone');
@@ -482,6 +488,75 @@ function stopRinging() {
 
         // --- LÓGICA DO MOTORISTA ---
 
+        /**
+         * Inscreve o usuário para Push Notifications e salva no Supabase.
+         * @param {number} driverId - O ID do motorista que está logando.
+         */
+        async function subscribeUserToPush(driverId) {
+          if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            console.warn('Push Notifications não são suportadas neste navegador.');
+            return;
+          }
+          
+          // 1. Pede permissão (se ainda não tiver)
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            console.warn('Permissão de notificação negada.');
+            return;
+          }
+
+          // 2. Obtém o Service Worker registrado
+          let swReg;
+          try {
+            swReg = await navigator.serviceWorker.ready;
+          } catch (e) {
+            console.error('Service worker não está pronto.', e);
+            return;
+          }
+
+          // 3. Obtém a inscrição (subscription)
+          let subscription;
+          try {
+            subscription = await swReg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: VAPID_PUBLIC_KEY 
+            });
+            console.log('Inscrição de Push obtida:', subscription);
+          } catch (error) {
+            console.error('Falha ao obter inscrição de push:', error);
+            return;
+          }
+
+          // 4. Salva a inscrição no Supabase
+          try {
+            const { error } = await supabaseClient
+              .from('push_subscriptions')
+              .upsert(
+                { 
+                  driver_id: driverId, 
+                  subscription_data: subscription 
+                },
+                { 
+                  onConflict: 'driver_id, subscription_data' // Evita duplicatas
+                }
+              );
+
+            if (error) {
+              console.error('Erro ao salvar inscrição no Supabase:', error);
+            } else {
+              console.log('Inscrição salva no Supabase com sucesso!');
+            }
+          } catch (e) {
+            console.error('Erro geral ao salvar no Supabase:', e);
+          }
+        }
+
+
+
+
+
+
+
         // ... (populateDriverSelection, selectDriver, logoutDriver, updateDriverStatusButton, toggleDriverStatus - sem alterações) ...
         function populateDriverSelection() {
             const list = document.getElementById('driver-list-selection');
@@ -517,7 +592,10 @@ function stopRinging() {
                 if (passwordInput.value.trim() === driver.password.trim()) {
                     state.currentDriverId = driverId;
                     localStorage.setItem('loggedInDriverId', driverId);
-                    requestNotificationPermission(); // Pede permissão ao logar
+
+                  //  requestNotificationPermission(); // Pede permissão ao logar
+                  subscribeUserToPush(driver.id); // <--- LINHA NOVA
+
                     document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
                     updateDriverStatusButton();
                     showScreen('driver-screen');
@@ -1384,7 +1462,11 @@ function stopRinging() {
                 if (driver) {
                     // Se encontrou o motorista, vai para a tela dele
                     document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
-                    requestNotificationPermission(); // Pede permissão aqui tbm, caso não tenha dado antes
+                  
+                
+                    //  requestNotificationPermission(); // Pede permissão aqui tbm, caso não tenha dado antes
+
+                    subscribeUserToPush(driver.id); // <--- LINHA NOVA
                     showScreen('driver-screen');
                 } else {
                     // Se o ID salvo é inválido, limpa e vai para a inicial
@@ -1640,16 +1722,25 @@ function setupMotoristaNotificationIntegration() {
 function showNewRideNotificationMotorista(ride) {
   startRingingMotorista();
 
-  if (Notification.permission === "granted") {
-    navigator.serviceWorker.ready.then(reg => {
-      reg.showNotification("Nova Corrida Atribuída!", {
-        body: `Passageiro: ${ride.userName || 'Novo passageiro'}`,
-        icon: "images/destino.png",
-        vibrate: [200, 100, 200],
-        tag: `corrida-${ride.id}`
-      });
-    });
-  }
+ // if (Notification.permission === "granted") {
+  //  navigator.serviceWorker.ready.then(reg => {
+   //   reg.showNotification("Nova Corrida Atribuída!", {
+    //    body: `Passageiro: ${ride.userName || 'Novo passageiro'}`,
+    //    icon: "images/destino.png",
+    //    vibrate: [200, 100, 200],
+     //   tag: `corrida-${ride.id}`
+  //    });
+ //   });
+ // }
+
+// Função nova (Apenas toca o alarme, o Push vem do servidor):
+function showNewRideNotificationMotorista(ride) {
+  startRingingMotorista();
+  // O Service Worker vai cuidar da notificação visual!
+}
+
+
+
 }
 
 // Ativa áudio silencioso para manter app vivo em background ao carregar a página
