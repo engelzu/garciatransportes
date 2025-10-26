@@ -221,6 +221,35 @@
         </div>
     </div>
 
+    <div id="install-prompt-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
+            <img src="images/motorista.png" alt="Motorista Icon" class="w-20 h-20 mx-auto mb-4 object-contain">
+            <h3 class="font-semibold text-xl text-white mb-2">Instalar Aplicativo</h3>
+            <p id="install-message" class="mb-4 text-sm text-gray-300">Para a melhor experiência, instale o app e ative as notificações.</p>
+            
+            <div id="ios-instructions" class="hidden text-left text-sm bg-gray-800 p-3 rounded-lg mb-4">
+                <p class="font-semibold">Para instalar no iPhone/iPad:</p>
+                <ol class="list-decimal list-inside mt-2">
+                    <li>Toque no ícone de <strong>Compartilhar</strong> (quadrado com seta para cima).</li>
+                    <li>Role para baixo e toque em</li>
+                    <li><strong>"Adicionar à Tela de Início"</strong>.</li>
+                </ol>
+            </div>
+
+            <div id="modal-install-buttons" class="flex flex-col gap-3">
+                 <button id="install-btn" onclick="triggerInstallPrompt()" class="py-2 px-8 font-semibold rounded-lg button-gradient hidden">
+                    1. Instalar Aplicativo
+                 </button>
+                 <button id="notify-btn" onclick="triggerNotificationPrompt()" class="py-2 px-8 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 border border-white">
+                    2. Ativar Notificações
+                 </button>
+                 <button id="install-close-btn" onclick="closeInstallPromptModal()" class="py-1 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600 border border-white mt-2">
+                    Fechar
+                 </button>
+            </div>
+        </div>
+    </div>
+
     <audio id="ringtone" preload="auto" src="SOM/somchamada.mp3"></audio>
     <audio id="silent-audio" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="></audio>
 
@@ -237,6 +266,7 @@
         let audioUnlocked = false; // Flag para controlar o desbloqueio do áudio
         let wakeLock = null; // Variável para a funcionalidade de manter o ecrã ativo
         let mapOpenedForRideIds = []; // Armazena IDs de corridas agendadas cujo mapa foi aberto
+        let deferredInstallPrompt = null; // Variável para guardar o evento de instalação
 
         let state = {
             rides: [],
@@ -362,7 +392,6 @@ function startRinging() {
   ringInterval = setInterval(playRingSound, 4000);
   document.getElementById('silence-btn').classList.remove('hidden');
 }
-
 // O botão silenciar já está correto:
 function stopRinging() {
   if (ringInterval) {
@@ -611,7 +640,8 @@ function stopRinging() {
                     state.currentDriverId = driverId;
                     localStorage.setItem('loggedInDriverId', driverId);
 
-                    subscribeUserToPush(driver.id); 
+                  //  requestNotificationPermission(); // Pede permissão ao logar
+                  subscribeUserToPush(driver.id); // <--- LINHA NOVA
                     
                     // !! AJUSTE ADICIONADO AQUI !!
                     // Força o desbloqueio do áudio no momento do clique de login
@@ -1161,7 +1191,7 @@ function stopRinging() {
                 showModal("Não foi possível aceitar o agendamento.");
             } else {
                  // Não abre o mapa aqui, apenas atualiza o status
-                 // O motorista abrirá o mapa manualmente mais tarde
+                 // O motorista abrirá o mapa manually mais tarde
                  loadDriverJobs(); // Atualiza a lista para mostrar os novos botões
             }
         }
@@ -1451,6 +1481,8 @@ function stopRinging() {
         // --- initApp --- (Garante que seja chamado após DOM carregado)
         // ... (código existente sem alterações) ...
         async function initApp() {
+            showInstallPromptModal(); // <-- ATUALIZAÇÃO ADICIONADA AQUI
+
             loadRideProgress(); // Carrega progresso salvo
             loadAppIcon();      // Carrega o ícone do app
             await fetchAllData(); // Busca dados iniciais
@@ -1648,6 +1680,98 @@ function stopRinging() {
             // Salva o PDF
             doc.save(`relatorio_corridas_${driverName.replace(/\s/g, '_')}_${startDateInput}_a_${endDateInput}.pdf`);
             closeExportModal(); // Fecha o modal após gerar
+        }
+        
+        // ========================================================================
+        // NOVAS FUNÇÕES: PROMPT DE INSTALAÇÃO E NOTIFICAÇÃO
+        // ========================================================================
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+          // Previne que o mini-infobar do Chrome apareça
+          e.preventDefault();
+          // Guarda o evento para que possa ser disparado mais tarde
+          deferredInstallPrompt = e;
+          // Mostra o nosso botão de instalação customizado
+          const installBtn = document.getElementById('install-btn');
+          if (installBtn) {
+            installBtn.classList.remove('hidden');
+          }
+          console.log('`beforeinstallprompt` disparado, pronto para instalar.');
+        });
+
+        function showInstallPromptModal() {
+          const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+          // Se o app JÁ ESTIVER INSTALADO, não faz nada
+          if (isStandalone) {
+            console.log('App já está instalado (standalone). Modal de instalação ignorado.');
+            return;
+          }
+
+          const modal = document.getElementById('install-prompt-modal');
+          if (!modal) return;
+
+          // Se for iOS, mostra as instruções manuais
+          if (isIOS) {
+            document.getElementById('ios-instructions').classList.remove('hidden');
+            document.getElementById('install-btn').classList.add('hidden'); // Esconde o botão de instalar
+          }
+
+          // Se a permissão de notificação já foi dada, esconde o botão
+          if (Notification.permission === 'granted') {
+             document.getElementById('notify-btn').classList.add('hidden');
+          }
+
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
+
+        function closeInstallPromptModal() {
+            const modal = document.getElementById('install-prompt-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function triggerInstallPrompt() {
+          if (!deferredInstallPrompt) {
+            console.log('Evento de instalação não está pronto.');
+            return; // Evento não está pronto
+          }
+          // Mostra o prompt de instalação nativo do navegador
+          deferredInstallPrompt.prompt();
+          
+          // Espera o usuário responder ao prompt
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          console.log(`Resultado da instalação: ${outcome}`);
+          
+          // Limpa o evento, pois ele só pode ser usado uma vez
+          deferredInstallPrompt = null;
+          
+          // Esconde o modal e o botão
+          closeInstallPromptModal();
+          document.getElementById('install-btn').classList.add('hidden');
+        }
+
+        async function triggerNotificationPrompt() {
+            if (!('Notification' in window)) {
+                alert('Este navegador não suporta notificações.');
+                return;
+            }
+            
+            const permission = await Notification.requestPermission();
+            
+            if (permission === 'granted') {
+                console.log('Permissão de notificação concedida!');
+                // Esconde o botão e talvez o modal
+                document.getElementById('notify-btn').classList.add('hidden');
+                // Se o botão de instalar também estiver escondido, fecha o modal
+                if(document.getElementById('install-btn').classList.contains('hidden')) {
+                    closeInstallPromptModal();
+                }
+            } else {
+                console.warn('Permissão de notificação negada.');
+            }
         }
 
         // Chama initApp quando o DOM estiver pronto
