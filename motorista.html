@@ -1298,7 +1298,8 @@
                     if (state.currentDriverId && relevantDriverId === state.currentDriverId) {
                          // Toca alarme se uma corrida for ASSIGNED a este motorista
                         if (payload.eventType === 'UPDATE' && newRecord.status === 'assigned' && oldRecord.status !== 'assigned') {
-                            showNewRideNotification(newRecord); // Mostra popup e toca alarme
+                            showNewRideNotificationMotorista(newRecord);
+ // Mostra popup e toca alarme
                         }
                          // Para o alarme se a corrida designada for aceita ou cancelada por ele mesmo
                          else if (payload.eventType === 'UPDATE' && oldRecord.status === 'assigned' && ['accepted', 'canceled_by_driver'].includes(newRecord.status)) {
@@ -1373,6 +1374,10 @@
                     }
                 }
             });
+               // --- Adicione estas linhas para ativar o wake lock por padrão:
+               document.getElementById('wake-lock-toggle').checked = true;
+               toggleWakeLock();
+
 
             // Verifica se há um motorista logado no localStorage
             const loggedInDriverId = localStorage.getItem('loggedInDriverId');
@@ -1539,9 +1544,138 @@
         // Chama initApp quando o DOM estiver pronto
         document.addEventListener('DOMContentLoaded', initApp);
 
+    // Controle do audioContext e intervalo para tocar som repetidamente
+let motoristaAudioContext = null;
+let motoristaAudioUnlocked = false;
+let motoristaBeepInterval = null;
+
+function initMotoristaAudioContext() {
+  if (!motoristaAudioContext) {
+    motoristaAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    console.log("AudioContext do motorista inicializado");
+  }
+  return motoristaAudioContext;
+}
+
+function unlockMotoristaAudio() {
+  if (motoristaAudioUnlocked) return;
+  try {
+    const ctx = initMotoristaAudioContext();
+    if (ctx.state === "suspended") {
+      ctx.resume().then(() => {
+        motoristaAudioUnlocked = true;
+        console.log("Áudio desbloqueado (motorista)");
+        document.body.removeEventListener("click", unlockMotoristaAudio);
+        document.body.removeEventListener("touchstart", unlockMotoristaAudio);
+      });
+    } else {
+      motoristaAudioUnlocked = true;
+      console.log("Áudio já desbloqueado (motorista)");
+    }
+  } catch (e) {
+    console.error("Erro ao desbloquear áudio:", e);
+  }
+}
+document.body.addEventListener("click", unlockMotoristaAudio, { once: true });
+document.body.addEventListener("touchstart", unlockMotoristaAudio, { once: true });
+
+// Função que toca um beep curto usando Web Audio API
+function tocarSomMotorista() {
+  if (!motoristaAudioUnlocked) {
+    console.warn("Áudio bloqueado, aguarde interação do usuário");
+    return;
+  }
+  try {
+    const ctx = initMotoristaAudioContext();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+    oscillator.frequency.linearRampToValueAtTime(1000, ctx.currentTime + 0.1);
+
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 0.4);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.5);
+  } catch (err) {
+    console.error("Erro ao tocar som motorista:", err);
+  }
+}
+
+// Inicia o som repetitivo a cada 4 segundos
+function startRingingMotorista() {
+  stopRingingMotorista();
+  tocarSomMotorista();
+  motoristaBeepInterval = setInterval(tocarSomMotorista, 4000);
+  console.log("Alerta sonoro ativo para motorista");
+}
+
+// Para o som repetitivo
+function stopRingingMotorista() {
+  if (motoristaBeepInterval) {
+    clearInterval(motoristaBeepInterval);
+    motoristaBeepInterval = null;
+    console.log("Alerta sonoro parado");
+  }
+}
+
+// Registra service worker para notificações funcionar em background
+function setupMotoristaNotificationIntegration() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('motorista-sw.js')
+      .then(() => console.log("Service Worker motorista registrado"))
+      .catch((err) => console.error("Erro Service Worker:", err));
+  }
+}
+
+// Exibe notificação e inicia som repetitivo para nova corrida
+function showNewRideNotificationMotorista(ride) {
+  startRingingMotorista();
+
+  if (Notification.permission === "granted") {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification("Nova Corrida Atribuída!", {
+        body: `Passageiro: ${ride.userName || 'Novo passageiro'}`,
+        icon: "images/destino.png",
+        vibrate: [200, 100, 200],
+        tag: `corrida-${ride.id}`
+      });
+    });
+  }
+}
+
+// Ativa áudio silencioso para manter app vivo em background ao carregar a página
+window.addEventListener("load", () => {
+  const silentAudio = document.getElementById("silent-audio");
+  if (silentAudio) {
+    silentAudio.play().catch(e => console.warn("Erro ao iniciar áudio silencioso:", e));
+  }
+  setupMotoristaNotificationIntegration();
+});
+
+
+
+
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+
+
+
+
+
 
     </body>
 </html>
