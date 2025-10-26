@@ -212,16 +212,6 @@
     <audio id="silent-audio" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="></audio>
 
     <script>
-
-        self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', () => self.clients.claim());
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  event.waitUntil(clients.openWindow('/'));
-});
-
-
-
         // ========================================================================
         // NOVA CONSTANTE - CHAVE DA API GEOAPIFY
         // ========================================================================
@@ -340,22 +330,23 @@ self.addEventListener('notificationclick', event => {
         document.body.addEventListener('touchstart', unlockAudio, { once: true });
 
         function playRingSound() {
-  if (audioUnlocked && ringtone) {
+           if (audioUnlocked && ringtone) {
     ringtone.currentTime = 0;
     ringtone.play().catch(e => console.error("Erro ao tocar som:", e));
   }
-  tocarSomMotorista(); // beep juntos a cada ciclo
+  tocarSomMotorista(); // beep simultâneo
 }
-function startRingingMotorista() {
-  stopRingingMotorista();
+function startRinging() {
+  stopRinging();
   playRingSound();
-  motoristaBeepInterval = setInterval(playRingSound, 4000);
+  ringInterval = setInterval(playRingSound, 4000);
   document.getElementById('silence-btn').classList.remove('hidden');
 }
-function stopRingingMotorista() {
-  if (motoristaBeepInterval) {
-    clearInterval(motoristaBeepInterval);
-    motoristaBeepInterval = null;
+// O botão silenciar já está correto:
+function stopRinging() {
+  if (ringInterval) {
+    clearInterval(ringInterval);
+    ringInterval = null;
   }
   if (ringtone) {
     ringtone.pause();
@@ -1384,10 +1375,6 @@ function stopRingingMotorista() {
                     }
                 }
             });
-               // --- Adicione estas linhas para ativar o wake lock por padrão:
-               document.getElementById('wake-lock-toggle').checked = true;
-               toggleWakeLock();
-
 
             // Verifica se há um motorista logado no localStorage
             const loggedInDriverId = localStorage.getItem('loggedInDriverId');
@@ -1673,19 +1660,7 @@ window.addEventListener("load", () => {
   }
   setupMotoristaNotificationIntegration();
 });
-function requestNotificationPermission() {
-  if ("Notification" in window && Notification.permission !== "granted") {
-    Notification.requestPermission().then(function(permission) {
-      if (permission === "granted") {
-        console.log("Permissão para notificações concedida.");
-      }
-    });
-  }
-}
-// Ao identificar nova corrida:
-startRingingMotorista(); // já faz beep + som repetido
-// Para parar (botão silenciar):
-stopRingingMotorista();
+
 
 
 
