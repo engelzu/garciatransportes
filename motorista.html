@@ -355,6 +355,14 @@
   }
   tocarSomMotorista(); // beep simultâneo
 }
+
+function startRinging() {
+  stopRinging();
+  playRingSound();
+  ringInterval = setInterval(playRingSound, 4000);
+  document.getElementById('silence-btn').classList.remove('hidden');
+}
+
 // O botão silenciar já está correto:
 function stopRinging() {
   if (ringInterval) {
@@ -603,8 +611,12 @@ function stopRinging() {
                     state.currentDriverId = driverId;
                     localStorage.setItem('loggedInDriverId', driverId);
 
-                  //  requestNotificationPermission(); // Pede permissão ao logar
-                  subscribeUserToPush(driver.id); // <--- LINHA NOVA
+                    subscribeUserToPush(driver.id); 
+                    
+                    // !! AJUSTE ADICIONADO AQUI !!
+                    // Força o desbloqueio do áudio no momento do clique de login
+                    unlockAudio();
+                    unlockMotoristaAudio();
 
                     document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
                     updateDriverStatusButton();
@@ -1475,6 +1487,11 @@ function stopRinging() {
                   
                     subscribeUserToPush(driver.id); 
                     showScreen('driver-screen');
+                    
+                    // !! AJUSTE ADICIONADO AQUI !!
+                    // Força o desbloqueio do áudio no re-login
+                    unlockAudio();
+                    unlockMotoristaAudio();
 
                     // LINHAS NOVAS PARA ATIVAR O WAKE LOCK
                     document.getElementById('wake-lock-toggle').checked = true;
