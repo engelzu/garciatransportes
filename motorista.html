@@ -172,7 +172,7 @@
             <div class="flex items-center justify-between mb-4 card-gradient p-3 rounded-lg">
                 <span class="font-semibold text-lg text-white">MANTER TELA ATIVA</span>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="wake-lock-toggle" onchange="toggleWakeLock()">
+            <input type="checkbox" id="wake-lock-toggle" onchange="toggleWakeLock()" checked>
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -1473,12 +1473,15 @@ function stopRinging() {
                     // Se encontrou o motorista, vai para a tela dele
                     document.getElementById('driver-name-display').textContent = `Bem-vindo, ${driver.name}`;
                   
-                
-                    //  requestNotificationPermission(); // Pede permissão aqui tbm, caso não tenha dado antes
-
-                    subscribeUserToPush(driver.id); // <--- LINHA NOVA
+                    subscribeUserToPush(driver.id); 
                     showScreen('driver-screen');
+
+                    // LINHAS NOVAS PARA ATIVAR O WAKE LOCK
+                    document.getElementById('wake-lock-toggle').checked = true;
+                    toggleWakeLock(); // Chama a função para ativar o bloqueio
+                    
                 } else {
+// ...
                     // Se o ID salvo é inválido, limpa e vai para a inicial
                     console.warn("ID do motorista salvo inválido. Deslogando.");
                     localStorage.removeItem('loggedInDriverId');
@@ -1728,29 +1731,10 @@ function setupMotoristaNotificationIntegration() {
   }
 }
 
-// Exibe notificação e inicia som repetitivo para nova corrida
-function showNewRideNotificationMotorista(ride) {
-  startRingingMotorista();
-
- // if (Notification.permission === "granted") {
-  //  navigator.serviceWorker.ready.then(reg => {
-   //   reg.showNotification("Nova Corrida Atribuída!", {
-    //    body: `Passageiro: ${ride.userName || 'Novo passageiro'}`,
-    //    icon: "images/destino.png",
-    //    vibrate: [200, 100, 200],
-     //   tag: `corrida-${ride.id}`
-  //    });
- //   });
- // }
-
 // Função nova (Apenas toca o alarme, o Push vem do servidor):
 function showNewRideNotificationMotorista(ride) {
-  startRingingMotorista();
+  startRinging(); // <-- CORRIGIDO. Esta função toca TUDO (MP3 e Beep) e MOSTRA O BOTÃO.
   // O Service Worker vai cuidar da notificação visual!
-}
-
-
-
 }
 
 // Ativa áudio silencioso para manter app vivo em background ao carregar a página
