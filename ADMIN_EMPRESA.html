@@ -115,12 +115,60 @@
         }
         /* FIM DO ESTILO CUSTOMIZADO */
 
+        /* MODAIS */
         #schedule-modal { display: none; }
         #schedule-modal.flex { display: flex; }
-
-        /* NOVO MODAL */
         #no-destination-modal { display: none; }
         #no-destination-modal.flex { display: flex; }
+        
+        /* ====================================================== */
+        /* INÍCIO: ESTILOS DO NOVO MODAL */
+        /* ====================================================== */
+        #multi-schedule-modal { display: none; }
+        #multi-schedule-modal.flex { display: flex; }
+        
+        /* Container para os inputs de data com scroll */
+        #multi-schedule-date-list {
+            max-height: 200px; /* Altura máxima antes de scrollar */
+            overflow-y: auto; /* Scroll vertical */
+            background-color: #1f2937; /* Fundo um pouco mais escuro */
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para cada linha de data */
+        .multi-schedule-date-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem; /* 8px */
+            margin-bottom: 0.5rem; /* 8px */
+        }
+        .multi-schedule-date-item:last-child {
+            margin-bottom: 0;
+        }
+        /* Botão de remover data */
+        .remove-date-btn {
+            background-color: #ef4444; /* bg-red-500 */
+            color: white;
+            border: none;
+            border-radius: 9999px; /* rounded-full */
+            width: 1.5rem; /* 24px */
+            height: 1.5rem; /* 24px */
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0; /* Impede que o botão encolha */
+        }
+        .remove-date-btn:hover {
+            background-color: #dc2626; /* bg-red-600 */
+        }
+        /* ====================================================== */
+        /* FIM: ESTILOS DO NOVO MODAL */
+        /* ====================================================== */
+
 
         /* --- CSS PARA ABAS --- */
         .tab-button { background-color: #374151; border: 1px solid #4b5563; padding: 10px 15px; cursor: pointer; transition: all 0.2s ease-in-out; border-radius: 8px; font-weight: 600; color: white !important; }
@@ -164,12 +212,8 @@
 </head>
 <body class="main-gradient text-white min-h-screen flex items-start justify-center p-4 pt-8">
 
-    <!-- MODIFICAÇÃO: 'max-w-md' removido daqui e aplicado css interno -->
     <div id="app-container" class="mx-auto">
 
-        <!-- ====================================================== -->
-        <!-- INÍCIO: HTML CORRIGIDO -->
-        <!-- ====================================================== -->
         <div id="company-login-screen" class="screen active">
             <div id="admin-access-icon" title="Acesso Super Admin" onclick="showSuperAdminLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -178,7 +222,6 @@
             </div>
 
             <h2 class="text-3xl font-bold mb-6 text-center">Login da Empresa</h2>
-            <!-- ESTE ELEMENTO ESTAVA FALTANDO NO ARQUIVO QUE CAUSOU O ERRO -->
             <div class="mb-4"><label for="company-login-select" class="block mb-2 text-sm font-medium">Empresa</label><select id="company-login-select" class="w-full p-3 rounded-lg"></select></div>
             <div class="mb-4"><label for="admin-username-input" class="block mb-2 text-sm font-medium">Usuário Admin</label><input type="text" id="admin-username-input" class="w-full p-3 rounded-lg" placeholder="Digite seu usuário"></div>
             <div class="mb-4"><label for="admin-password-input" class="block mb-2 text-sm font-medium">Senha</label><input type="password" id="admin-password-input" class="w-full p-3 rounded-lg" placeholder="Digite sua senha"></div>
@@ -214,7 +257,6 @@
 
             <div id="request-ride-screen" class="admin-sub-screen active">
                  <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
-                <!-- Ajuste para centralizar o formulário de solicitação -->
                 <div id="admin-request-form" class="card-gradient p-6 rounded-lg max-w-2xl mx-auto">
                     <div class="mb-4">
                         <label for="passenger-quantity-select" class="block mb-2 text-sm font-medium">SELECIONE A QUANTIDADE DE PASSAGEIROS</label>
@@ -238,27 +280,22 @@
                         <div class="mt-6 space-y-3">
                             <button id="admin-request-immediate-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR AGORA</button>
                             <button id="admin-request-scheduled-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">AGENDAR</button>
-                        </div>
+                            <button id="admin-request-multi-schedule-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg border-2 border-cyan-400">AGENDAR VÁRIOS DIAS</button>
+                            </div>
                     </div>
                 </div>
             </div>
 
             <div id="approval-ride-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Aprovar Solicitações Pendentes</h2>
-                <!-- Ajuste para centralizar e limitar a largura dos cards -->
                 <div id="pending-rides-container" class="space-y-4 max-w-2xl mx-auto">
                     </div>
             </div>
 
-            <!-- ====================================================== -->
-            <!-- INÍCIO: TELA DE HISTÓRICO MODIFICADA -->
-            <!-- ====================================================== -->
             <div id="history-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Histórico de Corridas</h2>
                 
-                <!-- INÍCIO: Seção de Filtros e Exportação -->
                 <div id="history-filters" class="card-gradient p-4 rounded-lg mb-4 space-y-3 max-w-4xl mx-auto">
-                    <!-- MODIFICAÇÃO: grid-cols-3 para adicionar o novo filtro -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <label for="history-filter-start-date" class="block mb-1 text-xs font-medium">Data Inicial</label>
@@ -268,7 +305,6 @@
                             <label for="history-filter-end-date" class="block mb-1 text-xs font-medium">Data Final</label>
                             <input type="date" id="history-filter-end-date" class="w-full p-2 rounded-lg" style="color-scheme: dark;">
                         </div>
-                        <!-- NOVO FILTRO: Tipo -->
                         <div>
                             <label for="history-filter-type" class="block mb-1 text-xs font-medium">Tipo</label>
                             <select id="history-filter-type" class="w-full p-2 rounded-lg">
@@ -282,8 +318,7 @@
                         <label for="history-filter-status" class="block mb-1 text-xs font-medium">Status</label>
                         <select id="history-filter-status" class="w-full p-2 rounded-lg">
                             <option value="">-- Todos os Status --</option>
-                            <!-- Status serão preenchidos via JS -->
-                        </select>
+                            </select>
                     </div>
                     <div class="flex flex-wrap gap-2 justify-center">
                         <button onclick="applyHistoryFilter()" class="flex-grow py-2 px-4 font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700">Filtrar</button>
@@ -293,12 +328,8 @@
                     
                     <p id="history-filter-display" class="text-center text-xs text-gray-400 h-4"></p>
                 </div>
-                <!-- FIM: Seção de Filtros e Exportação -->
-
-                <!-- Container da Tabela com Scroll Horizontal -->
                 <div class="overflow-x-auto rounded-lg border border-gray-700">
-                    <table id="history-table" class="w-full min-w-[1200px]" style="display: none;"> <!-- Aumentei o min-width -->
-                        <thead class="bg-gray-800">
+                    <table id="history-table" class="w-full min-w-[1200px]" style="display: none;"> <thead class="bg-gray-800">
                             <tr>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">ID</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
@@ -316,22 +347,14 @@
                             </tr>
                         </thead>
                         <tbody id="history-table-body" class="bg-gray-900 divide-y divide-gray-700">
-                            <!-- Linhas serão preenchidas via JS -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
-                <!-- Container de fallback para quando não há dados -->
                 <div id="history-rides-container">
-                    <!-- Esta div será usada para mensagens de 'carregando' ou 'nenhum resultado' -->
-                </div>
+                    </div>
             </div>
-            <!-- ====================================================== -->
-            <!-- FIM: TELA DE HISTÓRICO MODIFICADA -->
-            <!-- ====================================================== -->
-
             <div id="user-management-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Gerenciar Usuários</h2>
-                <!-- Ajuste para centralizar o gerenciamento de usuários -->
                 <div class="max-w-2xl mx-auto">
                     <div class="card-gradient p-4 rounded-lg mb-6">
                         <h3 id="user-form-title" class="text-lg font-semibold mb-2">Adicionar Usuário</h3>
@@ -364,7 +387,6 @@
                 <h2 class="text-2xl font-bold">Gerenciar Empresas</h2>
                 <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
             </div>
-            <!-- Ajuste para centralizar o gerenciamento de empresas -->
             <div class="max-w-2xl mx-auto">
                 <div class="card-gradient p-4 rounded-lg mb-6">
                     <h3 id="company-form-title" class="text-lg font-semibold mb-2">Adicionar Empresa</h3>
@@ -382,10 +404,7 @@
 
         <div id="admin-management-screen" class="screen">
              </div>
-        <!-- ====================================================== -->
-        <!-- FIM: HTML CORRIGIDO -->
-        <!-- ====================================================== -->
-    </div>
+        </div>
 
     <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4"> <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <h3 class="text-2xl font-bold mb-4">Agendar Corrida</h3>
@@ -402,9 +421,31 @@
         </div>
     </div>
 
-    <!-- ====================================================== -->
-    <!-- INÍCIO: NOVO MODAL DE CONFIRMAÇÃO (LOCAL CORRETO) -->
-    <!-- ====================================================== -->
+    <div id="multi-schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-2xl font-bold mb-4 text-center">Agendar Vários Dias</h3>
+            
+            <div class="mb-4 text-left">
+                <label for="multi-schedule-time" class="block mb-2 text-sm font-medium">Horário (para todos os dias)</label>
+                <input type="time" id="multi-schedule-time" class="w-full p-3 rounded-lg" style="color-scheme: dark;">
+            </div>
+
+            <div class="mb-4 text-left">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-sm font-medium">Datas</label>
+                    <button onclick="addDateToMultiSchedule()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white">+ Adicionar Data</button>
+                </div>
+                <div id="multi-schedule-date-list">
+                    <p id="multi-schedule-placeholder" class="text-center text-gray-400 p-4">Clique em "+ Adicionar Data" para começar.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-4 mt-6">
+                <button onclick="closeMultiScheduleModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
+                <button onclick="confirmAdminMultiSchedule()" class="py-2 px-8 font-semibold rounded-lg button-gradient">AGENDAR TODOS</button>
+            </div>
+        </div>
+    </div>
     <div id="no-destination-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <h3 class="text-xl font-bold mb-4">Confirmar Solicitação</h3>
@@ -415,9 +456,7 @@
             </div>
         </div>
     </div>
-    <!-- ====================================================== -->
-    <!-- FIM: NOVO MODAL DE CONFIRMAÇÃO -->
-    <!-- ====================================================== -->
+    
 
     <script>
         // ========================================================================
@@ -435,6 +474,14 @@
         let companyUsersCache = [];
         let currentManagingCompany = { id: null, name: null };
         let debounceTimer; // Adicionado para o autocomplete manual
+        
+        // ========================================================================
+        // INÍCIO: NOVA VARIÁVEL GLOBAL
+        // ========================================================================
+        let tempMultiScheduleRideData = null; // Armazena os dados da corrida para o modal de multi-agendamento
+        // ========================================================================
+        // FIM: NOVA VARIÁVEL GLOBAL
+        // ========================================================================
 
 
         // ========================================================================
@@ -791,9 +838,6 @@
                             </select>
                         </div>
                         
-                        <!-- ====================================================== -->
-                        <!-- INÍCIO: MODIFICAÇÃO SOLICITADA (CHECKBOX) -->
-                        <!-- ====================================================== -->
                         <div class="flex justify-between items-center mb-1 mt-3">
                             <label for="address-input-${i}" class="block text-xs font-medium">Endereço</label>
                             <div class="flex items-center">
@@ -801,10 +845,6 @@
                                 <label for="use-collab-address-${i}" class="ml-2 text-xs font-medium text-gray-300" style="color: #e5e7eb !important;">USAR ENDEREÇO DO COLABORADOR</label>
                             </div>
                         </div>
-                        <!-- ====================================================== -->
-                        <!-- FIM: MODIFICAÇÃO SOLICITADA -->
-                        <!-- ====================================================== -->
-
                         <div class="autocomplete-container">
                             <input type="text" id="address-input-${i}" class="w-full p-2 rounded-lg" placeholder="Endereço autocompletado ou manual"
                                    oninput="handleAddressInput(event, 'address-input-${i}List')">
@@ -821,7 +861,6 @@
                 <div class="border border-cyan-400 p-3 rounded-lg mt-4">
                     <p class="font-semibold text-md mb-2 text-cyan-400">Destino Final</p>
                     
-                    <!-- INÍCIO: CAMPOS DE COLABORADOR ADICIONADOS -->
                     <div class="mb-2">
                         <label for="collaborator-select-destination" class="block mb-1 text-xs font-medium">Colaborador (Opcional)</label>
                         <select id="collaborator-select-destination" data-index="destination" class="w-full p-2 rounded-lg collaborator-selector">
@@ -837,8 +876,6 @@
                             <label for="use-collab-address-destination" class="ml-2 text-xs font-medium text-gray-300" style="color: #e5e7eb !important;">USAR ENDEREÇO DO COLABORADOR</label>
                         </div>
                     </div>
-                    <!-- FIM: CAMPOS DE COLABORADOR ADICIONADOS -->
-
                     <div class="autocomplete-container">
                         <input type="text" id="address-input-destination" class="w-full p-2 rounded-lg" placeholder="Digite o endereço de destino da viagem"
                                oninput="handleAddressInput(event, 'address-input-destinationList')">
@@ -1046,10 +1083,215 @@
             // adminRequestRide(); // <-- Chamada antiga
             validateAndInitiateRide('scheduled'); // <-- NOVA CHAMADA
         }
+        
+        // ========================================================================
+        // INÍCIO: NOVAS FUNÇÕES (Agendamento Múltiplo)
+        // ========================================================================
+        
+        function openMultiScheduleModal() {
+            const modal = document.getElementById('multi-schedule-modal');
+            const timeInput = document.getElementById('multi-schedule-time');
+            const dateList = document.getElementById('multi-schedule-date-list');
+            const placeholder = document.getElementById('multi-schedule-placeholder');
+            
+            // Limpa a lista de datas
+            dateList.innerHTML = '';
+            placeholder.style.display = 'block'; // Mostra o placeholder
+            dateList.appendChild(placeholder);
+            
+            // Define a hora padrão
+            timeInput.value = new Date().toTimeString().slice(0, 5);
+            
+            modal.classList.add('flex');
+        }
+        
+        function closeMultiScheduleModal() {
+            document.getElementById('multi-schedule-modal').classList.remove('flex');
+            tempMultiScheduleRideData = null; // Limpa os dados temporários ao fechar/cancelar
+        }
+
+        function addDateToMultiSchedule() {
+            const dateList = document.getElementById('multi-schedule-date-list');
+            const placeholder = document.getElementById('multi-schedule-placeholder');
+            
+            // Esconde o placeholder se ele existir
+            if (placeholder) {
+                placeholder.style.display = 'none';
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+
+            // Cria o wrapper
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'multi-schedule-date-item';
+
+            // Cria o input de data
+            const dateInput = document.createElement('input');
+            dateInput.type = 'date';
+            dateInput.className = 'w-full p-2 rounded-lg multi-schedule-date-input'; // Adiciona classe para facilitar a busca
+            dateInput.style.colorScheme = 'dark';
+            dateInput.min = today; // Define data mínima
+            dateInput.value = today; // Define data padrão
+
+            // Cria o botão de remover
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-date-btn';
+            removeBtn.innerHTML = 'X';
+            removeBtn.onclick = () => removeDateFromMultiSchedule(itemDiv); // Passa o 'itemDiv' para remoção
+
+            // Adiciona na div
+            itemDiv.appendChild(dateInput);
+            itemDiv.appendChild(removeBtn);
+            
+            // Adiciona a div na lista
+            dateList.appendChild(itemDiv);
+        }
+        
+        function removeDateFromMultiSchedule(itemElement) {
+            const dateList = document.getElementById('multi-schedule-date-list');
+            dateList.removeChild(itemElement);
+            
+            // Se a lista ficar vazia, mostra o placeholder novamente
+            if (dateList.querySelectorAll('.multi-schedule-date-item').length === 0) {
+                 const placeholder = document.getElementById('multi-schedule-placeholder');
+                 if (placeholder) placeholder.style.display = 'block';
+            }
+        }
+        
+        // Esta é a função de validação (Etapa 1 do Multi-Schedule)
+        function validateAndInitiateMultiSchedule() {
+            // 1. Valida o formulário principal (passageiros, endereços)
+            const passengerCount = parseInt(document.getElementById('passenger-quantity-select').value, 10);
+            if (!passengerCount || passengerCount < 1) { return alert('Selecione a quantidade de passageiros.'); }
+
+            const firstCollaboratorId = document.getElementById('collaborator-select-0').value;
+            if (!firstCollaboratorId) { return alert('Selecione o Colaborador para a Origem 1.'); }
+            const collaborator = state.allUsers.find(u => u.id == firstCollaboratorId);
+            if (!collaborator) return alert('Colaborador da Origem 1 não encontrado.');
+
+            const originAddress = document.getElementById('address-input-0').value.trim();
+            if (!originAddress) { return alert('O Endereço da Origem 1 é obrigatório.'); }
+
+            for (let i = 1; i < passengerCount; i++) {
+                const collabId = document.getElementById(`collaborator-select-${i}`)?.value;
+                const addressValue = document.getElementById(`address-input-${i}`)?.value.trim();
+                if (!collabId || !addressValue) {
+                    return alert(`Preencha o Colaborador e o Endereço para a Origem ${i + 1}.`);
+                }
+            }
+            
+            // NO AGENDAMENTO MÚLTIPLO, O DESTINO FINAL É OBRIGATÓRIO
+            const destinationAddress = document.getElementById('address-input-destination').value.trim();
+            if (!destinationAddress) {
+                return alert('O Destino Final é obrigatório para agendamentos múltiplos.');
+            }
+
+            // 2. Monta o objeto de dados *base* (sem data/hora)
+            const destinationsArray = [];
+            for (let i = 1; i < passengerCount; i++) {
+                const collabId = document.getElementById(`collaborator-select-${i}`)?.value;
+                const addressValue = document.getElementById(`address-input-${i}`)?.value.trim();
+                const additionalCollaborator = state.allUsers.find(u => u.id == collabId);
+                destinationsArray.push({
+                    name: `Origem ${additionalCollaborator.name}`,
+                    address: addressValue
+                });
+            }
+            destinationsArray.push({
+                name: 'Destino Final',
+                address: destinationAddress
+            });
+
+            // 3. Salva os dados base na variável global temporária
+            tempMultiScheduleRideData = {
+                userId: collaborator.id,
+                userName: collaborator.name,
+                userCompany: collaborator.company,
+                origin_address: originAddress,
+                destination: JSON.stringify(destinationsArray),
+                passenger_count: passengerCount,
+                observation: document.getElementById('admin-observation').value.trim(),
+                requestTime: new Date().toISOString(), // A solicitação é feita agora
+                requested_by_admin_name: state.loggedInAdmin.username,
+            };
+            
+            // 4. Se tudo estiver OK, abre o modal de multi-agendamento
+            openMultiScheduleModal();
+        }
+        
+        // Esta é a função de submissão (Etapa 2 do Multi-Schedule)
+        async function confirmAdminMultiSchedule() {
+            if (!tempMultiScheduleRideData) {
+                return alert('Erro: Dados da corrida não encontrados. Tente novamente.');
+            }
+            
+            const timeInput = document.getElementById('multi-schedule-time');
+            const timeValue = timeInput.value;
+            if (!timeValue) {
+                return alert('Por favor, defina um horário.');
+            }
+            
+            const dateInputs = document.querySelectorAll('.multi-schedule-date-input');
+            if (dateInputs.length === 0) {
+                return alert('Adicione pelo menos uma data.');
+            }
+            
+            const now = new Date();
+            const nowMinutes = Math.floor(now.getTime() / 60000);
+            const ridesToInsert = [];
+            
+            for (const dateInput of dateInputs) {
+                const dateValue = dateInput.value;
+                if (!dateValue) {
+                    return alert('Todas as datas devem ser preenchidas.');
+                }
+                
+                const scheduledDate = new Date(`${dateValue}T${timeValue}`);
+                const scheduledMinutes = Math.floor(scheduledDate.getTime() / 60000);
+                
+                if (scheduledMinutes < nowMinutes) {
+                    return alert(`A data ${dateValue} às ${timeValue} está no passado. Por favor, corrija.`);
+                }
+                
+                // Cria uma cópia dos dados base e adiciona as informações de agendamento
+                const newRideData = {
+                    ...tempMultiScheduleRideData,
+                    status: 'scheduled',
+                    request_type: 'scheduled',
+                    scheduled_datetime: scheduledDate.toISOString()
+                };
+                
+                ridesToInsert.push(newRideData);
+            }
+            
+            if (ridesToInsert.length === 0) {
+                return alert('Nenhuma data válida para agendar.');
+            }
+            
+            // Insere todas as corridas em lote
+            const { data, error } = await supabaseClient
+                .from('rides')
+                .insert(ridesToInsert)
+                .select();
+
+            if (error) {
+                alert(`Erro ao criar agendamentos: ${error.message}`);
+                console.error("Erro Supabase (Multi-Schedule):", error);
+            } else {
+                alert(`${data.length} corridas foram agendadas com sucesso!`);
+                resetAdminForm(); // Limpa o formulário principal
+                closeMultiScheduleModal(); // Fecha o modal
+                // tempMultiScheduleRideData já é limpo pelo closeMultiScheduleModal()
+            }
+        }
+        
+        // ========================================================================
+        // FIM: NOVAS FUNÇÕES (Agendamento Múltiplo)
+        // ========================================================================
 
 
         // ========================================================================
-        // NOVA FUNÇÃO DE VALIDAÇÃO (Etapa 1)
+        // NOVA FUNÇÃO DE VALIDAÇÃO (Etapa 1 - Agendamento Único ou Imediato)
         // ========================================================================
         async function validateAndInitiateRide(requestType) {
             // Define o tipo de requisição (usado por executeRideRequest)
@@ -1103,7 +1345,7 @@
 
 
         // ========================================================================
-        // FUNÇÃO DE SUBMISSÃO (Etapa 2)
+        // FUNÇÃO DE SUBMISSÃO (Etapa 2 - Agendamento Único ou Imediato)
         // (Anteriormente 'adminRequestRide', agora sem validações de destino)
         // ========================================================================
         async function executeRideRequest() {
@@ -1165,7 +1407,13 @@
             const { data, error } = await supabaseClient.from('rides').insert([rideData]).select().single();
 
             if (error) {
+                // ======================================================
+                // INÍCIO DA CORREÇÃO DO ERRO DE SINTAXE
+                // ======================================================
                 alert('Erro ao solicitar corrida: ' + error.message);
+                // ======================================================
+                // FIM DA CORREÇÃO
+                // ======================================================
                 console.error("Erro Supabase:", error);
             } else {
                 alert(`Corrida para ${collaborator.name} ${passengerCount > 1 ? `e mais ${passengerCount - 1}` : ''} solicitada com sucesso! Status: ${rideData.status}.`);
@@ -1564,8 +1812,7 @@
                         <td class="p-3 text-sm">${ride.driverName || 'N/A'}</td>
                         <td class="p-3 text-sm">${ride.observation || 'N/A'}</td>
                         <td class="p-3 text-sm">${ride.requested_by_admin_name || 'N/A'}</td>
-                        <td class="p-3 text-sm">${typeText}</td> <!-- MODIFICADO -->
-                    </tr>
+                        <td class="p-3 text-sm">${typeText}</td> </tr>
                 `;
                 tableBody.innerHTML += row;
             });
@@ -1679,26 +1926,31 @@
 
             await populateLoginCompanies(); // Carrega empresas para o login
 
-            // Configura botões de solicitar/agendar corrida
+            // ======================================================
+            // INÍCIO: MODIFICAÇÃO (Adiciona listeners para *todos* os botões)
+            // ======================================================
             const immediateBtn = document.getElementById('admin-request-immediate-btn');
             const scheduledBtn = document.getElementById('admin-request-scheduled-btn');
+            const multiScheduleBtn = document.getElementById('admin-request-multi-schedule-btn'); // NOVO
+
             if (immediateBtn) {
-                // ======================================================
-                // INÍCIO DA MODIFICAÇÃO SOLICITADA
-                // ======================================================
                 immediateBtn.onclick = () => {
-                    validateAndInitiateRide('immediate'); // Nova chamada
+                    validateAndInitiateRide('immediate'); // Chamada existente
                 };
-                // ======================================================
-                // FIM DA MODIFICAÇÃO SOLICITADA
-                // ======================================================
             }
             if (scheduledBtn) {
-                scheduledBtn.onclick = openAdminScheduleModal;
+                scheduledBtn.onclick = openAdminScheduleModal; // Chamada existente
             }
+            if (multiScheduleBtn) {
+                multiScheduleBtn.onclick = validateAndInitiateMultiSchedule; // NOVA CHAMADA
+            }
+            // ======================================================
+            // FIM: MODIFICAÇÃO
+            // ======================================================
+
 
             // ======================================================
-            // INÍCIO: NOVOS LISTENERS DO MODAL
+            // INÍCIO: NOVOS LISTENERS DO MODAL "SEM DESTINO" (Existente)
             // ======================================================
             const noDestNoBtn = document.getElementById('no-destination-btn-no');
             const noDestYesBtn = document.getElementById('no-destination-btn-yes');
