@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Bot - Visualizador de Mensagens</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .status {
+            flex: 1;
+            text-align: right;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .status.loading {
+            color: #667eea;
+        }
+
+        .status.success {
+            color: #10b981;
+        }
+
+        .status.error {
+            color: #ef4444;
+        }
+
+        .messages-container {
+            display: grid;
+            gap: 20px;
+        }
+
+        .message-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        .message-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .user-details h3 {
+            color: #333;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .user-details p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .chat-id-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-id-badge:hover {
+            transform: scale(1.05);
+        }
+
+        .chat-id-badge:active {
+            transform: scale(0.95);
+        }
+
+        .message-content {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .message-text {
+            color: #333;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .message-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .no-messages {
+            background: white;
+            padding: 60px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .no-messages h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .no-messages p {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .copy-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #10b981;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .status {
+                text-align: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Garcia Transportes - Telegram Bot</h1>
+            <p>Visualizador de Mensagens e Chat IDs</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="loadMessages()">🔄 Atualizar Mensagens</button>
+            <div class="status" id="status">Clique em "Atualizar" para carregar mensagens</div>
+        </div>
+
+        <div class="messages-container" id="messagesContainer">
+            <div class="no-messages">
+                <h2>👋 Bem-vindo!</h2>
+                <p>Clique no botão "Atualizar Mensagens" acima para carregar as mensagens recebidas pelo bot.<br><br>
+                <strong>Como usar:</strong><br>
+                1. Clique em "Atualizar Mensagens"<br>
+                2. Veja as mensagens organizadas<br>
+                3. Clique no Chat ID para copiar automaticamente</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Chat ID copiado! ✓</div>
+
+    <script>
+        const BOT_TOKEN = '8475646578:AAE72zdL4U0HZ73LrzEcNHltXSDbB5umT_M';
+        const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/getUpdates`;
+
+        async function loadMessages() {
+            const statusEl = document.getElementById('status');
+            const containerEl = document.getElementById('messagesContainer');
+
+            // Mostra status de carregamento
+            statusEl.textContent = '⏳ Carregando mensagens...';
+            statusEl.className = 'status loading';
+
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+
+                if (!data.ok) {
+                    throw new Error('Erro ao buscar mensagens');
+                }
+
+                const messages = data.result;
+
+                if (messages.length === 0) {
+                    containerEl.innerHTML = `
+                        <div class="no-messages">
+                            <h2>📭 Nenhuma mensagem encontrada</h2>
+                            <p>Ainda não há mensagens recebidas pelo bot.<br><br>
+                            Peça para um motorista enviar uma mensagem "Oi" para o bot <strong>@Garciatransporte2025_bot</strong> no Telegram.</p>
+                        </div>
+                    `;
+                    statusEl.textContent = '✓ Nenhuma mensagem encontrada';
+                    statusEl.className = 'status success';
+                    return;
+                }
+
+                // Renderiza mensagens
+                containerEl.innerHTML = messages.map(msg => {
+                    const message = msg.message || {};
+                    const from = message.from || {};
+                    const chatId = message.chat?.id || 'N/A';
+                    const firstName = from.first_name || 'Usuário';
+                    const lastName = from.last_name || '';
+                    const username = from.username ? `@${from.username}` : '';
+                    const text = message.text || '(sem texto)';
+                    const date = message.date ? new Date(message.date * 1000).toLocaleString('pt-BR') : 'N/A';
+                    const initials = (firstName.charAt(0) + (lastName.charAt(0) || '')).toUpperCase();
+
+                    return `
+                        <div class="message-card">
+                            <div class="message-header">
+                                <div class="user-info">
+                                    <div class="user-avatar">${initials}</div>
+                                    <div class="user-details">
+                                        <h3>${firstName} ${lastName}</h3>
+                                        <p>${username || 'Sem username'}</p>
+                                    </div>
+                                </div>
+                                <div class="chat-id-badge" onclick="copyToClipboard('${chatId}')" title="Clique para copiar">
+                                    <svg class="copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                    Chat ID: ${chatId}
+                                </div>
+                            </div>
+                            <div class="message-content">
+                                <div class="message-text">${text}</div>
+                            </div>
+                            <div class="message-meta">
+                                <span>📅 ${date}</span>
+                                <span>Update ID: ${msg.update_id}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                statusEl.textContent = `✓ ${messages.length} mensagem${messages.length > 1 ? 's' : ''} carregada${messages.length > 1 ? 's' : ''}`;
+                statusEl.className = 'status success';
+
+            } catch (error) {
+                console.error('Erro:', error);
+                containerEl.innerHTML = `
+                    <div class="no-messages">
+                        <h2>❌ Erro ao carregar mensagens</h2>
+                        <p>${error.message}<br><br>Verifique sua conexão e tente novamente.</p>
+                    </div>
+                `;
+                statusEl.textContent = '❌ Erro ao carregar';
+                statusEl.className = 'status error';
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+            }).catch(err => {
+                console.error('Erro ao copiar:', err);
+                alert('Chat ID: ' + text);
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // Carrega mensagens automaticamente ao abrir a página
+        window.addEventListener('load', loadMessages);
+    </script>
+</body>
+</html>
