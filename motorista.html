@@ -1858,18 +1858,94 @@ function stopRingingMotorista() {
   }
 }
 
+// ========================================================================
+// INTEGRAÇÃO COM SERVICE WORKER - Sistema Completo de Notificações
+// ========================================================================
+
+// Listener para mensagens do Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    console.log('[App] Mensagem do Service Worker:', event.data);
+    
+    if (event.data.type === 'PLAY_NOTIFICATION_SOUND') {
+      // Service Worker pediu para tocar o som
+      playRingSound();
+    }
+    
+    if (event.data.type === 'NEW_RIDE_NOTIFICATION') {
+      // Service Worker notificou sobre nova corrida
+      console.log('[App] Nova corrida via SW:', event.data.data);
+      // O sistema real-time já cuida disso, mas podemos forçar atualização
+      if (state.currentDriverId) {
+        loadDriverJobs();
+      }
+    }
+  });
+}
+
 // Registra service worker para notificações funcionar em background
-function setupMotoristaNotificationIntegration() {
-  if (!("Notification" in window)) return;
-  if (Notification.permission !== "granted") {
-    Notification.requestPermission();
+async function setupMotoristaNotificationIntegration() {
+  if (!('serviceWorker' in navigator)) {
+    console.warn('[App] Service Workers não suportados neste navegador');
+    return;
   }
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('motorista-sw.js')
-      .then(() => console.log("Service Worker motorista registrado"))
-      .catch((err) => console.error("Erro Service Worker:", err));
+  try {
+    // Registra o Service Worker
+    const registration = await navigator.serviceWorker.register('motorista-sw.js', {
+      scope: './'
+    });
+    
+    console.log('[App] Service Worker registrado com sucesso!', registration.scope);
+    
+    // Verifica se há atualização disponível
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+      console.log('[App] Novo Service Worker encontrado, instalando...');
+      
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          console.log('[App] Novo Service Worker instalado! Recarregue a página para ativar.');
+          // Poderia mostrar um aviso ao usuário aqui
+        }
+      });
+    });
+    
+    // Se já existe um Service Worker ativo, pede permissão de notificação
+    if (registration.active) {
+      await requestNotificationPermissionEnhanced();
+    }
+    
+    // Garante que o Service Worker está pronto antes de pedir notificações
+    await navigator.serviceWorker.ready;
+    console.log('[App] Service Worker pronto para receber notificações');
+    
+  } catch (error) {
+    console.error('[App] Erro ao registrar Service Worker:', error);
   }
+}
+
+// Função melhorada para pedir permissão de notificação
+async function requestNotificationPermissionEnhanced() {
+  if (!('Notification' in window)) {
+    console.warn('[App] Notificações não suportadas');
+    return false;
+  }
+  
+  if (Notification.permission === 'granted') {
+    console.log('[App] Permissão de notificação já concedida');
+    return true;
+  }
+  
+  if (Notification.permission === 'denied') {
+    console.warn('[App] Permissão de notificação negada pelo usuário');
+    return false;
+  }
+  
+  // Pede permissão
+  const permission = await Notification.requestPermission();
+  console.log('[App] Resultado da permissão:', permission);
+  return permission === 'granted';
 }
 
 // Função nova (Apenas toca o alarme, o Push vem do servidor):
@@ -1878,13 +1954,65 @@ function showNewRideNotificationMotorista(ride) {
   // O Service Worker vai cuidar da notificação visual!
 }
 
+// ========================================================================
+// SISTEMA DE ÁUDIO MELHORADO - Funciona em Background
+// ========================================================================
+
+// Mantém áudio ativo mesmo em background
+function keepAudioContextAlive() {
+  const silentAudio = document.getElementById("silent-audio");
+  if (silentAudio && silentAudio.paused) {
+    silentAudio.play().catch(e => {
+      console.warn("Erro ao manter áudio silencioso:", e);
+    });
+  }
+  
+  // Mantém AudioContext ativo
+  if (motoristaAudioContext && motoristaAudioContext.state === 'suspended') {
+    motoristaAudioContext.resume().then(() => {
+      console.log('[Audio] AudioContext retomado');
+    });
+  }
+}
+
+// Verifica e mantém áudio ativo periodicamente
+setInterval(keepAudioContextAlive, 5000); // A cada 5 segundos
+
+// Função melhorada para tocar som com fallback
+function playNotificationSoundEnhanced() {
+  // Tenta tocar o MP3
+  playRingSound();
+  
+  // Se o Service Worker estiver ativo, pede para ele também tocar
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'PLAY_NOTIFICATION_SOUND'
+    });
+  }
+}
+
 // Ativa áudio silencioso para manter app vivo em background ao carregar a página
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
+  console.log('[App] Inicializando sistema de notificações e áudio...');
+  
+  // Inicia áudio silencioso
   const silentAudio = document.getElementById("silent-audio");
   if (silentAudio) {
     silentAudio.play().catch(e => console.warn("Erro ao iniciar áudio silencioso:", e));
   }
-  setupMotoristaNotificationIntegration();
+  
+  // Configura Service Worker e notificações
+  await setupMotoristaNotificationIntegration();
+  
+  console.log('[App] Sistema de notificações pronto!');
+});
+
+// Garante que o áudio continue ativo quando a aba volta a ficar visível
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === 'visible') {
+    console.log('[Audio] Página visível, verificando áudio...');
+    keepAudioContextAlive();
+  }
 });
 
 
