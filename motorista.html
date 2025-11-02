@@ -431,8 +431,8 @@ function stopRinging() {
                 }
             } catch (err) {
                 console.error(`Erro ao ativar Wake Lock: ${err.name}, ${err.message}`);
-                // Desmarca o toggle se falhar
-                document.getElementById('wake-lock-toggle').checked = false;
+                // CORREÇÃO: NÃO desmarca o toggle, mantém marcado para retry automático
+                // O toggle permanece TRUE e o sistema tentará reativar automaticamente
             }
         };
 
