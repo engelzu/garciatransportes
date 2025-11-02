@@ -834,7 +834,6 @@
                     <h3 class="font-semibold mb-2">Adicionar Novo Motorista</h3>
                     <input type="text" id="new-driver-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Nome Completo">
                     <input type="tel" id="new-driver-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Telefone">
-                    <input type="email" id="new-driver-email" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Email (opcional)">
                     <input type="text" id="new-driver-plate" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Placa do Carro">
                     <input type="text" id="new-driver-model" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Modelo do Carro">
                     <input type="text" id="new-driver-color" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Cor do Carro">
@@ -1002,7 +1001,6 @@
                 <input type="text" id="modal-input-matricula" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Matrícula">
                 <input type="text" id="modal-input-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Nome">
                 <input type="tel" id="modal-input-phone" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Telefone">
-                <input type="email" id="modal-input-email" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Email (opcional)">
                 <input type="text" id="modal-input-plate" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Placa do Carro">
                 <input type="text" id="modal-input-model" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Modelo do Carro">
                 <input type="text" id="modal-input-color" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Cor do Carro">
@@ -1400,7 +1398,6 @@
                 if(content.type === 'edit-driver') {
                     document.getElementById('modal-input-name').style.display = 'block';
                     document.getElementById('modal-input-phone').style.display = 'block';
-                    document.getElementById('modal-input-email').style.display = 'block';
                     document.getElementById('modal-input-plate').style.display = 'block';
                     document.getElementById('modal-input-model').style.display = 'block';
                     document.getElementById('modal-input-color').style.display = 'block';
@@ -1408,7 +1405,6 @@
                     document.getElementById('modal-input-status').style.display = 'block';
                     document.getElementById('modal-input-name').value = content.name;
                     document.getElementById('modal-input-phone').value = content.phone;
-                    document.getElementById('modal-input-email').value = content.email || '';
                     document.getElementById('modal-input-plate').value = content.plate;
                     document.getElementById('modal-input-model').value = content.car_model || '';
                     document.getElementById('modal-input-color').value = content.car_color || '';
@@ -2042,72 +2038,6 @@
             tableContainer.innerHTML = tableHTML;
         }
 
-        // Função auxiliar para enviar notificação por email ao motorista
-        async function sendDriverEmailNotification(driver, rideId) {
-            // Verificar se o motorista tem email cadastrado
-            if (!driver.email) {
-                console.log('Motorista não possui email cadastrado. Email não enviado.');
-                return;
-            }
-
-            try {
-                // Buscar detalhes da corrida
-                const { data: ride, error: rideError } = await supabaseClient
-                    .from('rides')
-                    .select('*')
-                    .eq('id', rideId)
-                    .single();
-
-                if (rideError || !ride) {
-                    console.error('Erro ao buscar dados da corrida:', rideError);
-                    return;
-                }
-
-                // Buscar dados do passageiro
-                const { data: user, error: userError } = await supabaseClient
-                    .from('users')
-                    .select('name')
-                    .eq('id', ride.userId)
-                    .single();
-
-                const passengerName = user?.name || 'Passageiro';
-
-                // Preparar dados para a Edge Function
-                const emailData = {
-                    driverEmail: driver.email,
-                    driverName: driver.name,
-                    rideDetails: {
-                        rideId: ride.id,
-                        passengerName: passengerName,
-                        origin: ride.origin_address || 'Origem não especificada',
-                        destination: formatDestination(ride.destination) || 'Destino não especificado',
-                        distance: ride.km ? `${ride.km} km` : 'A calcular',
-                        price: ride.price ? `${parseFloat(ride.price).toFixed(2)}` : 'A calcular'
-                    }
-                };
-
-                // Chamar Edge Function
-                const response = await fetch(`${supabaseClient.supabaseUrl}/functions/v1/send-driver-notification`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${supabaseClient.supabaseKey}`
-                    },
-                    body: JSON.stringify(emailData)
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    console.error('Erro ao enviar email:', result);
-                } else {
-                    console.log('Email enviado com sucesso:', result);
-                }
-            } catch (error) {
-                console.error('Erro ao processar envio de email:', error);
-            }
-        }
-
         async function updateRideDriver(rideId) {
             const selectElement = document.getElementById(`ongoing-driver-select-${rideId}`);
             if (!selectElement) return;
@@ -2139,8 +2069,13 @@
                 showModal("Não foi possível atualizar o motorista.");
             } else {
                 showModal("Motorista atribuído com sucesso!");
-                // Enviar notificação por email
-                await sendDriverEmailNotification(driver, rideId);
+                // Atualiza o state local
+                const rideIndex = state.rides.findIndex(r => r.id === rideId);
+                if (rideIndex !== -1) {
+                    state.rides[rideIndex] = { ...state.rides[rideIndex], status: 'assigned', driverId: parseInt(driver.id), driverName: driver.name };
+                }
+                // Re-renderiza a tabela
+                await renderOngoingRidesTable();
             }
         }
 
@@ -2156,15 +2091,21 @@
                 console.error("Erro ao designar motorista:", error);
                 showModal("Não foi possível designar o motorista.");
             } else {
-                // Enviar notificação por email
-                await sendDriverEmailNotification(driver, rideId);
+                showModal("Motorista designado com sucesso!");
+                // Atualiza o state local
+                const rideIndex = state.rides.findIndex(r => r.id === rideId);
+                if (rideIndex !== -1) {
+                    state.rides[rideIndex] = { ...state.rides[rideIndex], status: 'assigned', driverId: parseInt(driver.id), driverName: driver.name };
+                }
+                // Re-renderiza listas
+                loadAdminRequests();
+                await renderOngoingRidesTable();
             }
         }
 
         async function addDriver() {
             const nameInput = document.getElementById('new-driver-name');
             const phoneInput = document.getElementById('new-driver-phone');
-            const emailInput = document.getElementById('new-driver-email');
             const plateInput = document.getElementById('new-driver-plate');
             const modelInput = document.getElementById('new-driver-model');
             const colorInput = document.getElementById('new-driver-color');
@@ -2172,28 +2113,24 @@
 
             const name = nameInput.value.trim(); 
             const phone = phoneInput.value.trim();
-            const email = emailInput.value.trim();
             const plate = plateInput.value.trim();
             const model = modelInput.value.trim();
             const color = colorInput.value.trim();
             const password = passwordInput.value.trim();
 
             if (!name || !phone || !plate || !password || !model || !color) { 
-                showModal('Todos os campos são obrigatórios (exceto email).'); 
+                showModal('Todos os campos são obrigatórios.'); 
                 return; 
             }
-            const insertData = { 
+            const { error } = await supabaseClient.from('drivers').insert([{ 
                 name, phone, plate, password, status: 'inactive', car_model: model, car_color: color 
-            };
-            if (email) insertData.email = email;
-            
-            const { error } = await supabaseClient.from('drivers').insert([insertData]);
+            }]);
 
             if (error) { 
                 console.error('Error adding driver:', error); 
                 showModal('Erro ao adicionar motorista.'); 
             } else { 
-                nameInput.value = phoneInput.value = emailInput.value = plateInput.value = passwordInput.value = modelInput.value = colorInput.value = ''; 
+                nameInput.value = phoneInput.value = plateInput.value = passwordInput.value = modelInput.value = colorInput.value = ''; 
                 showModal('Motorista adicionado com sucesso!'); 
             }
         }
@@ -2204,7 +2141,6 @@
             const onConfirm = async () => {
                 const newName = document.getElementById('modal-input-name').value.trim();
                 const newPhone = document.getElementById('modal-input-phone').value.trim();
-                const newEmail = document.getElementById('modal-input-email').value.trim();
                 const newPlate = document.getElementById('modal-input-plate').value.trim();
                 const newModel = document.getElementById('modal-input-model').value.trim();
                 const newColor = document.getElementById('modal-input-color').value.trim();
@@ -2220,7 +2156,6 @@
                         car_model: newModel,
                         car_color: newColor
                     };
-                    if (newEmail) updateData.email = newEmail;
                     if (newPassword) updateData.password = newPassword;
                     const { error } = await supabaseClient.from('drivers').update(updateData).eq('id', driverId);
                     if (error) { 
@@ -2237,7 +2172,6 @@
                 type: 'edit-driver', 
                 name: driver.name, 
                 phone: driver.phone, 
-                email: driver.email,
                 plate: driver.plate, 
                 car_model: driver.car_model,
                 car_color: driver.car_color,
@@ -3105,15 +3039,30 @@ async function sendNewRideEmailNotification(ride) {
                 })
                 .eq('id', rideId);
 
-            if (error) alert('Não foi possível finalizar a corrida.');
-            else alert('Corrida finalizada com sucesso!');
+            if (error) {
+                alert('Não foi possível finalizar a corrida.');
+            } else {
+                alert('Corrida finalizada com sucesso!');
+                // Atualiza o state local
+                const rideIndex = state.rides.findIndex(r => r.id === rideId);
+                if (rideIndex !== -1) {
+                    state.rides[rideIndex] = { ...state.rides[rideIndex], status: 'completed', km: finalDistance };
+                }
+                await renderOngoingRidesTable();
+            }
         }
 
         async function adminDeleteRide(rideId) {
             if (!confirm('ATENÇÃO: Ação irreversível. Deseja realmente excluir esta corrida?')) return;
             const { error } = await supabaseClient.from('rides').delete().eq('id', rideId);
-            if (error) alert('Não foi possível excluir a corrida.');
-            else alert('Corrida excluída com sucesso!');
+            if (error) {
+                alert('Não foi possível excluir a corrida.');
+            } else {
+                alert('Corrida excluída com sucesso!');
+                // Remove do state local
+                state.rides = state.rides.filter(r => r.id !== rideId);
+                await renderOngoingRidesTable();
+            }
         }
         
         async function initApp() {
