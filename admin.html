@@ -2080,7 +2080,7 @@
                         rideId: ride.id,
                         passengerName: passengerName,
                         origin: ride.origin_address || 'Origem não especificada',
-                        destination: ride.destination || 'Destino não especificado',
+                        destination: formatDestination(ride.destination) || 'Destino não especificado',
                         distance: ride.km ? `${ride.km} km` : 'A calcular',
                         price: ride.price ? `${parseFloat(ride.price).toFixed(2)}` : 'A calcular'
                     }
