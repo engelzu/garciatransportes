@@ -1,24 +1,54 @@
 {
-  "name": "GARCIA TRANSPORTES Motorista",
-  "short_name": "Motorista",
+  "name": "GARCIA TRANSPORTES - Motorista",
+  "short_name": "Garcia Motorista",
+  "description": "Sistema de gestão de corridas para motoristas - Garcia Transportes",
   "start_url": "/motorista.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#000000",
+  "orientation": "portrait",
   "theme_color": "#1f2937",
-  "orientation": "portrait-primary",
+  "background_color": "#000000",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "icons": [
     {
       "src": "images/motorista.png",
-      "type": "image/png",
       "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "images/motorista.png",
-      "type": "image/png",
+      "src": "images/destino.png",
       "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Minhas Corridas",
+      "short_name": "Corridas",
+      "description": "Ver minhas corridas ativas",
+      "url": "/motorista.html",
+      "icons": [
+        {
+          "src": "images/destino.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/motorista.html",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "related_applications": [],
+  "prefer_related_applications": false
 }
