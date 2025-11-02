@@ -838,6 +838,7 @@
                     <input type="text" id="new-driver-model" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Modelo do Carro">
                     <input type="text" id="new-driver-color" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Cor do Carro">
                     <input type="password" id="new-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Senha">
+                    <input type="text" id="new-driver-telegram" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Telegram Chat ID (opcional)">
                     <button onclick="addDriver()" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient text-white">Adicionar</button>
                 </div>
                 
@@ -1005,6 +1006,7 @@
                 <input type="text" id="modal-input-model" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Modelo do Carro">
                 <input type="text" id="modal-input-color" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Cor do Carro">
                 <input type="password" id="modal-input-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Nova Senha (deixe em branco para manter)">
+                <input type="text" id="modal-input-telegram" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Telegram Chat ID (opcional)">
                 <select id="modal-input-status" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none">
                     <option value="active">Ativo</option>
                     <option value="inactive">Inativo</option>
@@ -1402,12 +1404,14 @@
                     document.getElementById('modal-input-model').style.display = 'block';
                     document.getElementById('modal-input-color').style.display = 'block';
                     document.getElementById('modal-input-password').style.display = 'block'; 
+                    document.getElementById('modal-input-telegram').style.display = 'block';
                     document.getElementById('modal-input-status').style.display = 'block';
                     document.getElementById('modal-input-name').value = content.name;
                     document.getElementById('modal-input-phone').value = content.phone;
                     document.getElementById('modal-input-plate').value = content.plate;
                     document.getElementById('modal-input-model').value = content.car_model || '';
                     document.getElementById('modal-input-color').value = content.car_color || '';
+                    document.getElementById('modal-input-telegram').value = content.telegram_chat_id || '';
                     document.getElementById('modal-input-status').value = content.status;
                 } else if (content.type === 'edit-user') {
                     document.getElementById('modal-input-matricula').style.display = 'block';
@@ -2054,6 +2058,8 @@
                 showModal("Motorista selecionado não encontrado.");
                 return;
             }
+            
+            const ride = state.rides.find(r => r.id === rideId);
 
             const { error } = await supabaseClient
                 .from('rides')
@@ -2074,6 +2080,28 @@
                 if (rideIndex !== -1) {
                     state.rides[rideIndex] = { ...state.rides[rideIndex], status: 'assigned', driverId: parseInt(driver.id), driverName: driver.name };
                 }
+                
+                // Enviar notificação Telegram se o motorista tiver Chat ID
+                if (driver.telegram_chat_id && ride) {
+                    try {
+                        const { data, error: telegramError } = await supabaseClient.functions.invoke('send-telegram-notification', {
+                            body: {
+                                chatId: driver.telegram_chat_id,
+                                driverName: driver.name,
+                                origin: ride.origin || 'Não informado',
+                                destination: ride.destination || 'Não informado'
+                            }
+                        });
+                        if (telegramError) {
+                            console.error('Erro ao enviar Telegram:', telegramError);
+                        } else {
+                            console.log('Telegram enviado com sucesso:', data);
+                        }
+                    } catch (err) {
+                        console.error('Erro ao enviar notificação Telegram:', err);
+                    }
+                }
+                
                 // Re-renderiza a tabela
                 await renderOngoingRidesTable();
             }
@@ -2086,6 +2114,8 @@
                 return;
             }
             const driver = state.drivers.find(d => d.id == selectedDriverId);
+            const ride = state.rides.find(r => r.id === rideId);
+            
             const { error } = await supabaseClient.from('rides').update({ status: 'assigned', driverId: parseInt(driver.id), driverName: driver.name }).eq('id', rideId);
             if (error) { 
                 console.error("Erro ao designar motorista:", error);
@@ -2097,6 +2127,28 @@
                 if (rideIndex !== -1) {
                     state.rides[rideIndex] = { ...state.rides[rideIndex], status: 'assigned', driverId: parseInt(driver.id), driverName: driver.name };
                 }
+                
+                // Enviar notificação Telegram se o motorista tiver Chat ID
+                if (driver.telegram_chat_id && ride) {
+                    try {
+                        const { data, error: telegramError } = await supabaseClient.functions.invoke('send-telegram-notification', {
+                            body: {
+                                chatId: driver.telegram_chat_id,
+                                driverName: driver.name,
+                                origin: ride.origin || 'Não informado',
+                                destination: ride.destination || 'Não informado'
+                            }
+                        });
+                        if (telegramError) {
+                            console.error('Erro ao enviar Telegram:', telegramError);
+                        } else {
+                            console.log('Telegram enviado com sucesso:', data);
+                        }
+                    } catch (err) {
+                        console.error('Erro ao enviar notificação Telegram:', err);
+                    }
+                }
+                
                 // Re-renderiza listas
                 loadAdminRequests();
                 await renderOngoingRidesTable();
@@ -2110,6 +2162,7 @@
             const modelInput = document.getElementById('new-driver-model');
             const colorInput = document.getElementById('new-driver-color');
             const passwordInput = document.getElementById('new-driver-password');
+            const telegramInput = document.getElementById('new-driver-telegram');
 
             const name = nameInput.value.trim(); 
             const phone = phoneInput.value.trim();
@@ -2117,20 +2170,24 @@
             const model = modelInput.value.trim();
             const color = colorInput.value.trim();
             const password = passwordInput.value.trim();
+            const telegram_chat_id = telegramInput.value.trim();
 
             if (!name || !phone || !plate || !password || !model || !color) { 
                 showModal('Todos os campos são obrigatórios.'); 
                 return; 
             }
-            const { error } = await supabaseClient.from('drivers').insert([{ 
+            const insertData = { 
                 name, phone, plate, password, status: 'inactive', car_model: model, car_color: color 
-            }]);
+            };
+            if (telegram_chat_id) insertData.telegram_chat_id = telegram_chat_id;
+            
+            const { error } = await supabaseClient.from('drivers').insert([insertData]);
 
             if (error) { 
                 console.error('Error adding driver:', error); 
                 showModal('Erro ao adicionar motorista.'); 
             } else { 
-                nameInput.value = phoneInput.value = plateInput.value = passwordInput.value = modelInput.value = colorInput.value = ''; 
+                nameInput.value = phoneInput.value = plateInput.value = passwordInput.value = modelInput.value = colorInput.value = telegramInput.value = ''; 
                 showModal('Motorista adicionado com sucesso!'); 
             }
         }
@@ -2145,6 +2202,7 @@
                 const newModel = document.getElementById('modal-input-model').value.trim();
                 const newColor = document.getElementById('modal-input-color').value.trim();
                 const newPassword = document.getElementById('modal-input-password').value.trim();
+                const newTelegram = document.getElementById('modal-input-telegram').value.trim();
                 const newStatus = document.getElementById('modal-input-status').value;
 
                 if (newName && newPhone && newPlate && newModel && newColor) {
@@ -2157,6 +2215,7 @@
                         car_color: newColor
                     };
                     if (newPassword) updateData.password = newPassword;
+                    if (newTelegram) updateData.telegram_chat_id = newTelegram;
                     const { error } = await supabaseClient.from('drivers').update(updateData).eq('id', driverId);
                     if (error) { 
                         console.error('Error updating driver:', error); 
@@ -2175,6 +2234,7 @@
                 plate: driver.plate, 
                 car_model: driver.car_model,
                 car_color: driver.car_color,
+                telegram_chat_id: driver.telegram_chat_id,
                 status: driver.status 
             });
         }
