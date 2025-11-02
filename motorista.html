@@ -447,6 +447,10 @@ function stopRinging() {
         // Função chamada pelo toggle
         async function toggleWakeLock() {
             const isChecked = document.getElementById('wake-lock-toggle').checked;
+            
+            // Salva a preferência no localStorage
+            localStorage.setItem('wakeLockEnabled', isChecked ? 'true' : 'false');
+            
             if (isChecked) {
                 await requestWakeLock();
                 // Tenta manter a app "viva" com áudio silencioso
@@ -1487,6 +1491,13 @@ function stopRinging() {
             loadAppIcon();      // Carrega o ícone do app
             await fetchAllData(); // Busca dados iniciais
             setupRealtimeSubscriptions(); // Configura atualizações em tempo real
+
+            // SEMPRE inicia com Wake Lock ATIVADO (tela ativa)
+            const wakeLockToggle = document.getElementById('wake-lock-toggle');
+            wakeLockToggle.checked = true; // Garante que está marcado
+            localStorage.setItem('wakeLockEnabled', 'true'); // Salva no localStorage
+            await requestWakeLock(); // Ativa o Wake Lock imediatamente
+            console.log('Wake Lock ativado automaticamente no início do app.');
 
             // Listener para quando a aba/app volta a ficar visível
             document.addEventListener('visibilitychange', async () => {
