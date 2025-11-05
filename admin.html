@@ -1923,7 +1923,8 @@
 	                        ${destinationsHTML}
 	                        <p class="font-semibold">Observação: <span class="font-normal text-yellow-300">${ride.observation || 'Nenhuma'}</span></p>
                         ${distanceInfo}
-                        <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
+                        <p class="font-semibold">Admin Solicitante: <span class="font-normal">${ride.requested_by_admin_name || 'N/A'}</span></p>
+	                        <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
                         <p class="text-sm text-gray-300">Solicitado em: ${new Date(ride.requestTime).toLocaleTimeString()}</p>
                         ${actionContent}
                     `;
@@ -1964,6 +1965,7 @@
                             <th scope="col" class="px-4 py-3">Status</th>
                             <th scope="col" class="px-4 py-3">Tipo</th>
                             <th scope="col" class="px-4 py-3">Data/Hora</th>
+                            <th scope="col" class="px-4 py-3">Admin Solicitante</th>
                             <th scope="col" class="px-4 py-3">Ações</th>
                         </tr>
                     </thead>
@@ -2033,6 +2035,7 @@
                         </td>
                         <td class="px-4 py-3">${rideTypeInfo}</td>
                         <td class="px-4 py-3">${dateTimeString}</td> 
+                        <td class="px-4 py-3">${ride.requested_by_admin_name || 'N/A'}</td>
                         <td class="px-4 py-3">${actionsCellHTML}</td>
                     </tr>
                 `;
@@ -2789,8 +2792,8 @@ async function sendNewRideEmailNotification(ride) {
                 'Usuário': ride.userName,
                 'Empresa': ride.userCompany,
                 'Destino': formatDestination(ride.destination),
-                'Motorista': ride.driverName || 'N/A',
-                'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
+              'ID do Motorista': ride.driverId || 'N/A',
+	                'Admin Solicitante': ride.requested_by_admin_name || 'N/A',               'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                 'Data do Aceite': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A',
                 'Status': translateStatus(ride.status).text
             }));
