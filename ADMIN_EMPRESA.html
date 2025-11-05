@@ -198,8 +198,9 @@
         }
 
         /* Permite quebra de linha na coluna de destinos e observação */
-        #history-table td:nth-child(8), /* Coluna Destinos */
-        #history-table td:nth-child(11) { /* Coluna Observação */
+        #history-table td:nth-child(9), /* Coluna Motivo */
+	        #history-table td:nth-child(10), /* Coluna Destinos */
+        #history-table td:nth-child(12) { /* Coluna Observação */
             white-space: normal;
             min-width: 250px; /* Largura mínima */
         }
@@ -253,11 +254,18 @@
                 <button id="tab-approve-ride" class="tab-button" onclick="showAdminSubScreen('approval-ride-screen')">Aprovar Solicitações</button>
                 <button id="tab-history" class="tab-button" onclick="showAdminSubScreen('history-screen')">Histórico</button>
                 <button id="tab-users" class="tab-button" onclick="showAdminSubScreen('user-management-screen')">Gerenciar Usuários</button>
+                <button id="tab-motivos" class="tab-button" onclick="showAdminSubScreen('motivos-management-screen')">Gerenciar Motivos</button>
             </div>
 
             <div id="request-ride-screen" class="admin-sub-screen active">
                  <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
                 <div id="admin-request-form" class="card-gradient p-6 rounded-lg max-w-2xl mx-auto">
+                    <div class="mb-4">
+                        <label for="motivo-select" class="block mb-2 text-sm font-medium">SELECIONE O MOTIVO DA SOLICITAÇÃO</label>
+                        <select id="motivo-select" class="w-full p-3 rounded-lg">
+                            <option value="">-- Selecione o Motivo --</option>
+                        </select>
+                    </div>
                     <div class="mb-4">
                         <label for="passenger-quantity-select" class="block mb-2 text-sm font-medium">SELECIONE A QUANTIDADE DE PASSAGEIROS</label>
                         <select id="passenger-quantity-select" class="w-full p-3 rounded-lg">
@@ -334,10 +342,12 @@
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">ID</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Solicitante</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motivo</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Solicitação</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Agendada</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Aceite</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Origem</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motivo</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Destinos</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Passag.</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motorista</th>
@@ -378,6 +388,23 @@
                     </div>
                     <div id="user-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                         </div>
+                </div>
+            </div>
+
+            <div id="motivos-management-screen" class="admin-sub-screen">
+                <h2 class="text-2xl font-bold text-center mb-4">Gerenciar Motivos</h2>
+                <div class="max-w-2xl mx-auto">
+                    <div class="card-gradient p-4 rounded-lg mb-6">
+                        <h3 id="motivo-form-title" class="text-lg font-semibold mb-2">Adicionar Motivo</h3>
+                        <input type="hidden" id="editing-motivo-id">
+                        <div class="space-y-2">
+                            <input type="text" id="new-motivo-name" placeholder="Nome do Motivo (Ex: Reunião, Entrega de Documentos)" class="w-full p-2 rounded-lg">
+                        </div>
+                        <button onclick="addOrUpdateMotivo()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
+                        <button id="cancel-motivo-edit-btn" onclick="cancelMotivoEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                    </div>
+                    <div id="motivo-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                    </div>
                 </div>
             </div>
         </div>
@@ -677,6 +704,9 @@
              if (rideDetails) rideDetails.classList.add('hidden');
             const observationInput = document.getElementById('admin-observation');
              if (observationInput) observationInput.value = '';
+            // Reseta também o select de motivos
+            const motivoSelect = document.getElementById('motivo-select');
+            if (motivoSelect) motivoSelect.value = '';
         }
 
 
@@ -781,12 +811,52 @@
             }
             state.allUsers = users || []; // Garante que seja um array
         }
+        
+        // ========================================================================
+        // INÍCIO: FUNÇÃO (Carregar Motivos no Select) - CORRIGIDA
+        // ========================================================================
+        async function populateMotivosSelect() {
+            const select = document.getElementById('motivo-select');
+            if (!select) return;
+
+            // ======================================================
+            // CORREÇÃO (Usa ID da empresa e coluna 'empresa_id')
+            // ======================================================
+            if (!state.loggedInCompany || !state.loggedInCompany.id) return; // Precisa do ID
+
+            const { data, error } = await supabaseClient
+                .from('motivos')
+                .select('id, nome') // 'nome' é a coluna da sua tabela
+                .eq('empresa_id', state.loggedInCompany.id) // Compara 'empresa_id' com o ID da empresa logada
+                .order('nome'); // Ordena por 'nome'
+            // ======================================================
+            // FIM DA CORREÇÃO
+            // ======================================================
+
+            if (error) {
+                console.error("Erro ao carregar motivos para select:", error);
+                select.innerHTML = '<option value="">Erro ao carregar motivos</option>';
+                return;
+            }
+            
+            select.innerHTML = '<option value="">-- Selecione o Motivo --</option>'; // Reset
+            if (data) {
+                data.forEach(motivo => {
+                    select.innerHTML += `<option value="${motivo.id}">${motivo.nome}</option>`; // Usa 'motivo.nome'
+                });
+            }
+        }
+        // ========================================================================
+        // FIM: FUNÇÃO
+        // ========================================================================
+
 
         async function setupAdminScreen() {
             document.getElementById('admin-welcome-message').textContent = `Bem-vindo, Admin (${state.loggedInCompany.name})`;
             resetAdminForm();
 
             await refreshAllUsers(); // Carrega todos os usuários para o seletor
+            await populateMotivosSelect(); // <<== ADICIONADO: Carrega os motivos
 
             // Configura o listener para a quantidade de passageiros
             const passengerSelect = document.getElementById('passenger-quantity-select');
@@ -1160,7 +1230,10 @@
         
         // Esta é a função de validação (Etapa 1 do Multi-Schedule)
         function validateAndInitiateMultiSchedule() {
-            // 1. Valida o formulário principal (passageiros, endereços)
+            // 1. Valida o formulário principal (passageiros, endereços, MOTIVO)
+            const motivoId = document.getElementById('motivo-select').value;
+            if (!motivoId) { return alert('Selecione o Motivo da solicitação.'); }
+
             const passengerCount = parseInt(document.getElementById('passenger-quantity-select').value, 10);
             if (!passengerCount || passengerCount < 1) { return alert('Selecione a quantidade de passageiros.'); }
 
@@ -1213,6 +1286,7 @@
                 observation: document.getElementById('admin-observation').value.trim(),
                 requestTime: new Date().toISOString(), // A solicitação é feita agora
                 requested_by_admin_name: state.loggedInAdmin.username,
+                motivo_id: motivoId // <<== ADICIONADO: Salva o ID do motivo
             };
             
             // 4. Se tudo estiver OK, abre o modal de multi-agendamento
@@ -1302,6 +1376,9 @@
             // (Se 'scheduled', adminScheduledDateTime já foi setado por confirmAdminSchedule)
 
             // Validações que eram do adminRequestRide
+            const motivoId = document.getElementById('motivo-select').value;
+            if (!motivoId) { return alert('Selecione o Motivo da solicitação.'); }
+
             const passengerCount = parseInt(document.getElementById('passenger-quantity-select').value, 10);
             if (!passengerCount || passengerCount < 1) { return alert('Selecione a quantidade de passageiros.'); }
 
@@ -1350,6 +1427,7 @@
         // ========================================================================
         async function executeRideRequest() {
             // As validações (exceto destino) já foram feitas em validateAndInitiateRide
+            const motivoId = document.getElementById('motivo-select').value;
             const passengerCount = parseInt(document.getElementById('passenger-quantity-select').value, 10);
             const firstCollaboratorId = document.getElementById('collaborator-select-0').value;
             const collaborator = state.allUsers.find(u => u.id == firstCollaboratorId);
@@ -1391,6 +1469,7 @@
                 observation: document.getElementById('admin-observation').value.trim(),
                 requestTime: new Date().toISOString(),
                 requested_by_admin_name: state.loggedInAdmin.username, // Nome do admin que solicitou
+                motivo_id: motivoId // <<== ADICIONADO: Salva o ID do motivo
             };
 
             // Define o status e tipo (variáveis globais setadas em validateAndInitiateRide)
@@ -1399,7 +1478,7 @@
                 rideData.request_type = 'scheduled';
                 rideData.scheduled_datetime = adminScheduledDateTime;
             } else {
-                 rideData.status = 'approved';
+                 rideData.status = 'approved'; // Aprovado direto, pois é o Admin solicitando
                 rideData.request_type = 'immediate';
             }
 
@@ -1425,43 +1504,9 @@
             adminScheduledDateTime = null;
         }
 
-
-        // --- Funções populateLoginCompanies, showAdminSubScreen, loadPendingRides, loadHistoryRides, approveRide, rejectRide ---
-        // Nenhuma alteração necessária aqui
-
-         async function populateLoginCompanies() {
-            const select = document.getElementById('company-login-select');
-            // ======================================================
-            // INÍCIO DA CORREÇÃO
-            // ======================================================
-            if (!select) {
-                console.error("Erro fatal: Elemento 'company-login-select' não encontrado no DOM.");
-                return; // Para a execução se o elemento não existe
-            }
-            // ======================================================
-            // FIM DA CORREÇÃO
-            // ======================================================
-            select.innerHTML = '<option value="">Carregando...</option>'; // Valor vazio inicial
-            const { data, error } = await supabaseClient
-                .from('companies')
-                .select('id, name')
-                .order('name'); // Ordena por nome
-
-            if (error) {
-                select.innerHTML = '<option value="">Erro ao carregar</option>';
-                console.error("ERRO AO CARREGAR EMPRESAS:", error);
-                return;
-            }
-            if (!data || data.length === 0) {
-                 select.innerHTML = '<option value="">Nenhuma empresa cadastrada</option>';
-                 return;
-            }
-
-            // Preenche o select
-            select.innerHTML = '<option value="">-- Selecione a Empresa --</option>' + // Opção padrão
-                               data.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-        }
-
+        // ========================================================================
+        // INÍCIO DA CORREÇÃO: Função showAdminSubScreen (corrigida)
+        // ========================================================================
         function showAdminSubScreen(subScreenId) {
             // Esconde todas as sub-telas e remove a classe 'active' das abas
             document.querySelectorAll('.admin-sub-screen').forEach(screen => screen.classList.remove('active'));
@@ -1475,7 +1520,6 @@
             switch (subScreenId) {
                 case 'request-ride-screen':
                     tabToActivateId = 'tab-request-ride';
-                    // Garante que o autocomplete seja inicializado se ainda não foi
                      handlePassengerQuantityChange({ target: document.getElementById('passenger-quantity-select') });
                     break;
                 case 'approval-ride-screen':
@@ -1489,13 +1533,23 @@
                 case 'user-management-screen':
                     tabToActivateId = 'tab-users';
                     loadCompanyUsers(); // Carrega dados ao mostrar a aba
-                    // A chamada initAutocomplete foi removida daqui
+                    break;
+                case 'motivos-management-screen': // Corrigido para corresponder ao ID do botão
+                    tabToActivateId = 'tab-motivos';
+                    loadMotivos(); // <<== ADICIONADO: Carrega a lista de motivos
                     break;
             }
             const tabToActivate = document.getElementById(tabToActivateId);
             if (tabToActivate) tabToActivate.classList.add('active');
         }
+        // ========================================================================
+        // FIM DA CORREÇÃO
+        // ========================================================================
 
+
+        // ========================================================================
+        // INÍCIO DA CORREÇÃO: Função loadPendingRides (corrigida)
+        // ========================================================================
         async function loadPendingRides() {
             const container = document.getElementById('pending-rides-container');
             container.innerHTML = '<p class="text-center">Carregando solicitações...</p>';
@@ -1505,40 +1559,45 @@
                  return;
             }
 
-            // Busca corridas 'pending_approval' E TAMBÉM 'approved' (para o admin geral poder ver o que já foi aprovado por ele ou pelo solicitante)
+            // Busca corridas 'pending_approval' (status antigo) E 'approved' (novo status do admin)
+            // A lógica original era buscar 'solicitacoes' pendentes. A nova é buscar 'rides'
+            // Vamos assumir que 'pending_approval' é o status que o Admin deve aprovar.
             const { data: rides, error } = await supabaseClient
                 .from('rides')
-                .select('*')
+                .select(`
+                    *,
+                    motivos ( nome ) 
+                `) // <<== ADICIONADO: Busca o nome do motivo
                 .eq('userCompany', state.loggedInCompany.name) // Filtra pela empresa logada
-                .in('status', ['pending_approval', 'approved']) // Apenas pendentes OU aprovadas
+                .eq('status', 'pending_approval') // <<== ALTERADO: Busca SÓ o que está pendente de aprovação
                 .order('requestTime', { ascending: true }); // Mais antigos primeiro
 
             if (error) {
                 container.innerHTML = '<p class="text-center text-red-500">Erro ao carregar solicitações.</p>';
-                console.error("Erro ao buscar corridas pendentes/aprovadas:", error);
+                console.error("Erro ao buscar corridas pendentes:", error);
                 return;
             }
 
-            const pendingOrApprovedRides = rides || [];
+            const pendingRides = rides || [];
 
-            if (pendingOrApprovedRides.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400">Nenhuma solicitação pendente ou aprovada para esta empresa no momento.</p>';
+            if (pendingRides.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400">Nenhuma solicitação pendente de aprovação no momento.</p>';
                 return;
             }
 
             // Renderiza os cards
-            container.innerHTML = pendingOrApprovedRides.map(ride => {
+            container.innerHTML = pendingRides.map(ride => {
                 const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
                 const scheduledDate = ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : null;
-                const destinations = parseDestinations(ride.destination); // Usa a função parse que retorna [{name, address}]
+                const destinations = parseDestinations(ride.destination);
+                
+                // <<== ADICIONADO: Pega o nome do motivo
+                const motivoName = ride.motivos ? ride.motivos.nome : 'N/A'; // Usa 'nome'
 
-                // Formata os destinos para exibição
                  let destinationsHtml = destinations.map(destObj => `<p><strong>${destObj.name || 'Destino'}:</strong> ${destObj.address || 'N/A'}</p>`).join('');
 
-                 // Rótulo para status
-                 const statusLabel = ride.status === 'pending_approval' ? 'PENDENTE' : 'APROVADA';
-                 const statusColor = ride.status === 'pending_approval' ? 'bg-yellow-600' : 'bg-teal-600';
-
+                 const statusLabel = 'PENDENTE';
+                 const statusColor = 'bg-yellow-600';
 
                 return `
                     <div id="ride-card-${ride.id}" class="card-gradient p-4 rounded-lg border border-gray-700">
@@ -1546,42 +1605,34 @@
                              <div>
                                  <p class="font-bold text-lg">${ride.userName}</p>
                                  <p class="text-xs text-gray-400">Solicitado em: ${requestDate}</p>
+                                 ${ride.requested_by_admin_name ? `<p class="text-xs text-gray-400">Solicitado por Admin: ${ride.requested_by_admin_name}</p>` : ''}
                                  ${scheduledDate ? `<p class="text-xs text-orange-400 font-semibold">Agendado para: ${scheduledDate}</p>` : ''}
                              </div>
                              <span class="text-xs font-bold py-1 px-3 rounded-full ${statusColor} text-white">${statusLabel}</span>
                         </div>
                         <div class="text-sm space-y-1 border-t border-gray-700 pt-2 mt-2">
-                            <p><strong>Origem:</strong> ${ride.origin_address || 'N/A'}</p>
+                            <p><strong>Motivo:</strong> ${motivoName}</p> <p><strong>Origem:</strong> ${ride.origin_address || 'N/A'}</p>
                             ${destinationsHtml || '<p>Destino: N/A</p>'}
                             ${ride.observation ? `<p class="mt-2"><strong>Observação:</strong> ${ride.observation}</p>` : ''}
                             <p class="text-xs text-gray-500 mt-1">Passageiros: ${ride.passenger_count || 1}</p>
-                             ${ride.requested_by_admin_name ? `<p class="text-xs text-gray-500">Solicitado por Admin: ${ride.requested_by_admin_name}</p>` : ''}
                         </div>
-                        ${ride.status === 'pending_approval' ? `
                         <div class="flex justify-end gap-3 mt-4">
                              <button onclick="rejectRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-red-600 hover:bg-red-700">REJEITAR</button>
                              <button onclick="approveRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-green-600 hover:bg-green-700">APROVAR</button>
                         </div>
-                        ` : `
-                         <div class="mt-4 text-right text-sm text-teal-400 font-semibold">
-                             Aguardando motorista aceitar...
-                         </div>
-                        `}
                     </div>
                 `;
             }).join('');
         }
-
-
         // ========================================================================
-        // INÍCIO: SEÇÃO DE HISTÓRICO MODIFICADA
+        // FIM DA CORREÇÃO
         // ========================================================================
 
         // ========================================================================
-        // VARIÁVEIS GLOBAIS PARA HISTÓRICO
+        // INÍCIO: SEÇÃO DE HISTÓRICO (Unificada e corrigida)
         // ========================================================================
+        
         let allHistoryRidesCache = [];
-        // Mapeamento de status para texto e cor (agora global no script)
         const statusMap = {
             'approved': { text: 'Aprovada', color: 'text-teal-400' },
             'rejected': { text: 'Rejeitada', color: 'text-red-500' },
@@ -1593,12 +1644,10 @@
             'in_progress': { text: 'Em Andamento', color: 'text-purple-400' },
             'completed': { text: 'Concluída', color: 'text-green-500' },
             'canceled': { text: 'Cancelada (Usuário/Admin)', color: 'text-gray-500' },
-            'canceled_by_driver': { text: 'Cancelada (Motorista)', color: 'text-pink-500' }
+            'canceled_by_driver': { text: 'Cancelada (Motorista)', color: 'text-pink-500' },
+            'pending_approval': { text: 'Pendente', color: 'text-yellow-400' } // Adicionado caso apareça
         };
 
-        // ========================================================================
-        // FUNÇÃO MODIFICADA - loadHistoryRides
-        // ========================================================================
         async function loadHistoryRides() {
             const container = document.getElementById('history-rides-container'); // Usado para mensagens
             const tableBody = document.getElementById('history-table-body');
@@ -1615,10 +1664,12 @@
 
             const { data: rides, error } = await supabaseClient
                 .from('rides')
-                .select('*')
+                .select(`
+                    *,
+                    motivos ( nome )
+                `) // <<== ADICIONADO: Busca o nome do motivo
                 .eq('userCompany', state.loggedInCompany.name)
-                // Exclui apenas as pendentes de aprovação inicial
-                .not('status', 'eq', 'pending_approval')
+                // .not('status', 'eq', 'pending_approval') // Mostra tudo, inclusive pendentes
                 .order('requestTime', { ascending: false }); // Mais recentes primeiro
 
             if (error) {
@@ -1636,21 +1687,12 @@
             }
 
             allHistoryRidesCache = rides; // Salva os dados no cache
-
-            // Popula o filtro de status
             populateStatusFilter();
-
-            // Renderiza a tabela com todos os dados
             renderHistoryTable();
             
-            // Limpa a mensagem de 'carregando' e mostra a tabela
             container.innerHTML = '';
             if (tableElement) tableElement.style.display = 'table'; // Mostra a tabela
         }
-
-        // ========================================================================
-        // NOVAS FUNÇÕES - LÓGICA DE FILTRO E RENDERIZAÇÃO DA TABELA
-        // ========================================================================
 
         function formatDateTime(isoString) {
             if (!isoString) return 'N/A';
@@ -1671,12 +1713,10 @@
             const statusFilter = document.getElementById('history-filter-status');
             if (!statusFilter) return;
 
-            // Salva a opção "Todos"
             const firstOption = statusFilter.options[0];
             statusFilter.innerHTML = '';
             statusFilter.appendChild(firstOption);
 
-            // Pega status únicos do cache
             const uniqueStatuses = [...new Set(allHistoryRidesCache.map(ride => ride.status))];
 
             uniqueStatuses.sort().forEach(statusKey => {
@@ -1688,34 +1728,25 @@
             });
         }
 
-        // ========================================================================
-        // FUNÇÃO MODIFICADA - applyHistoryFilter (Adicionado 'type')
-        // ========================================================================
         function applyHistoryFilter() {
             const startDate = document.getElementById('history-filter-start-date').value;
             const endDate = document.getElementById('history-filter-end-date').value;
             const status = document.getElementById('history-filter-status').value;
-            const type = document.getElementById('history-filter-type').value; // NOVO
+            const type = document.getElementById('history-filter-type').value;
             
-            renderHistoryTable({ startDate, endDate, status, type }); // NOVO
+            renderHistoryTable({ startDate, endDate, status, type });
         }
 
-        // ========================================================================
-        // FUNÇÃO MODIFICADA - clearHistoryFilter (Adicionado 'type')
-        // ========================================================================
         function clearHistoryFilter() {
             document.getElementById('history-filter-start-date').value = '';
             document.getElementById('history-filter-end-date').value = '';
             document.getElementById('history-filter-status').value = '';
-            document.getElementById('history-filter-type').value = ''; // NOVO
+            document.getElementById('history-filter-type').value = '';
             
             renderHistoryTable(); // Renderiza sem filtros
             document.getElementById('history-filter-display').textContent = '';
         }
 
-        // ========================================================================
-        // FUNÇÃO MODIFICADA - renderHistoryTable (Adicionado 'type')
-        // ========================================================================
         function renderHistoryTable(filters = {}) {
             const tableBody = document.getElementById('history-table-body');
             const container = document.getElementById('history-rides-container'); // Para mensagens
@@ -1729,23 +1760,19 @@
             let filteredRides = [...allHistoryRidesCache];
             let filterText = [];
 
-            // 1. Filtrar por Status
             if (filters.status) {
                 filteredRides = filteredRides.filter(ride => ride.status === filters.status);
                 const statusText = statusMap[filters.status]?.text || filters.status;
                 filterText.push(`Status: ${statusText}`);
             }
 
-            // 2. NOVO - Filtrar por Tipo
             if (filters.type) {
                 filteredRides = filteredRides.filter(ride => ride.request_type === filters.type);
                 const typeText = filters.type === 'immediate' ? 'Imediato' : 'Agendado';
                 filterText.push(`Tipo: ${typeText}`);
             }
 
-            // 3. Filtrar por Data Inicial (com base em 'requestTime')
             if (filters.startDate) {
-                // Adiciona 'T00:00:00' para garantir que a comparação inclua o dia todo
                 try {
                     const startDate = new Date(`${filters.startDate}T00:00:00`);
                     if (!isNaN(startDate)) {
@@ -1755,9 +1782,7 @@
                 } catch(e) { console.warn("Data inicial inválida"); }
             }
 
-            // 4. Filtrar por Data Final (com base em 'requestTime')
             if (filters.endDate) {
-                // Adiciona 'T23:59:59' para garantir que a comparação inclua o dia todo
                  try {
                     const endDate = new Date(`${filters.endDate}T23:59:59`);
                      if (!isNaN(endDate)) {
@@ -1767,60 +1792,64 @@
                  } catch(e) { console.warn("Data final inválida"); }
             }
 
-            // Atualiza o display de filtros
             if (filterText.length > 0) {
                 filterDisplay.textContent = `Filtros Ativos: ${filterText.join(', ')}`;
             } else {
                 filterDisplay.textContent = 'Mostrando todos os resultados.';
             }
 
-            // Verifica se sobraram resultados
             if (filteredRides.length === 0) {
                 container.innerHTML = '<p class="text-center text-gray-400 mt-4">Nenhum registro encontrado para os filtros aplicados.</p>';
                 tableElement.style.display = 'none'; // Esconde a tabela
                 return;
             }
             
-            // Se havia mensagem de "nenhum resultado", limpa
             container.innerHTML = '';
             tableElement.style.display = 'table'; // Garante que a tabela está visível
 
-            // Renderiza as linhas da tabela
             filteredRides.forEach(ride => {
                 const statusInfo = statusMap[ride.status] || { text: ride.status.toUpperCase(), color: 'text-gray-300' };
                 const destinations = parseDestinations(ride.destination);
                 
-                // Formata os múltiplos destinos para uma única célula
                 let destinationsHtml = destinations
                     .map(destObj => `<strong>${destObj.name || 'Destino'}:</strong> ${destObj.address || 'N/A'}`)
-                    .join('<br>'); // Usa <br> para quebrar linha dentro da célula
+                    .join('<br>');
                 
-                // NOVO: Formata o tipo
                 const typeText = ride.request_type === 'immediate' ? 'Imediato' : (ride.request_type === 'scheduled' ? 'Agendado' : (ride.request_type || 'N/A'));
+                
+                // <<== ADICIONADO: Pega o nome do motivo
+                const motivoName = ride.motivos ? ride.motivos.nome : 'N/A'; // Usa 'nome'
+
 
                 const row = `
                     <tr class="hover:bg-gray-800">
                         <td class="p-3 text-sm">${ride.id}</td>
                         <td class="p-3 text-sm font-medium ${statusInfo.color}">${statusInfo.text}</td>
                         <td class="p-3 text-sm">${ride.userName || 'N/A'}</td>
-                        <td class="p-3 text-sm">${formatDateTime(ride.requestTime)}</td>
+                        <td class="p-3 text-sm">${ride.motivo_id || 'N/A'}</td> <td class="p-3 text-sm">${formatDateTime(ride.requestTime)}</td>
                         <td class="p-3 text-sm">${formatDateTime(ride.scheduled_datetime)}</td>
                         <td class="p-3 text-sm">${formatDateTime(ride.acceptTime)}</td>
                         <td class="p-3 text-sm">${ride.origin_address || 'N/A'}</td>
-                        <td class="p-3 text-sm">${destinationsHtml || 'N/A'}</td>
+                        <td class="p-3 text-sm">${motivoName}</td> <td class="p-3 text-sm">${destinationsHtml || 'N/A'}</td>
                         <td class="p-3 text-sm">${ride.passenger_count || 1}</td>
                         <td class="p-3 text-sm">${ride.driverName || 'N/A'}</td>
                         <td class="p-3 text-sm">${ride.observation || 'N/A'}</td>
                         <td class="p-3 text-sm">${ride.requested_by_admin_name || 'N/A'}</td>
-                        <td class="p-3 text-sm">${typeText}</td> </tr>
+                        <td class="p-3 text-sm">${typeText}</td>
+                    </tr>
                 `;
                 tableBody.innerHTML += row;
             });
         }
+        
+        // ========================================================================
+        // FIM: SEÇÃO DE HISTÓRICO
+        // ========================================================================
 
         // ========================================================================
-        // NOVA FUNÇÃO - EXPORTAR TABELA PARA EXCEL
+        // INÍCIO: BLOCO RESTAURADO (que foi cortado na resposta anterior)
         // ========================================================================
+
         function exportHistoryToExcel(tableID, filename = ''){
             const table = document.getElementById(tableID);
             if (!table) {
@@ -1828,24 +1857,18 @@
                 return;
             }
             
-            // Clona a tabela para não modificar a original (ex: remover cores)
             const tableClone = table.cloneNode(true);
             
-            // (Opcional) Limpa classes de cor para melhor visualização no Excel
             tableClone.querySelectorAll('td, th').forEach(cell => {
-                cell.className = ''; // Remove classes de cor
-                // Substitui <br> por algo que o Excel possa entender como quebra de linha se necessário
-                // ou apenas remove para manter em uma linha
+                cell.className = '';
             });
 
-            // Converte o HTML da tabela
             let tableHTML = tableClone.outerHTML
-                .replace(/<br\s*\/?>/gi, "; "); // Substitui <br> por ponto e vírgula e espaço
+                .replace(/<br\s*\/?>/gi, "; "); 
 
             const dataType = 'application/vnd.ms-excel';
             filename = filename ? filename + '.xls' : 'export_excel.xls';
 
-            // Cria o link de download
             const downloadLink = document.createElement("a");
             document.body.appendChild(downloadLink);
             
@@ -1853,25 +1876,16 @@
                 const blob = new Blob(['\ufeff', tableHTML], { type: dataType });
                 navigator.msSaveOrOpenBlob( blob, filename);
             } else {
-                // Cria o link para o arquivo
-                downloadLink.href = 'data:' + dataType + ', ' + '\ufeff' + encodeURIComponent(tableHTML); // \ufeff para BOM e encode
-                // Define o nome do arquivo
+                downloadLink.href = 'data:' + dataType + ', ' + '\ufeff' + encodeURIComponent(tableHTML);
                 downloadLink.download = filename;
-                // Dispara o download
                 downloadLink.click();
             }
             document.body.removeChild(downloadLink);
         }
 
-        // ========================================================================
-        // FIM: SEÇÃO DE HISTÓRICO MODIFICADA
-        // ========================================================================
-
-
          async function approveRide(rideId) {
             if (!confirm('Tem certeza que deseja APROVAR esta solicitação de corrida?')) return;
 
-             // Busca a corrida para verificar o tipo
              const { data: ride, error: fetchError } = await supabaseClient
                  .from('rides')
                  .select('request_type')
@@ -1884,14 +1898,12 @@
                  return;
              }
 
-             // Define o próximo status:
-             // 'approved' -> Se AGENDADA (fica esperando a hora certa)
-             // 'requested' -> Se IMEDIATA (vai direto para a busca de motorista no admin geral)
-             const nextStatus = ride.request_type === 'scheduled' ? 'approved' : 'requested';
+             // Status 'approved' (Aprovado pelo Admin, pronto para motorista)
+             const nextStatus = 'approved';
 
             const { error: updateError } = await supabaseClient
                 .from('rides')
-                .update({ status: nextStatus }) // Atualiza para o status correto
+                .update({ status: nextStatus })
                 .eq('id', rideId);
 
             if (updateError) {
@@ -1899,7 +1911,7 @@
                 console.error("Erro Supabase (approveRide update):", updateError);
             } else {
                 alert('Corrida aprovada! Status atualizado para: ' + nextStatus.toUpperCase());
-                loadPendingRides(); // Atualiza a lista de pendentes (a corrida aprovada sumirá daqui se for 'requested')
+                loadPendingRides();
             }
         }
 
@@ -1908,7 +1920,7 @@
 
             const { error } = await supabaseClient
                 .from('rides')
-                .update({ status: 'rejected' }) // Atualiza para 'rejected'
+                .update({ status: 'rejected' })
                 .eq('id', rideId);
 
             if (error) {
@@ -1916,42 +1928,61 @@
                  console.error("Erro Supabase (rejectRide):", error);
             } else {
                 alert('Solicitação de corrida rejeitada.');
-                loadPendingRides(); // Atualiza a lista de pendentes
+                loadPendingRides();
             }
+        }
+
+        // --- FUNÇÃO PARA CARREGAR EMPRESAS NO SELECT DE LOGIN ---
+        async function populateLoginCompanies() {
+            const select = document.getElementById('company-login-select');
+            
+            if (!select) {
+                console.error("Erro: Elemento 'company-login-select' não encontrado no DOM.");
+                return;
+            }
+            
+            select.innerHTML = '<option value="">Carregando...</option>';
+            
+            const { data, error } = await supabaseClient
+                .from('companies')
+                .select('id, name')
+                .order('name');
+
+            if (error) {
+                console.error("Erro ao carregar empresas:", error);
+                select.innerHTML = '<option value="">Erro ao carregar empresas</option>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                select.innerHTML = '<option value="">Nenhuma empresa cadastrada</option>';
+                return;
+            }
+
+            select.innerHTML = '<option value="">-- Selecione a Empresa --</option>' + 
+                               data.map(company => `<option value="${company.name}">${company.name}</option>`).join('');
         }
 
         // --- FUNÇÃO DE INICIALIZAÇÃO PRINCIPAL ---
         async function initApp() {
-            // Não precisa mais do initializeGoogleMaps()
+            await populateLoginCompanies();
 
-            await populateLoginCompanies(); // Carrega empresas para o login
-
-            // ======================================================
-            // INÍCIO: MODIFICAÇÃO (Adiciona listeners para *todos* os botões)
-            // ======================================================
             const immediateBtn = document.getElementById('admin-request-immediate-btn');
             const scheduledBtn = document.getElementById('admin-request-scheduled-btn');
-            const multiScheduleBtn = document.getElementById('admin-request-multi-schedule-btn'); // NOVO
+            const multiScheduleBtn = document.getElementById('admin-request-multi-schedule-btn');
 
             if (immediateBtn) {
                 immediateBtn.onclick = () => {
-                    validateAndInitiateRide('immediate'); // Chamada existente
+                    validateAndInitiateRide('immediate');
                 };
             }
             if (scheduledBtn) {
-                scheduledBtn.onclick = openAdminScheduleModal; // Chamada existente
+                scheduledBtn.onclick = openAdminScheduleModal;
             }
             if (multiScheduleBtn) {
-                multiScheduleBtn.onclick = validateAndInitiateMultiSchedule; // NOVA CHAMADA
+                multiScheduleBtn.onclick = validateAndInitiateMultiSchedule;
             }
-            // ======================================================
-            // FIM: MODIFICAÇÃO
-            // ======================================================
 
-
-            // ======================================================
-            // INÍCIO: NOVOS LISTENERS DO MODAL "SEM DESTINO" (Existente)
-            // ======================================================
             const noDestNoBtn = document.getElementById('no-destination-btn-no');
             const noDestYesBtn = document.getElementById('no-destination-btn-yes');
 
@@ -1961,42 +1992,31 @@
             if (noDestYesBtn) {
                 noDestYesBtn.onclick = () => {
                     closeNoDestinationModal();
-                    executeRideRequest(); // Chama a submissão final
+                    executeRideRequest();
                 };
             }
-            // ======================================================
-            // FIM: NOVOS LISTENERS DO MODAL
-            // ======================================================
 
-
-            // Configura subscriptions do Supabase para atualizações em tempo real
              supabaseClient
                 .channel('public:rides')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, async (payload) => { // Marca como async
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, async (payload) => {
                     const activeScreen = document.querySelector('.screen.active');
-                    if (!activeScreen || !state.loggedInCompany) return; // Só atualiza se logado como empresa
+                    if (!activeScreen || !state.loggedInCompany) return;
 
-                    // Verifica se a mudança afeta a empresa logada
                     const companyName = state.loggedInCompany.name;
                     const rideCompany = payload.new?.userCompany || payload.old?.userCompany;
 
                     if (rideCompany === companyName) {
-                        // Atualiza os dados locais ANTES de recarregar a UI
-                        // await refreshAllUsers(); // ATENÇÃO: Não precisa buscar TODOS os usuários aqui, apenas as rides. buscar rides é mais eficiente
-                         // A função chamada abaixo (loadPending/History) já busca as rides necessárias
-
                         const activeSubScreen = activeScreen.querySelector('.admin-sub-screen.active');
                         if (activeSubScreen) {
                             if (activeSubScreen.id === 'approval-ride-screen') {
-                                await loadPendingRides(); // Usa await
+                                await loadPendingRides();
                             } else if (activeSubScreen.id === 'history-screen') {
-                                await loadHistoryRides(); // Usa await
+                                await loadHistoryRides();
                             }
-                             // Se estiver na tela de solicitar, força a recriação dos selects (mantém)
                              else if (activeSubScreen.id === 'request-ride-screen') {
                                 const passengerSelect = document.getElementById('passenger-quantity-select');
                                 if (passengerSelect.value) {
-                                    await refreshAllUsers(); // Precisa atualizar a lista de usuários para recriar os selects
+                                    await refreshAllUsers();
                                     handlePassengerQuantityChange({ target: passengerSelect });
                                 }
                              }
@@ -2013,26 +2033,22 @@
                 .channel('public:users')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
                      const activeScreen = document.querySelector('.screen.active');
-                     if (!activeScreen || !state.loggedInCompany) return; // Só atualiza se logado
+                     if (!activeScreen || !state.loggedInCompany) return;
 
-                     // Atualiza cache global de usuários INDEPENDENTE da empresa
                      await refreshAllUsers();
 
-                     // Verifica se a mudança é relevante para a empresa logada
                      const companyName = state.loggedInCompany.name;
                      const userCompany = payload.new?.company || payload.old?.company;
 
                      if (userCompany === companyName) {
                         const activeSubScreen = activeScreen.querySelector('.admin-sub-screen.active');
-                         // Se a aba de gerenciar usuários estiver ativa
                         if (activeSubScreen && activeSubScreen.id === 'user-management-screen') {
-                           await loadCompanyUsers(); // Recarrega a lista de usuários da empresa
+                           await loadCompanyUsers();
                         }
-                         // Se a aba de solicitar corrida estiver ativa, atualiza opções do select
                          else if (activeSubScreen && activeSubScreen.id === 'request-ride-screen') {
                              const passengerSelect = document.getElementById('passenger-quantity-select');
-                             if (passengerSelect.value) { // Se uma quantidade já foi selecionada
-                                 handlePassengerQuantityChange({ target: passengerSelect }); // Recria os selects com a lista atualizada
+                             if (passengerSelect.value) {
+                                 handlePassengerQuantityChange({ target: passengerSelect });
                              }
                          }
                      }
@@ -2042,15 +2058,12 @@
                      if (err) { console.error('Admin Empresa: Erro USERS subscription', err); }
                 });
 
-                 // Adiciona subscription para EMPRESAS (para atualizar o select de login e a lista do super admin)
                   supabaseClient
                     .channel('public:companies')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, async (payload) => {
                         console.log("Mudança na tabela de empresas detectada.");
-                        // Atualiza o select de login em todas as circunstâncias
                         await populateLoginCompanies();
 
-                        // Se o super admin estiver logado e na tela de gerenciamento, atualiza a lista
                         const activeScreenId = document.querySelector('.screen.active')?.id;
                         if (state.loggedInAdmin?.username === "Super Admin" && activeScreenId === 'company-management-screen') {
                             await loadCompanyManagement();
@@ -2061,12 +2074,50 @@
                          if (err) { console.error('Admin Empresa: Erro COMPANIES subscription', err); }
                     });
 
+            // ========================================================================
+            // INÍCIO: NOVA SUBSCRIPTION (Motivos) - CORRIGIDA
+            // ========================================================================
+             supabaseClient
+                .channel('public:motivos')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'motivos' }, async (payload) => {
+                    const activeScreen = document.querySelector('.screen.active');
+                    if (!activeScreen || !state.loggedInCompany) return;
+
+                    // ======================================================
+                    // CORREÇÃO (Usa ID da empresa e coluna 'empresa_id')
+                    // ======================================================
+                    const companyId = state.loggedInCompany.id; // Usa ID
+                    const motivoCompanyId = payload.new?.empresa_id || payload.old?.empresa_id; // Usa 'empresa_id'
+
+                    if (motivoCompanyId === companyId) { // Compara IDs
+                    // ======================================================
+                    // FIM DA CORREÇÃO
+                    // ======================================================
+                    
+                        // Atualiza o select de motivos em 'Solicitar Corrida'
+                        await populateMotivosSelect(); 
+                        
+                        const activeSubScreen = activeScreen.querySelector('.admin-sub-screen.active');
+                        // Se a aba de gerenciar motivos estiver ativa
+                        if (activeSubScreen && activeSubScreen.id === 'motivos-management-screen') {
+                            await loadMotivos(); // Recarrega a lista de motivos
+                        }
+                    }
+                })
+                .subscribe((status, err) => {
+                     if (status === 'SUBSCRIBED') { console.log('Admin Empresa: Conectado ao canal MOTIVOS'); }
+                     if (err) { console.error('Admin Empresa: Erro MOTIVOS subscription', err); }
+                });
+            // ========================================================================
+            // FIM: NOVA SUBSCRIPTION
+            // ========================================================================
+
         }
 
         // Chama initApp quando o DOM estiver pronto
         document.addEventListener('DOMContentLoaded', initApp);
 
-        // --- SUPER ADMIN: COMPANY CRUD FUNCTIONS --- (sem alterações)
+        // --- SUPER ADMIN: COMPANY CRUD FUNCTIONS ---
         async function loadCompanyManagement() {
             const container = document.getElementById('company-list-container');
             container.innerHTML = '<p class="text-center">Carregando empresas...</p>';
@@ -2097,7 +2148,7 @@
             document.getElementById('new-company-name').value = name;
             document.getElementById('cancel-edit-btn').classList.remove('hidden');
             document.getElementById('company-form-title').textContent = 'Editar Nome da Empresa';
-            window.scrollTo(0, 0); // Rola para o topo para ver o formulário
+            window.scrollTo(0, 0);
         }
 
         function cancelEdit() {
@@ -2113,10 +2164,10 @@
             if (!name) return alert('Nome da empresa é obrigatório.');
 
             let result;
-            if (id) { // Editando
-                result = await supabaseClient.from('companies').update({ name }).eq('id', id).select(); // Adiciona select
-            } else { // Adicionando
-                result = await supabaseClient.from('companies').insert({ name }).select(); // Adiciona select
+            if (id) {
+                result = await supabaseClient.from('companies').update({ name }).eq('id', id).select();
+            } else {
+                result = await supabaseClient.from('companies').insert({ name }).select();
             }
 
             const { data, error } = result;
@@ -2125,18 +2176,13 @@
                 console.error("Erro Supabase (Company Save):", error);
             } else {
                 alert(`Empresa "${data[0].name}" ${id ? 'atualizada' : 'adicionada'} com sucesso!`);
-                cancelEdit(); // Limpa o formulário
-                // A atualização da lista de empresas e do select de login será feita pelo listener de realtime
-                // await populateLoginCompanies();
-                // await loadCompanyManagement();
+                cancelEdit();
             }
         }
 
         async function deleteCompany(id, name) {
             if (!confirm(`ATENÇÃO!\n\nExcluir a empresa "${name}" também removerá:\n- Todos os Administradores associados.\n- Todos os Usuários (colaboradores) associados.\n- O histórico de corridas NÃO será removido, mas ficará sem referência de empresa.\n\nDeseja continuar?`)) return;
 
-            // Deleta em cascata (Supabase deve estar configurado para isso via FK constraints ON DELETE CASCADE)
-            // Ou deleta manualmente admins e users primeiro (mais seguro se não houver cascade)
             console.log(`Tentando excluir empresa ID: ${id}, Nome: ${name}`);
             const { error } = await supabaseClient.from('companies').delete().eq('id', id);
 
@@ -2145,18 +2191,15 @@
                 console.error("Erro Supabase (Company Delete):", error);
             } else {
                 alert(`Empresa "${name}" excluída com sucesso.`);
-                 // A atualização da lista de empresas e do select de login será feita pelo listener de realtime
-                // await populateLoginCompanies();
-                // await loadCompanyManagement();
             }
         }
 
 
-        // --- SUPER ADMIN: ADMINS CRUD FUNCTIONS --- (sem alterações)
+        // --- SUPER ADMIN: ADMINS CRUD FUNCTIONS ---
         function manageAdminsForCompany(companyId, companyName) {
             currentManagingCompany = { id: companyId, name: companyName };
             showScreen('admin-management-screen');
-            loadCompanyAdmins(); // Carrega a tela e os admins
+            loadCompanyAdmins();
         }
 
         async function loadCompanyAdmins() {
@@ -2166,8 +2209,6 @@
                 return;
             }
 
-            // Monta a estrutura da tela de gerenciamento de admins
-            // Ajuste para centralizar
             container.innerHTML = `
                 <div class="max-w-2xl mx-auto">
                     <div class="flex justify-between items-center mb-6">
@@ -2193,7 +2234,7 @@
                 .from('company_admins')
                 .select('*')
                 .eq('company_id', currentManagingCompany.id)
-                .order('username'); // Ordena por nome de usuário
+                .order('username');
 
             if (error) {
                 adminListContainer.innerHTML = '<p class="text-red-500 text-center">Erro ao carregar admins.</p>';
@@ -2205,7 +2246,6 @@
                 return;
             }
 
-            // Renderiza a lista de admins
             adminListContainer.innerHTML = data.map(admin => `
                 <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
                     <div>
@@ -2222,7 +2262,7 @@
         function editCompanyAdmin(admin) {
             document.getElementById('editing-admin-id').value = admin.id;
             document.getElementById('new-admin-username').value = admin.username;
-            document.getElementById('new-admin-password').value = admin.password; // Mostra a senha atual (não ideal para produção)
+            document.getElementById('new-admin-password').value = admin.password;
             document.getElementById('cancel-admin-edit-btn').classList.remove('hidden');
             document.getElementById('admin-form-title').textContent = 'Editar Admin';
             window.scrollTo(0, 0);
@@ -2239,15 +2279,15 @@
         async function addOrUpdateCompanyAdmin() {
             const id = document.getElementById('editing-admin-id').value;
             const username = document.getElementById('new-admin-username').value.trim();
-            const password = document.getElementById('new-admin-password').value.trim(); // Simplesmente pega a senha digitada
+            const password = document.getElementById('new-admin-password').value.trim();
 
             if (!username || !password) return alert('Usuário e Senha são obrigatórios.');
-            if (!currentManagingCompany.id) return alert('Erro: Empresa não selecionada.'); // Segurança
+            if (!currentManagingCompany.id) return alert('Erro: Empresa não selecionada.');
 
             const adminData = {
                 company_id: currentManagingCompany.id,
                 username,
-                password // Salva a senha diretamente (não seguro para produção)
+                password
             };
 
             const { data, error } = id
@@ -2259,8 +2299,8 @@
                  console.error("Erro Supabase (Admin Save):", error);
             } else {
                  alert(`Admin "${data[0].username}" ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
-                cancelCompanyAdminEdit(); // Limpa o formulário
-                await loadCompanyAdmins(); // Recarrega a lista
+                cancelCompanyAdminEdit();
+                await loadCompanyAdmins();
             }
         }
 
@@ -2272,13 +2312,12 @@
                 console.error("Erro Supabase (Admin Delete):", error);
             } else {
                  alert(`Admin "${username}" excluído com sucesso.`);
-                await loadCompanyAdmins(); // Recarrega a lista
+                await loadCompanyAdmins();
             }
         }
 
 
         // --- COMPANY ADMIN: USER CRUD FUNCTIONS ---
-
         async function loadCompanyUsers() {
             const container = document.getElementById('user-list-container');
             container.innerHTML = '<p class="text-center">Carregando usuários...</p>';
@@ -2288,26 +2327,24 @@
                 return;
             }
 
-            // Busca usuários filtrando pela empresa logada
             const { data, error } = await supabaseClient
                 .from('users')
                 .select('*')
                 .eq('company', state.loggedInCompany.name)
-                .order('name'); // Ordena por nome
+                .order('name');
 
             if (error) {
                 container.innerHTML = '<p class="text-red-500 text-center">Erro ao carregar usuários.</p>';
                 console.error("Erro Supabase (Load Users):", error);
                 return;
             }
-             companyUsersCache = data || []; // Atualiza o cache
+             companyUsersCache = data || [];
 
             if (companyUsersCache.length === 0) {
                 container.innerHTML = '<p class="text-gray-400 text-center">Nenhum usuário cadastrado para esta empresa.</p>';
                 return;
             }
 
-            // Renderiza a lista de usuários
             container.innerHTML = companyUsersCache.map(user => `
                 <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
                     <div>
@@ -2324,79 +2361,52 @@
             `).join('');
         }
 
-        // ========================================================================
-        // FUNÇÃO MODIFICADA - editUserById
-        // ========================================================================
         function editUserById(userId) {
             const user = companyUsersCache.find(u => u.id === userId);
             if (!user) return alert('Usuário não encontrado no cache.');
 
-            // Preenche o formulário com os dados do usuário
             document.getElementById('editing-user-id').value = user.id;
             document.getElementById('new-user-matricula').value = user.matricula || '';
             document.getElementById('new-user-name').value = user.name || '';
             document.getElementById('new-user-address').value = user.address || '';
-            // --- MODIFICAÇÃO ---
-            // Preenche o campo oculto com o endereço existente (confiando que é válido)
             document.getElementById('new-user-address-validated').value = user.address || ''; 
-            // --- FIM MODIFICAÇÃO ---
             document.getElementById('new-user-phone').value = user.phone || '';
-            document.getElementById('new-user-password').value = ''; // Limpa senha
+            document.getElementById('new-user-password').value = '';
             document.getElementById('new-user-password').placeholder = 'Nova Senha (deixe em branco para manter)';
 
-            // Mostra o botão de cancelar e ajusta o título
             document.getElementById('cancel-user-edit-btn').classList.remove('hidden');
             document.getElementById('user-form-title').textContent = 'Editar Usuário';
-            window.scrollTo(0, 0); // Rola para o topo
-
-             // A chamada initAutocomplete foi removida daqui
+            window.scrollTo(0, 0);
         }
 
-        // ========================================================================
-        // FUNÇÃO MODIFICADA - cancelUserEdit
-        // ========================================================================
         function cancelUserEdit() {
-            // Limpa o formulário
             document.getElementById('editing-user-id').value = '';
             document.getElementById('new-user-matricula').value = '';
             document.getElementById('new-user-name').value = '';
             document.getElementById('new-user-address').value = '';
-            // --- MODIFICAÇÃO ---
-            document.getElementById('new-user-address-validated').value = ''; // Limpa o campo oculto
-            // --- FIM MODIFICAÇÃO ---
+            document.getElementById('new-user-address-validated').value = '';
             document.getElementById('new-user-phone').value = '';
             document.getElementById('new-user-password').value = '';
             document.getElementById('new-user-password').placeholder = 'Senha';
 
-            // Esconde o botão cancelar e reseta o título
             document.getElementById('cancel-user-edit-btn').classList.add('hidden');
             document.getElementById('user-form-title').textContent = 'Adicionar Usuário';
-
-            // Bloco de limpeza do autocomplete foi removido daqui
         }
 
 
-        // ========================================================================
-        // FUNÇÃO MODIFICADA - addOrUpdateUser
-        // ========================================================================
         async function addOrUpdateUser() {
             const id = document.getElementById('editing-user-id').value;
             const matricula = document.getElementById('new-user-matricula').value.trim();
             const name = document.getElementById('new-user-name').value.trim();
             
-            // --- MODIFICAÇÃO VALIDAÇÃO ---
             const addressInput = document.getElementById('new-user-address');
             const address = addressInput.value.trim();
             const validatedAddressInput = document.getElementById('new-user-address-validated');
-            // Se o input oculto não existir por algum motivo, assume que o endereço é válido (fallback)
             const validatedAddress = validatedAddressInput ? validatedAddressInput.value.trim() : address; 
 
-            // Se 'address' foi preenchido, ele *deve* ser igual ao 'validatedAddress'
-            // Se 'address' está vazio, a validação passa (endereço pode ser opcional)
             if (address && address !== validatedAddress) {
                 return alert('Endereço inválido! Por favor, selecione um endereço da lista de sugestões. Se o endereço não for obrigatório, pode deixar o campo em branco.');
             }
-            // --- FIM MODIFICAÇÃO VALIDAÇÃO ---
 
             const phone = document.getElementById('new-user-phone').value.trim();
             const password = document.getElementById('new-user-password').value.trim();
@@ -2404,29 +2414,26 @@
             if (!matricula || !name) {
                 return alert('Matrícula e Nome são obrigatórios.');
             }
-             if (!id && !password) { // Senha obrigatória apenas para *novos* usuários
+             if (!id && !password) {
                 return alert('Senha é obrigatória para novos usuários.');
             }
 
-            // Monta o objeto com os dados do usuário
             let userData = {
                 matricula,
                 name,
-                address, // Salva o valor do campo (que agora foi validado)
+                address,
                 phone,
-                company: state.loggedInCompany.name // Associa à empresa logada
+                company: state.loggedInCompany.name
             };
 
-            // Adiciona a senha apenas se foi digitada (para edição) ou se é novo usuário
             if (password) {
-                userData.password = password; // Salva a senha diretamente
+                userData.password = password;
             }
 
             let result;
-            if (id) { // Editando usuário existente
+            if (id) {
                 result = await supabaseClient.from('users').update(userData).eq('id', id).select();
-            } else { // Adicionando novo usuário
-                // Garante que a senha foi fornecida (já validado acima)
+            } else {
                 userData.password = password;
                 result = await supabaseClient.from('users').insert([userData]).select();
             }
@@ -2438,9 +2445,7 @@
                 console.error("Erro Supabase (User Save):", error);
             } else {
                 alert(`Usuário "${data[0].name}" ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
-                cancelUserEdit(); // Limpa o formulário
-                // A atualização da lista será feita pelo listener de realtime
-                // await loadCompanyUsers();
+                cancelUserEdit();
             }
         }
 
@@ -2454,10 +2459,131 @@
                 console.error("Erro Supabase (User Delete):", error);
             } else {
                 alert(`Usuário "${name}" excluído com sucesso.`);
-                // A atualização da lista será feita pelo listener de realtime
-                // await loadCompanyUsers();
             }
         }
+        
+        // ========================================================================
+        // INÍCIO: NOVO BLOCO (CRUD de Motivos) - CORRIGIDO
+        // ========================================================================
+
+        async function loadMotivos() {
+            const container = document.getElementById('motivo-list-container');
+            container.innerHTML = '<p class="text-center">Carregando motivos...</p>';
+
+            // ======================================================
+            // CORREÇÃO (Usa ID da empresa e coluna 'empresa_id')
+            // ======================================================
+            if (!state.loggedInCompany || !state.loggedInCompany.id) { // Precisa do ID
+                container.innerHTML = '<p class="text-red-500 text-center">Erro: Empresa não identificada.</p>';
+                return;
+            }
+            
+            const { data, error } = await supabaseClient
+                .from('motivos')
+                .select('*')
+                .eq('empresa_id', state.loggedInCompany.id) // Compara 'empresa_id' com o ID da empresa logada
+                .order('nome'); // Ordena por 'nome'
+            // ======================================================
+            // FIM DA CORREÇÃO
+            // ======================================================
+
+            if (error) {
+                container.innerHTML = '<p class="text-red-500 text-center">Erro ao carregar motivos.</p>';
+                console.error("Erro Supabase (Load Motivos):", error);
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center">Nenhum motivo cadastrado.</p>';
+                return;
+            }
+
+            container.innerHTML = data.map(motivo => `
+                <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold text-lg">${motivo.nome}</p> </div>
+                    <div class="flex gap-2">
+                        <button onclick='editMotivo(${JSON.stringify(motivo)})' class="py-1 px-3 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Editar</button>
+                        <button onclick="deleteMotivo(${motivo.id},'${motivo.nome}')" class="py-1 px-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700">X</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addOrUpdateMotivo() {
+            const id = document.getElementById('editing-motivo-id').value;
+            const name = document.getElementById('new-motivo-name').value.trim();
+
+            if (!name) {
+                return alert('O nome do motivo é obrigatório.');
+            }
+            if (!state.loggedInCompany || !state.loggedInCompany.id) { // Precisa do ID
+                return alert('Erro: Empresa não logada.');
+            }
+
+            // ======================================================
+            // CORREÇÃO (Usa 'nome' e 'empresa_id')
+            // ======================================================
+            const motivoData = {
+                nome: name, // Coluna 'nome' da tabela 'motivos'
+                empresa_id: state.loggedInCompany.id // Salva o ID da empresa na coluna 'empresa_id'
+            };
+            // ======================================================
+            // FIM DA CORREÇÃO
+            // ======================================================
+
+            let result;
+            if (id) { // Editando
+                result = await supabaseClient.from('motivos').update(motivoData).eq('id', id).select();
+            } else { // Adicionando
+                result = await supabaseClient.from('motivos').insert([motivoData]).select();
+            }
+
+            const { data, error } = result;
+
+            if (error) {
+                alert('Erro ao salvar motivo: ' + error.message);
+                console.error("Erro Supabase (Motivo Save):", error);
+            } else {
+                alert(`Motivo "${data[0].nome}" ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
+                cancelMotivoEdit();
+                // As subscriptions de realtime (agora adicionadas) cuidarão de atualizar as listas
+            }
+        }
+
+        function editMotivo(motivo) {
+            if (!motivo) return;
+            document.getElementById('editing-motivo-id').value = motivo.id;
+            document.getElementById('new-motivo-name').value = motivo.nome; // Usa 'nome'
+            document.getElementById('cancel-motivo-edit-btn').classList.remove('hidden');
+            document.getElementById('motivo-form-title').textContent = 'Editar Motivo';
+            window.scrollTo(0, 0);
+        }
+
+        function cancelMotivoEdit() {
+            document.getElementById('editing-motivo-id').value = '';
+            document.getElementById('new-motivo-name').value = '';
+            document.getElementById('cancel-motivo-edit-btn').classList.add('hidden');
+            document.getElementById('motivo-form-title').textContent = 'Adicionar Motivo';
+        }
+
+        async function deleteMotivo(id, name) {
+            if (!confirm(`Tem certeza que deseja excluir o motivo "${name}"?`)) return;
+
+            const { error } = await supabaseClient.from('motivos').delete().eq('id', id);
+
+            if (error) {
+                alert('Erro ao excluir motivo: ' + error.message);
+                console.error("Erro Supabase (Motivo Delete):", error);
+            } else {
+                alert(`Motivo "${name}" excluído com sucesso.`);
+                // As subscriptions de realtime (agora adicionadas) cuidarão de atualizar as listas
+            }
+        }
+        // ========================================================================
+        // FIM: NOVO BLOCO
+        // ========================================================================
+
 
     </script>
 </body>
