@@ -5,20 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GARCIA TRANSPORTES - Motorista</title>
 
-<link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1f2937">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    </head>
-
-
-
-
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -134,15 +129,27 @@
         .text-orange-400 { color: #fb923c !important; }
         .text-blue-400 { color: #60a5fa !important; }
 
+        /* NOVO: Estilos para ícones Phosphor (como no admin.html) */
+        [class*="ph-"] {
+            font-size: 1.1em;
+            line-height: 1;
+            vertical-align: -0.1em;
+            margin-right: 0.25em;
+        }
+
     </style>
 </head>
-<body class="text-white min-h-screen p-4 bg-black"> <div id="app-container" class="w-full mx-auto max-w-md"> <div id="initial-screen" class="screen active text-center center-content-initial"> <img src="images/motorista.png" alt="Motorista Icon" class="w-32 h-32 mx-auto mb-4 object-contain">
+<body class="text-white min-h-screen p-4 bg-black">
+    <div id="app-container" class="w-full mx-auto max-w-md">
+        <div id="initial-screen" class="screen active text-center center-content-initial">
+            <img src="images/motorista.png" alt="Motorista Icon" class="w-32 h-32 mx-auto mb-4 object-contain">
             <div class="flex justify-center items-center gap-4 mb-2">
                 <div id="app-icon-container" class="h-12 w-12">
                     </div>
                 <h1 class="text-4xl sm:text-5xl font-bold text-white">GARCIA TRANSPORTES</h1>
             </div>
-            <div class="space-y-4 mt-8"> <button onclick="showScreen('driver-selection-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-initial-screen">
+            <div class="space-y-4 mt-8">
+                <button onclick="showScreen('driver-selection-screen')" class="w-full flex items-center justify-center gap-3 py-4 px-6 text-lg font-semibold rounded-lg button-initial-screen">
                     ÁREA DO MOTORISTA
                 </button>
             </div>
@@ -159,7 +166,8 @@
             <button onclick="logoutDriver()" class="mb-4 text-yellow-300">← Sair</button>
             <h2 class="text-3xl font-bold mb-2 text-center text-white">Minhas Corridas</h2>
             <p id="driver-name-display" class="text-center text-yellow-300 mb-1"></p>
-            <p id="driver-stats-display" class="text-center text-gray-300 font-semibold text-sm mb-6"></p> <div class="flex items-center justify-between mb-4 card-gradient p-3 rounded-lg">
+            <p id="driver-stats-display" class="text-center text-gray-300 font-semibold text-sm mb-6"></p>
+            <div class="flex items-center justify-between mb-4 card-gradient p-3 rounded-lg">
                 <span class="font-semibold text-lg text-white">Meu Status</span>
                 <div class="flex items-center gap-3">
                     <span id="driver-status-label" class="font-bold text-white"></span>
@@ -172,7 +180,7 @@
             <div class="flex items-center justify-between mb-4 card-gradient p-3 rounded-lg">
                 <span class="font-semibold text-lg text-white">MANTER TELA ATIVA</span>
                 <label class="toggle-switch">
-            <input type="checkbox" id="wake-lock-toggle" onchange="toggleWakeLock()" checked>
+                    <input type="checkbox" id="wake-lock-toggle" onchange="toggleWakeLock()" checked>
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -271,6 +279,7 @@
         let state = {
             rides: [],
             drivers: [],
+            users: [], // <-- NOVO: Array para armazenar usuários
             currentDriverId: null,
             appIcon: 'images/destino.png', // Definido para usar o ícone "destino.png"
         };
@@ -380,33 +389,34 @@
 
         function playRingSound() {
            if (audioUnlocked && ringtone) {
-    ringtone.currentTime = 0;
-    ringtone.play().catch(e => console.error("Erro ao tocar som:", e));
-  }
-  tocarSomMotorista(); // beep simultâneo
-}
+                ringtone.currentTime = 0;
+                ringtone.play().catch(e => console.error("Erro ao tocar som:", e));
+            }
+            tocarSomMotorista(); // beep simultâneo
+        }
 
-function startRinging() {
-  stopRinging();
-  playRingSound();
-  ringInterval = setInterval(playRingSound, 4000);
-  document.getElementById('silence-btn').classList.remove('hidden');
-}
-// O botão silenciar já está correto:
-function stopRinging() {
-  if (ringInterval) {
-    clearInterval(ringInterval);
-    ringInterval = null;
-  }
-  if (ringtone) {
-    ringtone.pause();
-    ringtone.currentTime = 0;
-  }
+        function startRinging() {
+            stopRinging();
+            playRingSound();
+            ringInterval = setInterval(playRingSound, 4000);
+            document.getElementById('silence-btn').classList.remove('hidden');
+        }
+        
+        // O botão silenciar já está correto:
+        function stopRinging() {
+            if (ringInterval) {
+                clearInterval(ringInterval);
+                ringInterval = null;
+            }
+            if (ringtone) {
+                ringtone.pause();
+                ringtone.currentTime = 0;
+            }
 
-  stopRingingMotorista(); // <-- ESTA É A LINHA QUE VOCÊ PRECISA ADICIONAR
+            stopRingingMotorista(); // <-- ESTA É A LINHA QUE VOCÊ PRECISA ADICIONAR
 
-  document.getElementById('silence-btn').classList.add('hidden');
-}
+            document.getElementById('silence-btn').classList.add('hidden');
+        }
 
         // --- LÓGICA PARA MANTER O ECRÃ E APP ATIVOS ---
         // ... (código existente sem alterações) ...
@@ -762,6 +772,59 @@ function stopRinging() {
         }
 
         // ========================================================================
+        // NOVA FUNÇÃO - getCollaboratorDetails (Busca nomes e telefones)
+        // ========================================================================
+        /**
+         * Extrai nomes de colaboradores do 'ride.destination' e busca seus telefones.
+         * @param {object} ride - O objeto da corrida.
+         * @param {Array} allUsers - O array state.users.
+         * @returns {Map<string, string>} Um Map onde a chave é o nome do colaborador e o valor é o telefone.
+         */
+        function getCollaboratorDetails(ride, allUsers) {
+            const collaborators = new Map();
+
+            // 1. Adiciona o solicitante principal
+            const mainUser = allUsers.find(u => u.name === ride.userName);
+            if (mainUser) {
+                collaborators.set(mainUser.name, mainUser.phone || 'N/A');
+            } else {
+                collaborators.set(ride.userName, 'N/A (Solicitante)'); // Telefone não encontrado para o solicitante
+            }
+
+            // 2. Tenta extrair colaboradores adicionais das paradas (como no admin.html)
+            const destinationString = ride.destination;
+            if (!destinationString || typeof destinationString !== 'string') {
+                return collaborators;
+            }
+            
+            const str = destinationString.trim();
+
+            if (str.startsWith('[{') && str.endsWith('}]')) {
+                try {
+                    const destinationsArray = JSON.parse(str);
+                    if (Array.isArray(destinationsArray)) {
+                        destinationsArray.forEach(dest => {
+                            // Tenta extrair nome da parada (ex: "Parada 1 João Silva")
+                            const match = dest.name ? String(dest.name).match(/^(Origem |Parada \d+)\s*(.+)/) : null;
+                            if (match && match[2]) {
+                                const collaboratorName = match[2].trim();
+                                // Adiciona à lista se ainda não estiver (evita duplicatas)
+                                if (!collaborators.has(collaboratorName)) {
+                                    const collaboratorUser = allUsers.find(u => u.name === collaboratorName);
+                                    collaborators.set(collaboratorName, collaboratorUser ? collaboratorUser.phone || 'N/A' : 'N/A');
+                                }
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Erro ao processar JSON de destino para colaboradores:", e);
+                }
+            }
+            
+            return collaborators;
+        }
+
+        // ========================================================================
         // NOVA FUNÇÃO - getDrivingDistanceByCoords (Usa Geoapify Routing API)
         // ========================================================================
         // Esta função calcula a distância de ROTA (carro) usando coordenadas
@@ -861,7 +924,7 @@ function stopRinging() {
         }
 
         // ========================================================================
-        // FUNÇÃO ATUALIZADA - loadDriverJobs (Usa Geoapify para distância)
+        // FUNÇÃO ATUALIZADA - loadDriverJobs (Exibe colaboradores)
         // ========================================================================
         async function loadDriverJobs() { // Tornada async
             if (!state.currentDriverId) return;
@@ -982,6 +1045,29 @@ function stopRinging() {
                         <p class="font-normal text-gray-300 break-words">${ride.origin_address}</p>
                     </div>` : '';
 
+                // ======================================================
+                // NOVO: Bloco de Colaboradores
+                // ======================================================
+                const collaboratorsMap = getCollaboratorDetails(ride, state.users);
+                let collaboratorsHtml = '<div class="mb-3 space-y-1">';
+                collaboratorsHtml += '<p class="text-xs text-gray-300">Colaboradores:</p>';
+                
+                if (collaboratorsMap.size > 0) {
+                    collaboratorsMap.forEach((phone, name) => {
+                        collaboratorsHtml += `
+                            <p class="font-normal text-white break-words">
+                                <i class="ph ph-user"></i> ${name}
+                                ${phone !== 'N/A' ? ` (<i class="ph ph-phone"></i> ${phone})` : ''}
+                            </p>`;
+                    });
+                } else {
+                    collaboratorsHtml += '<p class="font-normal text-gray-400">Nenhum colaborador listado.</p>';
+                }
+                collaboratorsHtml += '</div>';
+                // ======================================================
+                // FIM: Bloco de Colaboradores
+                // ======================================================
+
                 // --- Destinos ---
                 let destinationsHtml = '';
                 const destinations = parseDestinations(ride.destination); // Usa a função parse
@@ -1042,7 +1128,7 @@ function stopRinging() {
                         <p class="font-semibold text-white">${displayDateTime}</p>
                     </div>
                     ${originHtml}
-                    ${destinationsHtml}
+                    ${collaboratorsHtml} ${destinationsHtml}
                     ${ride.observation ? `
                     <div class="mb-3">
                         <p class="text-xs text-gray-300">Observação:</p>
@@ -1393,13 +1479,15 @@ function stopRinging() {
             );
         }
 
-        // --- fetchAllData --- (sem alterações)
-        // ... (código existente sem alterações) ...
+        // ========================================================================
+        // FUNÇÃO ATUALIZADA - fetchAllData (Inclui busca de usuários)
+        // ========================================================================
          async function fetchAllData() {
             // Usa Promise.all para buscar em paralelo
-            const [driversRes, ridesRes] = await Promise.all([
+            const [driversRes, ridesRes, usersRes] = await Promise.all([
                 supabaseClient.from('drivers').select('*'),
-                supabaseClient.from('rides').select('id, origin_address, destination, status, driverId, userName, userCompany, requestTime, userLocation, driverCurrentLocation, request_type, scheduled_datetime, observation')
+                supabaseClient.from('rides').select('id, origin_address, destination, status, driverId, userName, userCompany, requestTime, userLocation, driverCurrentLocation, request_type, scheduled_datetime, observation'),
+                supabaseClient.from('users').select('id, name, phone') // <-- NOVO: Busca usuários (id, nome, telefone)
             ]);
 
             if (driversRes.error) console.error('Erro a buscar motoristas:', driversRes.error);
@@ -1407,6 +1495,11 @@ function stopRinging() {
 
             if (ridesRes.error) console.error('Erro a buscar corridas:', ridesRes.error);
             else state.rides = ridesRes.data || [];
+
+            // NOVO: Salva os usuários no state
+            if (usersRes.error) console.error('Erro a buscar usuários:', usersRes.error);
+            else state.users = usersRes.data || [];
+
 
              // Atualiza o botão de status se o motorista estiver logado
              if (state.currentDriverId) {
@@ -1480,6 +1573,20 @@ function stopRinging() {
                  if (status === 'SUBSCRIBED') { console.log('Subscribed to real-time drivers!'); }
                  if (err) { console.error('Drivers subscription error:', err); }
             });
+
+            // NOVO: Subscription para usuários (para garantir que nomes/telefones estejam atualizados)
+            supabaseClient.channel('public:users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
+                console.log('Real-time event received (users):', payload.eventType);
+                await fetchAllData(); // Atualiza a lista de usuários
+                const activeScreenId = document.querySelector('.screen.active')?.id;
+                // Se a tela do motorista estiver aberta, recarrega os jobs para exibir os dados atualizados
+                if (activeScreenId === 'driver-screen' && state.currentDriverId) {
+                    loadDriverJobs();
+                }
+            }).subscribe((status, err) => {
+                 if (status === 'SUBSCRIBED') { console.log('Subscribed to real-time users!'); }
+                 if (err) { console.error('Users subscription error:', err); }
+            });
         }
 
         // --- initApp --- (Garante que seja chamado após DOM carregado)
@@ -1489,7 +1596,7 @@ function stopRinging() {
 
             loadRideProgress(); // Carrega progresso salvo
             loadAppIcon();      // Carrega o ícone do app
-            await fetchAllData(); // Busca dados iniciais
+            await fetchAllData(); // Busca dados iniciais (agora inclui usuários)
             setupRealtimeSubscriptions(); // Configura atualizações em tempo real
 
             // SEMPRE inicia com Wake Lock ATIVADO (tela ativa)
