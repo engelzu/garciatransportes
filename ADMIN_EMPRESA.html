@@ -198,9 +198,8 @@
         }
 
         /* Permite quebra de linha na coluna de destinos e observação */
-        #history-table td:nth-child(9), /* Coluna Motivo */
-	        #history-table td:nth-child(10), /* Coluna Destinos */
-        #history-table td:nth-child(12) { /* Coluna Observação */
+	    #history-table td:nth-child(9), /* Coluna Destinos */
+        #history-table td:nth-child(11) { /* Coluna Observação */
             white-space: normal;
             min-width: 250px; /* Largura mínima */
         }
@@ -347,7 +346,6 @@
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Agendada</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Aceite</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Origem</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motivo</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Destinos</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Passag.</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motorista</th>
@@ -1629,6 +1627,37 @@
         // ========================================================================
 
         // ========================================================================
+        // INÍCIO: FUNÇÃO DE SUPORTE (Extrai todos os nomes)
+        // ========================================================================
+        function extractAllPassengersNames(userName, destinationString) {
+            let names = new Set();
+            if (userName) {
+                names.add(userName);
+            }
+            
+            const destinations = parseDestinations(destinationString);
+            
+            destinations.forEach(dest => {
+                // Heurística: Se o nome do destino começar com 'Origem ', assumimos que o restante é o nome de um passageiro adicional.
+                // Ex: "Origem Nome do Colaborador"
+                const match = dest.name ? dest.name.match(/^(Origem |Parada )\s*(.+)/) : null;
+                if (match) {
+                    names.add(match[2].trim()); // Adiciona o nome extraído
+                }
+            });
+
+            // Converte o Set para Array e junta com vírgula, limitando a 3 para brevidade
+            const nameArray = Array.from(names);
+            if (nameArray.length > 3) {
+                return `${nameArray.slice(0, 3).join(', ')} e mais ${nameArray.length - 3}`;
+            }
+            return nameArray.join(', ') || 'N/A';
+        }
+        // ========================================================================
+        // FIM: FUNÇÃO DE SUPORTE
+        // ========================================================================
+
+        // ========================================================================
         // INÍCIO: SEÇÃO DE HISTÓRICO (Unificada e corrigida)
         // ========================================================================
         
@@ -1667,7 +1696,7 @@
                 .select(`
                     *,
                     motivos ( nome )
-                `) // <<== ADICIONADO: Busca o nome do motivo
+                `) // <<== MODIFICADO: Busca o nome do motivo
                 .eq('userCompany', state.loggedInCompany.name)
                 // .not('status', 'eq', 'pending_approval') // Mostra tudo, inclusive pendentes
                 .order('requestTime', { ascending: false }); // Mais recentes primeiro
@@ -1817,20 +1846,21 @@
                 
                 const typeText = ride.request_type === 'immediate' ? 'Imediato' : (ride.request_type === 'scheduled' ? 'Agendado' : (ride.request_type || 'N/A'));
                 
-                // <<== ADICIONADO: Pega o nome do motivo
+                // <<== MODIFICADO: Pega o nome do motivo e a lista de passageiros
                 const motivoName = ride.motivos ? ride.motivos.nome : 'N/A'; // Usa 'nome'
-
+                const allPassengersNames = extractAllPassengersNames(ride.userName, ride.destination); // Usa a nova função
 
                 const row = `
                     <tr class="hover:bg-gray-800">
                         <td class="p-3 text-sm">${ride.id}</td>
                         <td class="p-3 text-sm font-medium ${statusInfo.color}">${statusInfo.text}</td>
-                        <td class="p-3 text-sm">${ride.userName || 'N/A'}</td>
-                        <td class="p-3 text-sm">${ride.motivo_id || 'N/A'}</td> <td class="p-3 text-sm">${formatDateTime(ride.requestTime)}</td>
+                        <td class="p-3 text-sm">${allPassengersNames}</td>
+                        <td class="p-3 text-sm">${motivoName}</td>
+                        <td class="p-3 text-sm">${formatDateTime(ride.requestTime)}</td>
                         <td class="p-3 text-sm">${formatDateTime(ride.scheduled_datetime)}</td>
                         <td class="p-3 text-sm">${formatDateTime(ride.acceptTime)}</td>
                         <td class="p-3 text-sm">${ride.origin_address || 'N/A'}</td>
-                        <td class="p-3 text-sm">${motivoName}</td> <td class="p-3 text-sm">${destinationsHtml || 'N/A'}</td>
+                        <td class="p-3 text-sm">${destinationsHtml || 'N/A'}</td>
                         <td class="p-3 text-sm">${ride.passenger_count || 1}</td>
                         <td class="p-3 text-sm">${ride.driverName || 'N/A'}</td>
                         <td class="p-3 text-sm">${ride.observation || 'N/A'}</td>
