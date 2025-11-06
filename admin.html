@@ -945,11 +945,13 @@
                     <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
                         <tr>
                             <th scope="col" class="px-4 py-3">Data Solicitação</th>
-                            <th scope="col" class="px-4 py-3">Data Agendada</th> <th scope="col" class="px-4 py-3">Data Aceite</th>   <th scope="col" class="px-4 py-3">Usuário</th>
+                            <th scope="col" class="px-4 py-3">Data Agendada</th> 
+                            <th scope="col" class="px-4 py-3">Data Aceite</th>   
+                            <th scope="col" class="px-4 py-3">Usuário</th>
                             <th scope="col" class="px-4 py-3">Empresa</th>
                             <th scope="col" class="px-4 py-3">Origem</th>
                             <th scope="col" class="px-4 py-3">Destino</th>
-                            <th scope="col" class="px-4 py-3">Observação</th>
+                            <th scope="col" class="px-4 py-3">Colaboradores</th> <th scope="col" class="px-4 py-3">Observação</th>
                             <th scope="col" class="px-4 py-3">Motorista</th>
                             <th scope="col" class="px-4 py-3">Status</th>
                             <th scope="col" class="px-4 py-3">Distância (km)</th>
@@ -1828,6 +1830,7 @@
             const list = document.getElementById('admin-requests-list');
             list.innerHTML = '';
 
+            // MODIFICADO: Removendo 'assigned' daqui para que vá para Corridas em Andamento
             const requestedRides = state.rides.filter(r => r.status === 'requested' || r.status === 'approved' || r.status === 'pending_approval' || r.status === 'scheduled');
 
          // Verificar se há solicitações do tipo 'immediate' ou 'scheduled' para tocar o som
@@ -1920,7 +1923,7 @@
                     }
 
                     card.innerHTML = `
-                        <div class="flex justify-between items-center mb-2">
+                        <div class="flex justify-between items-start mb-2">
 	                        <h4 class="font-semibold text-lg">Nova Solicitação</h4>
 	                            ${rideTypeInfo}
 	                        </div>
@@ -1951,14 +1954,15 @@
             }
 
             const ridesWithDistance = ongoingRides.map((ride) => {
-                const { destinationsList } = extractCollaboratorsAndDestination(ride.userName, ride.destination);
+                const { allCollaboratorsNames, destinationsList } = extractCollaboratorsAndDestination(ride.userName, ride.destination);
                 const distanceKm = ride.km || 'Ao finalizar';
                 const originAddress = cleanAddressString(ride.origin_address);
                 return { 
                     ...ride, 
                     distanceKm: distanceKm, 
                     cleanedOrigin: originAddress, 
-                    formattedDestination: destinationsList, // MODIFICADO: Usar a lista simples para a tabela
+                    formattedDestination: destinationsList, 
+                    allCollaboratorsNames: allCollaboratorsNames // Adiciona o campo Colaboradores
                 };
             });
 
@@ -1969,7 +1973,7 @@
                             <th scope="col" class="px-4 py-3">Usuário</th>
                             <th scope="col" class="px-4 py-3">Origem</th>
                             <th scope="col" class="px-4 py-3">Destino</th>
-                            <th scope="col" class="px-4 py-3">Observação</th>
+                            <th scope="col" class="px-4 py-3">Colaboradores</th> <th scope="col" class="px-4 py-3">Observação</th>
                             <th scope="col" class="px-4 py-3">Distância (km)</th>
                             <th scope="col" class="px-4 py-3">Motorista</th>
                             <th scope="col" class="px-4 py-3">Status</th>
@@ -2036,10 +2040,9 @@
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20">
                         <td class="px-4 py-3 font-medium">${ride.userName}</td>
                         <td class="px-4 py-3">${ride.cleanedOrigin || '-'}</td> 
-                        <td class="px-4 py-3">${ride.formattedDestination}</td> 
-                        <td class="px-4 py-3 text-yellow-300">${ride.observation || '-'}</td>
+                        <td class="px-4 py-3">${ride.formattedDestination}</td>
+                        <td class="px-4 py-3">${ride.allCollaboratorsNames}</td> <td class="px-4 py-3 text-yellow-300">${ride.observation || '-'}</td>
                         <td class="px-4 py-3 font-semibold">${ride.distanceKm}</td>
-                        <td class="px-4 py-3">${driverCellHTML}</td>
                         <td class="px-4 py-3">
                             <span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span>
                         </td>
@@ -2924,11 +2927,11 @@ async function sendNewRideEmailNotification(ride) {
 
         async function loadAllRecords() {
             const tableBody = document.getElementById('all-records-body');
-            tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>'; // Colspan atualizado para 11
+            tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>'; // Colspan atualizado para 12
 
             const { data, error } = await supabaseClient.from('rides').select('*').order('requestTime', { ascending: false });
             if (error) {
-                tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>'; // Colspan atualizado
+                tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>'; // Colspan atualizado
                 return;
             }
             state.rides = data;
@@ -2945,7 +2948,7 @@ async function sendNewRideEmailNotification(ride) {
             }
             
             if (data.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>'; // Colspan atualizado
+                tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>'; // Colspan atualizado
                 return;
             }
             
@@ -2973,14 +2976,19 @@ async function sendNewRideEmailNotification(ride) {
                 const observation = ride.observation || '-';
                 const requestTimestamp = ride.requestTime ? new Date(ride.requestTime).getTime() : 0; 
 
+                // Extrai colaboradores para a nova coluna
+                const { allCollaboratorsNames } = extractCollaboratorsAndDestination(ride.userName, ride.destination);
+
                 return `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20" data-request-time="${requestTimestamp}">
                         <td class="px-4 py-3">${requestDateTime}</td> 
-                        <td class="px-4 py-3">${scheduledDateTime}</td> <td class="px-4 py-3">${acceptDateTime}</td>   <td class="px-4 py-3">${ride.userName}</td>
+                        <td class="px-4 py-3">${scheduledDateTime}</td> 
+                        <td class="px-4 py-3">${acceptDateTime}</td>   
+                        <td class="px-4 py-3">${ride.userName}</td>
                         <td class="px-4 py-3">${ride.userCompany || '-'}</td>
                         <td class="px-4 py-3">${originAddress}</td>
-                        <td class="px-4 py-3">${destinationAddress}</td> 
-                        <td class="px-4 py-3">${observation}</td>
+                        <td class="px-4 py-3">${destinationAddress}</td>
+                        <td class="px-4 py-3">${allCollaboratorsNames}</td> <td class="px-4 py-3">${observation}</td>
                         <td class="px-4 py-3">${ride.driverName || '-'}</td>
                         <td class="px-4 py-3"><span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span></td>
                         <td class="px-4 py-3">${distanceKm}</td> 
@@ -3003,7 +3011,7 @@ async function sendNewRideEmailNotification(ride) {
 
             rows.forEach(row => {
                 const requestTimestamp = row.dataset.requestTime;
-                const companyCell = row.cells[4]; // Índice da coluna Empresa atualizado para 4
+                const companyCell = row.cells[4]; // Índice da coluna Empresa
                 
                 if (requestTimestamp && companyCell) {
                     const recordDate = parseInt(requestTimestamp);
@@ -3054,15 +3062,16 @@ async function sendNewRideEmailNotification(ride) {
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
 
-            // Ajusta a largura das colunas (adiciona larguras para as novas colunas)
+            // Ajusta a largura das colunas (ADICIONADA A LARGURA PARA COLABORADORES)
             worksheet['!cols'] = [
                 { wch: 20 }, // Data Solicitação
-                { wch: 20 }, // Data Agendada (NOVO)
-                { wch: 20 }, // Data Aceite (NOVO)
+                { wch: 20 }, // Data Agendada
+                { wch: 20 }, // Data Aceite
                 { wch: 25 }, // Usuário
                 { wch: 20 }, // Empresa
                 { wch: 40 }, // Origem
                 { wch: 40 }, // Destino
+                { wch: 30 }, // Colaboradores (NOVO)
                 { wch: 30 }, // Observação
                 { wch: 25 }, // Motorista
                 { wch: 15 }, // Status
