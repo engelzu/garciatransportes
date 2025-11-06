@@ -7,21 +7,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Carrega a biblioteca Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/resend@3.2.0/dist/index.global.js"></script>
     
-    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
 
-    <!-- Leaflet (Mapa) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     
-    <!-- Ícones Phosphor -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
@@ -216,6 +212,7 @@
         .status-approved { background-color: #0d9488; color: #ffffff; }
         .status-rejected { background-color: #991b1b; color: #ffffff; }
 
+        /* Corrigido para garantir que o botão do Admin não seja ocultado */
         #initial-screen button[onclick="showScreen('user-login-screen')"],
         #initial-screen button[onclick="showScreen('driver-selection-screen')"] {
             display: none;
@@ -561,13 +558,10 @@
 </head>
 <body class="main-gradient text-white min-h-screen flex items-center justify-center p-4">
 
-    <!-- Elemento de áudio removido - agora usa Web Audio API -->
-
     <div id="countdown-timer" class="fixed top-4 right-4 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full"></div>
 
     <div id="app-container" class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
 
-        <!-- TELA INICIAL -->
         <div id="initial-screen" class="screen active text-center">
             <div class="flex justify-center items-center gap-4 mb-2">
                 <div id="app-icon-container" class="h-12 w-12"></div>
@@ -597,7 +591,6 @@
             </div>
         </div>
 
-        <!-- LOGIN ADMIN -->
         <div id="admin-login-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Login Administrador</h2>
@@ -611,7 +604,6 @@
             </div>
         </div>
 
-        <!-- LOGIN USUÁRIO -->
         <div id="user-login-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Login do Usuário</h2>
@@ -629,17 +621,14 @@
             </div>
         </div>
 
-        <!-- SELEÇÃO MOTORISTA -->
         <div id="driver-selection-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-1 text-center">Selecionar Motorista</h2>
             <p id="driver-selection-timestamp" class="text-center text-gray-700 text-sm mb-6"></p>
             <div id="driver-list-selection" class="space-y-3 max-w-md mx-auto">
-                <!-- Conteúdo gerado por JS -->
-            </div>
+                </div>
         </div>
 
-        <!-- TELA USUÁRIO -->
         <div id="user-screen" class="screen">
              <div class="max-w-md mx-auto">
                 <button onclick="logout()" class="mb-4 text-yellow-300">← Sair</button>
@@ -678,14 +667,11 @@
                         <div class="loader mx-auto"></div>
                     </div>
                     <div id="status-icon-en-route" class="hidden mx-auto mb-2">
-                        <!-- Imagem 'aceitou.png' vai aqui via JS -->
-                    </div>
+                        </div>
                     <div id="status-icon-arrived-pickup" class="hidden mx-auto mb-2">
-                        <!-- Imagem 'final.png' vai aqui via JS -->
-                    </div>
+                        </div>
                     <div id="status-icon-in-progress" class="hidden mx-auto mb-2">
-                        <!-- Imagem 'destino.png' vai aqui via JS -->
-                    </div>
+                        </div>
                     <p id="user-status-message" class="mt-4 text-lg"></p>
                     <button id="cancel-ride-btn" onclick="cancelRide()" class="mt-4 w-full py-2 px-4 font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white">CANCELAR SOLICITAÇÃO</button>
                 </div>
@@ -695,13 +681,11 @@
                         <button onclick="exportUserRidesToExcel()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white">Exportar</button>
                     </div>
                     <div id="user-ride-history" class="overflow-x-auto">
-                        <!-- Conteúdo gerado por JS -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
 
-        <!-- TELA ADMIN -->
         <div id="admin-screen" class="screen">
              <button onclick="showScreen('initial-screen')" class="mb-4 back-link">← Sair</button>
             <h2 class="text-3xl font-bold mb-2 text-center">Painel do Administrador</h2>
@@ -741,13 +725,11 @@
             </div>
         </div>
 
-        <!-- TELA ADMIN CORRIDAS -->
         <div id="admin-requests-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="promptToGoBack()" class="text-yellow-300">← Voltar ao Painel</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
-                <div class="w-32"></div> <!-- Spacer -->
-            </div>
+                <div class="w-32"></div> </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
                  <div class="card-gradient p-3 rounded-lg w-full" style="height: fit-content;">
                     <h3 class="font-semibold mb-2 text-center">Status das Corridas</h3>
@@ -805,20 +787,17 @@
                 <div class="lg:col-span-1">
                     <h3 class="text-2xl font-bold mb-4">Novas Solicitações</h3>
                     <div id="admin-requests-list" class="space-y-4">
-                        <!-- Conteúdo gerado por JS -->
-                    </div>
+                        </div>
                 </div>
 
                 <div class="lg:col-span-2">
                     <h3 class="text-2xl font-bold mb-4">Corridas em Andamento</h3>
                     <div id="admin-ongoing-rides-table" class="card-gradient p-4 rounded-lg overflow-x-auto">
-                        <!-- Conteúdo gerado por JS -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
 
-        <!-- TELA CADASTRO MOTORISTAS -->
         <div id="admin-driver-crud-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="showScreen('admin-screen')" class="back-link">← Voltar</button>
@@ -826,8 +805,7 @@
                     <h2 class="text-3xl font-bold text-center text-black">Cadastro de Motoristas</h2>
                     <p id="driver-count" class="text-gray-700 text-sm mt-1">0 motorista(s) cadastrado(s)</p>
                 </div>
-                <div class="w-24"></div> <!-- Spacer -->
-            </div>
+                <div class="w-24"></div> </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="card-gradient p-4 rounded-lg h-fit">
@@ -845,13 +823,11 @@
                 <div class="card-gradient p-4 rounded-lg md:col-span-2 max-h-[80vh] overflow-y-auto">
                     <h3 class="font-semibold mb-4 text-xl">Motoristas Cadastrados</h3>
                     <div id="driver-crud-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <!-- Cards de motorista gerados por JS -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
 
-        <!-- TELA CADASTRO USUÁRIOS -->
         <div id="admin-user-crud-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="showScreen('admin-screen')" class="back-link">← Voltar</button>
@@ -888,20 +864,17 @@
                         Usuários Cadastrados
                     </h3>
                     <div id="user-crud-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <!-- Cards de usuário gerados por JS -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
 
-        <!-- TELA MAPA DE CALOR -->
         <div id="admin-heatmap-screen" class="screen">
             <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Mapa de Localização de Usuários</h2>
             <div id="heatmap-canvas"></div> 
         </div>
 
-        <!-- TELA PERSONALIZAR -->
         <div id="admin-customize-screen" class="screen">
             <button onclick="showScreen('admin-screen')" class="mb-4 text-yellow-300">← Voltar ao Painel</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Personalizar App</h2>
@@ -912,7 +885,6 @@
             </div>
         </div>
 
-        <!-- TELA MOTORISTA -->
         <div id="driver-screen" class="screen">
             <div class="max-w-md mx-auto">
                 <button onclick="showScreen('driver-selection-screen')" class="mb-4 text-yellow-300">← Trocar Motorista</button>
@@ -941,7 +913,6 @@
             </div>
         </div>
 
-        <!-- TELA REGISTROS -->
         <div id="admin-records-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="showScreen('admin-screen')" class="text-yellow-300">← Voltar ao Painel</button>
@@ -974,9 +945,7 @@
                     <thead class="text-xs text-gray-300 uppercase bg-gray-900/30 sticky top-0">
                         <tr>
                             <th scope="col" class="px-4 py-3">Data Solicitação</th>
-                            <th scope="col" class="px-4 py-3">Data Agendada</th> <!-- NOVO -->
-                            <th scope="col" class="px-4 py-3">Data Aceite</th>   <!-- NOVO -->
-                            <th scope="col" class="px-4 py-3">Usuário</th>
+                            <th scope="col" class="px-4 py-3">Data Agendada</th> <th scope="col" class="px-4 py-3">Data Aceite</th>   <th scope="col" class="px-4 py-3">Usuário</th>
                             <th scope="col" class="px-4 py-3">Empresa</th>
                             <th scope="col" class="px-4 py-3">Origem</th>
                             <th scope="col" class="px-4 py-3">Destino</th>
@@ -987,14 +956,12 @@
                         </tr>
                     </thead>
                     <tbody id="all-records-body">
-                        <!-- Conteúdo gerado por JS -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
         </div>
 
-    <!-- MODAL -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <p id="modal-message" class="mb-4 text-lg"></p>
@@ -1027,7 +994,6 @@
     </div>
 
     <script>
-	        // <!-- Funções de renderização atualizadas -->
 	        window.showScreen = function(screenId) {
 	            const body = document.body;
 	            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
@@ -1125,8 +1091,7 @@
                         <p><i class="ph ph-paint-brush"></i> ${driver.car_color || 'N/A'}</p>
                     </div>
                     <div class="flex gap-2 mt-4">
-                        <button onclick="editDriver(${driver.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700"> <!-- COR VERDE -->
-                            <i class="ph ph-pencil-simple"></i> Editar
+                        <button onclick="editDriver(${driver.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700"> <i class="ph ph-pencil-simple"></i> Editar
                         </button>
                         <button onclick="promptDeleteDriver(${driver.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700">
                             <i class="ph ph-trash-simple"></i> Excluir
@@ -1167,8 +1132,7 @@
                         <p><i class="ph ph-map-pin"></i> ${user.address || 'N/A'}</p>
                     </div>
                     <div class="flex gap-2 mt-4">
-                        <button onclick="editUser(${user.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700"> <!-- COR VERDE -->
-                            <i class="ph ph-pencil-simple"></i> Editar
+                        <button onclick="editUser(${user.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700"> <i class="ph ph-pencil-simple"></i> Editar
                         </button>
                         <button onclick="deleteUser(${user.id})" class="w-full py-2 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700">
                             <i class="ph ph-trash-simple"></i> Excluir
@@ -1178,9 +1142,7 @@
                 listContainer.appendChild(card);
             });
         }
-        // <!-- Fim das funções de renderização -->
-
-        const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38';
+        // const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38';
         
         // --- CORREÇÃO: Mover a definição de loadAppIcon e uploadAppIcon para antes do DOMContentLoaded ---
         function loadAppIcon() {
@@ -1792,6 +1754,76 @@
             }
         }
 
+        // ========================================================================
+        // NOVA FUNÇÃO: Extração de Colaboradores e Destinos
+        // ========================================================================
+        function extractCollaboratorsAndDestination(userName, destinationString) {
+            let names = new Set([userName]);
+            let destinationsFormattedHTML = '';
+            let destinationsList = ''; // Lista simples de endereços para a tabela
+
+            if (typeof destinationString !== 'string' || !destinationString.trim()) {
+                 destinationsFormattedHTML = `<p class="font-semibold">Destino: <span class="font-normal">-</span></p>`;
+                 destinationsList = '-';
+                 return { allCollaboratorsNames: userName, destinationsFormattedHTML, destinationsList };
+            }
+
+            const trimmedString = destinationString.trim();
+
+            if (trimmedString.startsWith('[{') && trimmedString.endsWith('}]')) {
+                try {
+                    const destinationsArray = JSON.parse(trimmedString);
+                    if (Array.isArray(destinationsArray) && destinationsArray.length > 0) {
+                        const addressItems = [];
+                        const addresses = [];
+
+                        destinationsArray.forEach(dest => {
+                            if (dest.address) {
+                                addresses.push(dest.address);
+                                // Usa o nome do destino se disponível, senão usa 'Destino'
+                                const name = dest.name || 'Destino';
+                                addressItems.push(`<li><strong>${name}:</strong> <span class="font-normal">${dest.address}</span></li>`);
+                            }
+                            // Extrai nomes de colaboradores adicionais
+                            const match = dest.name ? dest.name.match(/^(Origem |Parada )\s*(.+)/) : null;
+                            if (match) {
+                                names.add(match[2].trim());
+                            }
+                        });
+
+                        destinationsFormattedHTML = `
+                            <p class="font-semibold">Destinos:</p>
+                            <ul class="list-disc list-inside pl-2 text-sm">
+                                ${addressItems.join('')}
+                            </ul>
+                        `;
+                        destinationsList = addresses.join(' - ');
+                    } else {
+                        destinationsFormattedHTML = `<p class="font-semibold">Destino: <span class="font-normal">-</span></p>`;
+                        destinationsList = '-';
+                    }
+                } catch (e) {
+                    // Falha no parse, trata como string única
+                    destinationsFormattedHTML = `<p class="font-semibold">Destino: <span class="font-normal">${formatDestination(destinationString)}</span></p>`;
+                    destinationsList = formatDestination(destinationString);
+                }
+            } else {
+                // Não é um array JSON, trata como string única
+                destinationsFormattedHTML = `<p class="font-semibold">Destino: <span class="font-normal">${formatDestination(destinationString)}</span></p>`;
+                destinationsList = formatDestination(destinationString);
+            }
+
+            // Formata a lista final de nomes de colaboradores
+            const nameArray = Array.from(names);
+            const allCollaboratorsNames = nameArray.join(', ');
+
+            return { allCollaboratorsNames, destinationsFormattedHTML, destinationsList };
+        }
+        // ========================================================================
+        // FIM DA NOVA FUNÇÃO
+        // ========================================================================
+
+
         async function loadAdminRequests() {
             const list = document.getElementById('admin-requests-list');
             list.innerHTML = '';
@@ -1841,39 +1873,12 @@
 
 	                    const originAddress = cleanAddressString(ride.origin_address);
 	                    
-	                    // --- INÍCIO DA LÓGICA DE MÚLTIPLOS DESTINOS ---
-	                    let destinationsHTML = '';
-	                    const destinationString = ride.destination;
-	                    
-	                    if (typeof destinationString === 'string' && destinationString.startsWith('[{') && destinationString.endsWith('}]')) {
-	                        try {
-	                            const destinationsArray = JSON.parse(destinationString);
-	                            if (Array.isArray(destinationsArray) && destinationsArray.length > 0) {
-	                                const addresses = destinationsArray
-	                                    .map(dest => dest.address || null) // Pega o endereço ou null
-	                                    .filter(Boolean); // Filtra os nulos/vazios
-	                                    
-	                                    // Lógica ajustada: Se for um array de destinos, sempre exibe a lista.
-	                                    destinationsHTML = `
-	                                        <p class="font-semibold">Destinos:</p>
-	                                        <ul class="list-disc list-inside pl-2 text-sm">
-	                                            ${addresses.map(addr => `<li><span class="font-normal">${addr}</span></li>`).join('')}
-	                                        </ul>
-	                                    `;
-	                            } else {
-	                                // JSON array está vazio
-	                                destinationsHTML = `<p class="font-semibold">Destino: <span class="font-normal">-</span></p>`;
-	                            }
-	                        } catch (e) {
-	                            // Falha no parse do JSON, trata como string única
-	                            destinationsHTML = `<p class="font-semibold">Destino: <span class="font-normal">${formatDestination(destinationString)}</span></p>`;
-	                        }
-	                    } else {
-	                        // Não é um array JSON, trata como string única
-	                        destinationsHTML = `<p class="font-semibold">Destino: <span class="font-normal">${formatDestination(destinationString)}</span></p>`;
-	                    }
-	                    // --- FIM DA LÓGICA DE MÚLTIPLOS DESTINOS ---
-	
+                        // ====================================================================
+                        // MODIFICAÇÃO: Usar a nova função de extração
+                        // ====================================================================
+                        const { allCollaboratorsNames, destinationsFormattedHTML } = extractCollaboratorsAndDestination(ride.userName, ride.destination);
+                        // ====================================================================
+
 	                    const distanceInfo = ride.km ? `<p class="text-sm text-gray-400">Distância: ${ride.km} km</p>` : `<p class="text-sm text-gray-500">Distância será calculada ao finalizar</p>`;
 
 	                    let rideTypeInfo = '';
@@ -1920,11 +1925,11 @@
 	                            ${rideTypeInfo}
 	                        </div>
 	                        <p class="font-semibold">Origem: <span class="font-normal">${originAddress || 'Não informado'}</span></p>
-	                        ${destinationsHTML}
-	                        <p class="font-semibold">Observação: <span class="font-normal text-yellow-300">${ride.observation || 'Nenhuma'}</span></p>
+	                        ${destinationsFormattedHTML}
+                            <p class="font-semibold">Colaboradores: <span class="font-normal">${allCollaboratorsNames}</span></p> <p class="font-semibold">Observação: <span class="font-normal text-yellow-300">${ride.observation || 'Nenhuma'}</span></p>
                         ${distanceInfo}
                         <p class="font-semibold">Admin Solicitante: <span class="font-normal">${ride.requested_by_admin_name || 'N/A'}</span></p>
-	                        <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
+	                        <p class="text-sm text-gray-400">Solicitante Original: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
                         <p class="text-sm text-gray-300">Solicitado em: ${new Date(ride.requestTime).toLocaleTimeString()}</p>
                         ${actionContent}
                     `;
@@ -1946,10 +1951,15 @@
             }
 
             const ridesWithDistance = ongoingRides.map((ride) => {
-                const originAddress = cleanAddressString(ride.origin_address);
-                const formattedDestination = formatDestination(ride.destination);
+                const { destinationsList } = extractCollaboratorsAndDestination(ride.userName, ride.destination);
                 const distanceKm = ride.km || 'Ao finalizar';
-                return { ...ride, distanceKm: distanceKm, cleanedOrigin: originAddress, formattedDestination: formattedDestination };
+                const originAddress = cleanAddressString(ride.origin_address);
+                return { 
+                    ...ride, 
+                    distanceKm: distanceKm, 
+                    cleanedOrigin: originAddress, 
+                    formattedDestination: destinationsList, // MODIFICADO: Usar a lista simples para a tabela
+                };
             });
 
             let tableHTML = `
@@ -2966,9 +2976,7 @@ async function sendNewRideEmailNotification(ride) {
                 return `
                     <tr class="border-b border-gray-700 hover:bg-gray-800/20" data-request-time="${requestTimestamp}">
                         <td class="px-4 py-3">${requestDateTime}</td> 
-                        <td class="px-4 py-3">${scheduledDateTime}</td> <!-- NOVO -->
-                        <td class="px-4 py-3">${acceptDateTime}</td>   <!-- NOVO -->
-                        <td class="px-4 py-3">${ride.userName}</td>
+                        <td class="px-4 py-3">${scheduledDateTime}</td> <td class="px-4 py-3">${acceptDateTime}</td>   <td class="px-4 py-3">${ride.userName}</td>
                         <td class="px-4 py-3">${ride.userCompany || '-'}</td>
                         <td class="px-4 py-3">${originAddress}</td>
                         <td class="px-4 py-3">${destinationAddress}</td> 
@@ -3437,7 +3445,7 @@ async function sendNewRideEmailNotification(ride) {
 
             try {
                 const response = await fetch(
-                    `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&lang=pt&limit=5&apiKey=${GEOAPIFY_API_KEY}`
+                    `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`
                 );
                 
                 const data = await response.json();
