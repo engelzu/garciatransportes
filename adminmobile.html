@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/resend@3.2.0/dist/index.global.js"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -561,7 +561,6 @@
 
     <div id="app-container" class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
 
-        <!-- TELA INICIAL: Só com Login Admin -->
         <div id="initial-screen" class="screen active text-center">
             <div class="flex justify-center items-center gap-4 mb-2">
                 <div id="app-icon-container" class="h-12 w-12"></div>
@@ -576,13 +575,11 @@
                     </svg>
                     <span>ÁREA DO ADMIN</span>
                 </button>
-                <!-- Botões de Usuário e Motorista removidos do fluxo, mas mantidos os IDs para compatibilidade JS -->
                 <button id="user-login-button" onclick="showScreen('user-login-screen')" class="hidden"></button>
                 <button id="driver-login-button" onclick="showScreen('driver-selection-screen')" class="hidden"></button>
             </div>
         </div>
 
-        <!-- TELA DE LOGIN ADMIN -->
         <div id="admin-login-screen" class="screen">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Login Administrador</h2>
@@ -596,7 +593,6 @@
             </div>
         </div>
         
-        <!-- TELA DE LOGIN DE USUÁRIO (MANTIDA PARA FUNCIONALIDADE, MAS ESCONDIDA DO FLUXO INICIAL) -->
         <div id="user-login-screen" class="screen hidden">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Login do Usuário</h2>
@@ -614,7 +610,6 @@
             </div>
         </div>
 
-        <!-- TELA DE SELEÇÃO DE MOTORISTA (MANTIDA PARA FUNCIONALIDADE, MAS ESCONDIDA DO FLUXO INICIAL) -->
         <div id="driver-selection-screen" class="screen hidden">
             <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Voltar</button>
             <h2 class="text-3xl font-bold mb-1 text-center">Selecionar Motorista</h2>
@@ -623,7 +618,6 @@
                 </div>
         </div>
 
-        <!-- TELA DE USUÁRIO (MANTIDA PARA FUNCIONALIDADE, MAS ESCONDIDA DO FLUXO INICIAL) -->
         <div id="user-screen" class="screen hidden">
              <div class="max-w-md mx-auto">
                 <button onclick="logout()" class="mb-4 text-yellow-300">← Sair</button>
@@ -681,9 +675,7 @@
             </div>
         </div>
 
-        <!-- TELA DO ADMIN: Removida a tela de painel com botões, vai direto para as solicitações -->
         <div id="admin-screen" class="screen hidden">
-             <!-- Esta tela é mantida no JS apenas para fins de navegação e logout, mas seu conteúdo de botões foi removido no fluxo de exibição -->
              <button onclick="showScreen('initial-screen')" class="mb-4 text-yellow-300">← Sair</button>
              <h2 class="text-3xl font-bold mb-2 text-center">Painel do Administrador</h2>
              <p id="admin-timestamp" class="text-center text-gray-700 text-sm mb-8"></p>
@@ -695,10 +687,8 @@
              </div>
         </div>
 
-        <!-- TELA DE SOLICITAÇÕES DE CORRIDA (Painel principal do Admin) -->
         <div id="admin-requests-screen" class="screen">
             <div class="flex justify-between items-center mb-4">
-                <!-- Botão de Sair em vez de "Voltar ao Painel" -->
                 <button onclick="showScreen('initial-screen')" class="text-yellow-300">← Sair do Admin</button>
                 <h2 class="text-3xl font-bold text-center">Painel de Corridas</h2>
                 <div class="w-32"></div> </div>
@@ -729,13 +719,9 @@
                     </div>
                     <div class="mt-4 pt-4 border-t border-gray-600 text-center">
                         <div id="digital-clock" class="text-3xl font-mono text-cyan-300 mb-2">00:00:00</div>
-                        <button onclick="exportDailyReportNow()" class="w-full py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white">
-                            EXPORTAR
-                        </button>
-                    </div>
+                        </div>
                 </div>
-                <!-- Card de Motoristas removido aqui -->
-            </div>
+                </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
                 <div class="lg:col-span-1">
                     <h3 class="text-2xl font-bold mb-4">Novas Solicitações</h3>
@@ -745,7 +731,6 @@
 
                 <div class="lg:col-span-2">
                     <h3 class="text-2xl font-bold mb-4">Corridas em Andamento</h3>
-                    <!-- Alterado para usar cards ao invés de tabela -->
                     <div id="admin-ongoing-rides-table" class="space-y-4">
                         <div class="card-gradient p-4 rounded-lg text-center">
                             <div class="loader mx-auto"></div>
@@ -756,7 +741,6 @@
             </div>
         </div>
         
-        <!-- TELA DE MOTORISTA (MANTIDA PARA FUNCIONALIDADE, MAS ESCONDIDA DO FLUXO INICIAL) -->
         <div id="driver-screen" class="screen hidden">
             <div class="max-w-md mx-auto">
                 <button onclick="showScreen('driver-selection-screen')" class="mb-4 text-yellow-300">← Trocar Motorista</button>
@@ -785,25 +769,17 @@
             </div>
         </div>
 
-        <!-- TELAS REMOVIDAS DO FLUXO HTML PARA MINIMIZAÇÃO, MAS FUNCIONALIDADE MANTIDA NO JS PARA EVITAR QUEBRAS -->
-        <!-- Cadastro de Motoristas -->
         <div id="admin-driver-crud-screen" class="screen hidden"></div>
-        <!-- Cadastro de Usuários -->
         <div id="admin-user-crud-screen" class="screen hidden"></div>
-        <!-- Mapa de Usuários -->
         <div id="admin-heatmap-screen" class="screen hidden"></div>
-        <!-- Personalizar App -->
         <div id="admin-customize-screen" class="screen hidden"></div>
-        <!-- Todos os Registros -->
         <div id="admin-records-screen" class="screen hidden"></div>
         
     </div>
 
-    <!-- Modal (Mantido para mensagens e confirmações) -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <p id="modal-message" class="mb-4 text-lg"></p>
-            <!-- Inputs do Modal (Mantidos para compatibilidade com funções não removidas) -->
             <div id="modal-input-container" class="hidden mb-4 space-y-2">
                 <input type="text" id="modal-input-matricula" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Matrícula">
                 <input type="text" id="modal-input-name" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Nome">
@@ -1480,7 +1456,6 @@
 	                        <p class="font-semibold">Observação: <span class="font-normal text-yellow-300">${ride.observation || 'Nenhuma'}</span></p>
                         ${distanceInfo}
                         <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
-                        <p class="text-sm text-gray-300">Solicitado em: ${new Date(ride.requestTime).toLocaleTimeString()}</p>
                         ${actionContent}
                     `;
 
@@ -1552,17 +1527,22 @@
                 
                 const distanceInfo = ride.km ? `<p class="text-sm text-gray-400">Distância: ${ride.km} km</p>` : `<p class="text-sm text-gray-500">Distância: N/A</p>`;
 
+                // === CÓDIGO AJUSTADO PARA O RÓTULO DE AGENDAMENTO (Manutenção) ===
                 let rideTypeInfo = '';
-                let dateTimeString = '';
-                const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-                
                 if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
-                    dateTimeString = new Date(ride.scheduled_datetime).toLocaleString('pt-BR', options);
-                    rideTypeInfo = `<span class="text-xs font-bold py-1 px-2 rounded-full bg-orange-500 text-white">AGENDADA ${dateTimeString}</span>`;
+                     const scheduledDate = new Date(ride.scheduled_datetime);
+                     const formattedTime = scheduledDate.toLocaleString('pt-BR', {
+                         day: '2-digit',
+                         month: '2-digit',
+                         hour: '2-digit',
+                         minute: '2-digit'
+                     });
+                     // Replicando o formato de "Novas Solicitações"
+                    rideTypeInfo = `<span class="text-xs font-bold py-1 px-2 rounded-full bg-orange-500 text-white">AGENDADA ${formattedTime}</span>`;
                 } else {
-                     dateTimeString = new Date(ride.requestTime).toLocaleString('pt-BR', options);
                     rideTypeInfo = '<span class="text-xs font-bold py-1 px-2 rounded-full bg-blue-500 text-white">IMEDIATA</span>';
                 }
+                // === FIM DO CÓDIGO AJUSTADO PARA O RÓTULO DE AGENDAMENTO ===
                 
                 const collaboratorName = ride.userName || 'Usuário Desconhecido';
                 
@@ -1619,9 +1599,13 @@
                     </div>
                 `;
 
+                // === ESTRUTURA DO CARD ALTERADA: REMOVIDA A LINHA INFERIOR COM O HORÁRIO ===
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <h4 class="font-semibold text-lg">Corrida em Andamento</h4>
+                        ${rideTypeInfo} </div>
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-semibold text-sm">Status:</span>
                         <span class="status-badge ${statusInfo.colorClass}">${statusInfo.text}</span>
                     </div>
                     <p class="font-semibold">Colaborador: <span class="font-normal">${collaboratorName}</span></p>
@@ -1631,10 +1615,10 @@
                     ${driverSection}
                     <div class="mt-3 flex justify-between items-center text-sm text-gray-400 border-t border-gray-700 pt-3">
                          ${distanceInfo}
-                         <p>${ride.request_type === 'scheduled' ? `Agendado:` : `Solicitado:`} ${new Date(ride.requestTime).toLocaleTimeString()}</p>
-                    </div>
+                         </div>
                     ${actionButtons}
                 `;
+                // === FIM DA ESTRUTURA DO CARD ALTERADA ===
 
                 listContainer.appendChild(card);
             });
@@ -1645,13 +1629,158 @@
             // Apenas chama a nova função, mantendo a chamada original no showScreen (embora já ajustada lá)
             renderOngoingRidesCards();
         }
+        
+        // --- FUNÇÃO loadAdminRequests() também ajustada para remover a linha inferior de tempo ---
+        async function loadAdminRequests() {
+            const list = document.getElementById('admin-requests-list');
+            list.innerHTML = '';
 
+            const requestedRides = state.rides.filter(r => r.status === 'requested' || r.status === 'approved' || r.status === 'pending_approval' || r.status === 'scheduled');
+
+         // Verificar se há solicitações do tipo 'immediate' ou 'scheduled' para tocar o som
+         const newRequestsWithSound = requestedRides.filter(ride => 
+             (ride.request_type === 'immediate' || ride.request_type === 'scheduled') && 
+             !ride.driver_id // Ainda não tem motorista designado
+         );
+
+         // Tocar som de notificação se houver solicitações pendentes
+         if (newRequestsWithSound.length > 0) {
+             startRingingAdmin();
+         }
+
+            requestedRides.sort((a, b) => new Date((a.request_type === 'scheduled' && a.scheduled_datetime) || a.requestTime) - new Date((b.request_type === 'scheduled' && b.scheduled_datetime) || b.requestTime));
+
+            const solicitadoCount = state.rides.filter(r => ['requested', 'approved', 'pending_approval'].includes(r.status)).length;
+            const agendadaCount = state.rides.filter(r => r.status === 'scheduled').length;
+            const designadoCount = state.rides.filter(r => r.status === 'assigned').length;
+            const emAndamentoCount = state.rides.filter(r => ['accepted', 'arrived_pickup', 'in_progress'].includes(r.status)).length;
+            const concluidasCount = state.rides.filter(r => r.status === 'completed').length;
+
+            document.getElementById('status-agendada-count').textContent = agendadaCount;
+            document.getElementById('status-solicitado-count').textContent = solicitadoCount;
+            document.getElementById('status-designado-count').textContent = designadoCount;
+            document.getElementById('status-em-andamento-count').textContent = emAndamentoCount;
+            document.getElementById('status-concluidas-count').textContent = concluidasCount;
+
+            const activeDriversCount = state.drivers.filter(d => d.status === 'active').length;
+            const totalDriversCount = state.drivers.length;
+
+            if (requestedRides.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-400">Nenhuma nova solicitação.</p>';
+            } else {
+                for (const ride of requestedRides) {
+                    const card = document.createElement('div');
+                    card.className = 'card-gradient p-4 rounded-lg shadow-md';
+
+	                    const originAddress = cleanAddressString(ride.origin_address);
+	                    
+                        let destinationsHTML = '';
+                        const destinationString = ride.destination;
+                        let isMultiDestination = false;
+                        
+                        // Lógica para tratar múltiplos destinos (JSON)
+                        if (typeof destinationString === 'string' && (destinationString.startsWith('[{') && destinationString.endsWith('}]'))) {
+                            try {
+                                const destinationsArray = JSON.parse(destinationString);
+                                if (Array.isArray(destinationsArray) && destinationsArray.length > 0) {
+                                    isMultiDestination = true;
+                                    
+                                    // NOVO: Adiciona o nome do colaborador/passageiro em cada destino, se disponível
+                                    const addresses = destinationsArray
+                                        .map(dest => {
+                                            const name = dest.name || ride.userName || 'Colaborador Desconhecido';
+                                            const address = dest.address || 'Endereço Não Informado';
+                                            return `<li><span class="font-normal">${name}: ${address}</span></li>`;
+                                        })
+                                        .filter(Boolean);
+                                        
+                                    destinationsHTML = `
+                                        <p class="font-semibold">Destinos:</p>
+                                        <ul class="list-disc list-inside pl-2 text-sm">
+                                            ${addresses.join('')}
+                                        </ul>
+                                    `;
+                                }
+                            } catch (e) {
+                                // Falha no parse do JSON, trata como string única
+                                destinationsHTML = `<p class="font-semibold">Destino: <span class="font-normal">${formatDestination(destinationString)}</span></p>`;
+                            }
+                        } 
+                        
+                        // Lógica para ORIGEM: Adiciona o nome do colaborador/passageiro
+                        let originHTML = `<p class="font-semibold">Origem: <span class="font-normal">${ride.userName || 'N/A'}: ${originAddress || 'Não informado'}</span></p>`;
+                        
+                        // Se não for um JSON de múltiplos destinos válido, mas tiver uma string, exibe como destino único
+                        if (!isMultiDestination) {
+                             destinationsHTML = `<p class="font-semibold">Destino: <span class="font-normal">${formatDestination(destinationString)}</span></p>`;
+                        }
+	                    
+	                    const distanceInfo = ride.km ? `<p class="text-sm text-gray-400">Distância: ${ride.km} km</p>` : `<p class="text-sm text-gray-500">Distância será calculada ao finalizar</p>`;
+
+	                    let rideTypeInfo = '';
+                    if (ride.request_type === 'scheduled' && ride.scheduled_datetime) {
+                        const scheduledDate = new Date(ride.scheduled_datetime);
+                        const formattedTime = scheduledDate.toLocaleString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        rideTypeInfo = `<span class="text-xs font-bold py-1 px-2 rounded-full bg-orange-500 text-white">AGENDADA ${formattedTime}</span>`;
+                    } else {
+                        rideTypeInfo = '<span class="text-xs font-bold py-1 px-2 rounded-full bg-blue-500 text-white">IMEDIATA</span>';
+                    }
+                    
+                    // Colaborador principal para a linha De:
+                    const collaboratorName = ride.userName || 'Usuário Desconhecido';
+
+                    let actionContent = '';
+                    if (ride.status === 'pending_approval') {
+                        actionContent = `
+                            <div class="mt-4 text-center p-2 rounded-lg bg-yellow-700 text-white font-semibold">
+                                Aguardando Aprovação
+                            </div>
+                        `;
+                    } else {
+                        const activeDrivers = state.drivers.filter(d => d.status === 'active');
+                        let driverOptions = activeDrivers.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                        if (activeDrivers.length === 0) {
+                            driverOptions = `<option value="" disabled>Nenhum motorista ativo</option>`;
+                        }
+                        actionContent = `
+                            <div class="mt-4 flex gap-2">
+                                <select id="driver-select-${ride.id}" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-white">
+                                    <option value="" class="text-gray-400">Selecione um motorista</option>
+                                    ${driverOptions}
+                                </select>
+                                <button onclick="assignDriver(${ride.id})" class="py-2 px-4 font-semibold rounded-lg button-gradient whitespace-nowrap text-white">Marcar</button>
+                            </div>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+	                        <h4 class="font-semibold text-lg">Nova Solicitação</h4>
+	                            ${rideTypeInfo}
+	                        </div>
+                            <p class="font-semibold">Colaborador: <span class="font-normal">${collaboratorName}</span></p>
+	                        ${originHTML}
+	                        ${destinationsHTML}
+	                        <p class="font-semibold">Observação: <span class="font-normal text-yellow-300">${ride.observation || 'Nenhuma'}</span></p>
+                        ${distanceInfo}
+                        <p class="text-sm text-gray-400">De: ${ride.userName} ${ride.userCompany ? `(${ride.userCompany})` : ''}</p>
+                        ${actionContent}
+                    `;
+
+                    list.appendChild(card);
+                };
+            }
+        }
+        
         // --- Resto das funções (sem alterações no corpo delas) ---
         // ... (Funções de login, modal, etc.)
         // ... (Funções de driver/user - stubs)
         // ... (Demais funções, como updateRideDriver e adminDeleteRide, mantidas intactas)
-        // A função updateRideDriver (usada no card) não precisa ser alterada, pois o ID do elemento de seleção (`ongoing-driver-select-${rideId}`) é o mesmo.
-        // As funções adminCompleteRide e adminDeleteRide (usadas no card) também não precisam de alteração.
 
         async function updateRideDriver(rideId) {
             const selectElement = document.getElementById(`ongoing-driver-select-${rideId}`);
