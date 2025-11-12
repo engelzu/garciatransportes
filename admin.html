@@ -639,12 +639,14 @@
 
                     <div class="mb-4 autocomplete-container">
                         <label for="origin" class="block mb-2 text-sm font-medium">Qual a sua origem?</label>
-                        <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço de partida completo" readonly>
+                        <input type="text" id="origin" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço de partida completo" oninput="handleAddressInput(event, 'originList')">
+                         <div class="autocomplete-list" id="originList"></div>
                     </div>
 
                     <div class="mb-4 autocomplete-container">
                         <label for="destination" class="block mb-2 text-sm font-medium">Qual o seu destino?</label>
-                        <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço completo" readonly>
+                        <input type="text" id="destination" class="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none text-white" placeholder="Digite o endereço completo" oninput="handleAddressInput(event, 'destinationList')">
+                        <div class="autocomplete-list" id="destinationList"></div>
                     </div>
 
                     <div class="flex items-center mb-4">
@@ -850,7 +852,7 @@
                     <input type="text" id="new-user-company" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white" placeholder="Empresa">
                     
                     <div class="autocomplete-container mb-2">
-                        <input type="text" id="new-user-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-white" placeholder="Endereço (selecione da lista)" oninput="handleAddressInput(event, 'new-user-addressList')" onfocus="this.removeAttribute('readonly');" readonly>
+                        <input type="text" id="new-user-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-white" placeholder="Endereço (selecione da lista)" oninput="handleAddressInput(event, 'new-user-addressList')">
                         <div class="autocomplete-list" id="new-user-addressList"></div>
                     </div>
                     
@@ -979,7 +981,7 @@
                 </select>
                 <input type="text" id="modal-input-company" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Empresa">
                 <div class="autocomplete-container">
-                    <input type="text" id="modal-input-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Endereço (selecione da lista)" oninput="handleAddressInput(event, 'modal-input-addressList')" onfocus="this.removeAttribute('readonly');" readonly>
+                    <input type="text" id="modal-input-address" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Endereço (selecione da lista)" oninput="handleAddressInput(event, 'modal-input-addressList')">
                     <div class="autocomplete-list" id="modal-input-addressList"></div>
                 </div>
                 <input type="password" id="modal-input-driver-password" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none" placeholder="Senha">
@@ -1143,7 +1145,7 @@
                 listContainer.appendChild(card);
             });
         }
-        // const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38';
+        // const GEOAPIFY_API_KEY = '3bd73ecada1d478a8c9473ad4115be38'; // Chave comentada, causando o erro
         
         // --- CORREÇÃO: Mover a definição de loadAppIcon e uploadAppIcon para antes do DOMContentLoaded ---
         function loadAppIcon() {
@@ -1205,6 +1207,9 @@
             currentUserOrigin: null, 
             currentUserDestination: null
         };
+        
+        // 🚨 CHAVE API CORRIGIDA: Você deve inserir sua chave aqui para o Geoapify funcionar.
+        const GEOAPIFY_API_KEY = '9452fa947c234c90b794bf2d1b8c5eb4'; 
 
         const SUPABASE_URL = 'https://jowsbmuqbzxukbbxbeqv.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impvd3NibXVxYnp4dWtiYnhiZXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NzA5NjQsImV4cCI6MjA3MTA0Njk2NH0.UMW2aQmuq0RiEHgody5StKEQzDjrKZnfUprDgDaMd1w';
@@ -1349,14 +1354,20 @@
             const inputContainer = document.getElementById('modal-input-container');
 
             Array.from(inputContainer.children).forEach(child => {
+                // Oculta todos os elementos de input e autocomplete container
                 if (child.tagName === 'INPUT' || child.tagName === 'SELECT' || child.classList.contains('autocomplete-container')) {
                     child.style.display = 'none';
                     if (child.tagName !== 'DIV') child.value = '';
                 }
             });
 
+            // Limpa o valor do input de endereço e remove o atributo de validade
             const modalAddressInput = document.getElementById('modal-input-address');
-            if (modalAddressInput) modalAddressInput.value = '';
+            if (modalAddressInput) {
+                modalAddressInput.value = '';
+                modalAddressInput.removeAttribute('data-address-valid');
+            }
+
 
             if (content.type) {
                 inputContainer.classList.remove('hidden');
@@ -1381,7 +1392,8 @@
                     document.getElementById('modal-input-name').style.display = 'block';
                     document.getElementById('modal-input-password').style.display = 'block'; 
                     document.getElementById('modal-input-company').style.display = 'block';
-                    document.getElementById('modal-input-address').parentElement.style.display = 'block';
+                    // Torna o autocomplete container visível
+                    document.querySelector('#modal-input-address').parentElement.style.display = 'block'; 
                     document.getElementById('modal-input-phone').style.display = 'block';
                     
                     document.getElementById('modal-input-matricula').value = content.matricula;
@@ -1428,6 +1440,8 @@
                     child.style.display = 'none';
                 }
             });
+            // Esconde todas as listas de autocomplete ao fechar o modal
+            document.querySelectorAll('.autocomplete-list').forEach(list => list.classList.remove('show'));
         }
 
         function logout() {
@@ -1537,14 +1551,28 @@
             const originAddress = document.getElementById('origin').value;
             const destinationAddress = document.getElementById('destination').value;
             
-            if (!state.currentUserOrigin || state.currentUserOrigin.properties.formatted !== originAddress) {
+            // Verifica se o endereço foi selecionado pelo autocomplete (indicado pelo atributo data-address-valid)
+            const originInput = document.getElementById('origin');
+            const destinationInput = document.getElementById('destination');
+
+            if (!originInput.getAttribute('data-address-valid')) {
                 showModal('Por favor, selecione um endereço de ORIGEM válido da lista de sugestões.');
                 return;
             }
-            if (!state.currentUserDestination || state.currentUserDestination.properties.formatted !== destinationAddress) {
+            if (!destinationInput.getAttribute('data-address-valid')) {
                 showModal('Por favor, selecione um endereço de DESTINO válido da lista de sugestões.');
                 return;
             }
+            // Verifica também as variáveis de estado para as coordenadas
+            if (!state.currentUserOrigin || state.currentUserOrigin.properties.formatted !== originAddress) {
+                showModal('Erro interno: As coordenadas da Origem não foram salvas corretamente. Por favor, selecione novamente o endereço de ORIGEM.');
+                return;
+            }
+            if (!state.currentUserDestination || state.currentUserDestination.properties.formatted !== destinationAddress) {
+                 showModal('Erro interno: As coordenadas do Destino não foram salvas corretamente. Por favor, selecione novamente o endereço de DESTINO.');
+                 return;
+            }
+
 
             const isScheduled = document.getElementById('schedule-toggle').checked;
             const scheduledTimeValue = document.getElementById('schedule-datetime').value;
@@ -1598,8 +1626,14 @@
                 document.getElementById('user-status-message').textContent = 'Aguardando um motorista aceitar...';
                 startUserStatusCheck();
                 
+                // Limpa o estado e inputs após o sucesso
                 state.currentUserOrigin = null;
                 state.currentUserDestination = null;
+                document.getElementById('origin').value = '';
+                document.getElementById('destination').value = '';
+                originInput.removeAttribute('data-address-valid');
+                destinationInput.removeAttribute('data-address-valid');
+
 
             } catch (error) {
                 console.error("Erro ao processar solicitação de corrida:", error);
@@ -1889,7 +1923,7 @@
                     }
 
                     card.innerHTML = `
-                        <div class="flex justify-between items-center mb-2">
+                        <div class="flex justify-between items-start mb-2">
 	                        <h4 class="font-semibold text-lg">Nova Solicitação</h4>
 	                            ${rideTypeInfo}
 	                        </div>
@@ -2308,7 +2342,14 @@
                     else { closeModal(); }
                 } else { showModal('Nome completo e telefone são obrigatórios.'); }
             };
-            showModal('Editar dados do usuário:', onConfirm, true, { type: 'edit-user', matricula: user.matricula, name: user.name, company: user.company, address: user.address, phone: user.phone });
+            showModal('Editar dados do usuário:', onConfirm, true, { 
+                type: 'edit-user', 
+                matricula: user.matricula, 
+                name: user.name, 
+                company: user.company, 
+                address: user.address, 
+                phone: user.phone 
+            });
         }
 
         async function deleteUser(userId) {
@@ -3164,6 +3205,7 @@ async function sendNewRideEmailNotification(ride) {
                 return null; 
             }
             
+            // 🚨 USANDO GEOAPIFY_API_KEY
             const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
             
             try {
@@ -3176,6 +3218,7 @@ async function sendNewRideEmailNotification(ride) {
                 } else {
                     const newAddress = `${address}, Guaíba, RS`;
                     console.log(`Primeira tentativa falhou para '${address}', tentando com '${newAddress}'`);
+                    // 🚨 USANDO GEOAPIFY_API_KEY
                     const fallbackUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(newAddress)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
                     
                     const fallbackResponse = await fetch(fallbackUrl);
@@ -3217,6 +3260,7 @@ async function sendNewRideEmailNotification(ride) {
                 map = L.map(mapDiv, { preferCanvas: true }).setView(center, 13); // preferCanvas pode ajudar
 
                 // Adiciona a camada base do mapa (tiles)
+                // 🚨 USANDO GEOAPIFY_API_KEY
                 L.tileLayer(`https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`, {
                     attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a>',
                     maxZoom: 19 // Definir zoom máximo pode ajudar
@@ -3329,6 +3373,7 @@ async function sendNewRideEmailNotification(ride) {
             }
 
             const waypoints = `${originCoords.lat},${originCoords.lon}|${destCoords.lat},${destCoords.lon}`;
+            // 🚨 USANDO GEOAPIFY_API_KEY
             const url = `https://api.geoapify.com/v1/routing?waypoints=${encodeURIComponent(waypoints)}&mode=drive&units=metric&apiKey=${GEOAPIFY_API_KEY}`;
             
             try {
@@ -3419,14 +3464,22 @@ async function sendNewRideEmailNotification(ride) {
             
             const inputId = listId.replace('List', '');
             const input = document.getElementById(inputId);
+            // Remove o atributo de validade antes da busca
             if (input) {
                 input.removeAttribute('data-address-valid');
+            }
+            // Limpa o estado se for input de usuário (origem/destino)
+            if (inputId === 'origin') {
+                 state.currentUserOrigin = null;
+            } else if (inputId === 'destination') {
+                 state.currentUserDestination = null;
             }
             
             list.innerHTML = '<div class="loading">Buscando...</div>';
             list.classList.add('show');
 
             try {
+                // 🚨 USANDO GEOAPIFY_API_KEY
                 const response = await fetch(
                     `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&lang=pt&limit=5&apiKey=${GEOAPIFY_API_KEY}`
                 );
