@@ -1687,24 +1687,30 @@
             return statuses[status] || status.toUpperCase();
         }
 
-        // --- exportRidesToPdf --- (sem alterações)
+        // --- exportRidesToPdf --- (CORRIGIDO)
         // ... (código existente sem alterações) ...
          function exportRidesToPdf() {
-            // Verifica se jsPDF está carregado
+            // 1. Verifica se a biblioteca principal jsPDF está carregada
              if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
                  showModal("Erro ao carregar a biblioteca PDF. Tente recarregar a página.");
                  console.error("jsPDF não está definido.");
                  return;
              }
+
+             // 2. Pega o construtor do jsPDF
+             const { jsPDF } = window.jspdf;
+             
+             // 3. CRIA a instância do documento
+             const doc = new jsPDF();
+
+             // 4. AGORA VERIFICA se o plugin autoTable está carregado na instância 'doc'
              if (typeof doc.autoTable !== 'function') {
                   showModal("Erro ao carregar o plugin AutoTable do PDF. Tente recarregar a página.");
                  console.error("jsPDF AutoTable não está definido.");
                  return;
              }
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
+             
+             // 5. O restante da sua função continua daqui...
             const startDateInput = document.getElementById('start-date').value;
             const endDateInput = document.getElementById('end-date').value;
 
