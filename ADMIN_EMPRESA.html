@@ -1,84 +1,195 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GARCIA TRANSPORTES - Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <style>
-        body, html { background-color: #000; }
-        .main-gradient { background: linear-gradient(135deg, #000000, #000000); }
-        .button-gradient { background: linear-gradient(to right, #000000, #000000); border: 2px solid white; position: relative; overflow: hidden; color: white !important; } /* Garante texto branco */
-        .button-gradient::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to right, rgba(255,255,255,0.3), rgba(255,255,255,0)); transition: transform 0.3s ease-in-out; transform: translateX(-100%); }
-        .button-gradient:hover::before { transform: translateX(0); }
-        .card-gradient { background: linear-gradient(135deg, #000000, #000000); border: 1px solid #4b5563; } /* Adiciona borda sutil */
-        .screen { display: none; background-color: #000; }
-        .screen.active { display: block; }
-        .text-black, .text-gray-800, .text-gray-400, .text-gray-300, .text-gray-600, .text-gray-700, .text-gray-500, .text-green-300, .text-yellow-300 { color: #ffffff !important; }
-        .text-cyan-400 { color: #00ffff !important; }
-        h1, h2, h3, p, button, label, input::placeholder, textarea::placeholder, select, option { color: #ffffff !important; }
-        input, select, textarea { background-color: #374151 !important; border-color: #4b5563 !important; color: white !important; /* Garante texto branco */}
-        input:focus, select:focus, textarea:focus { border-color: #00ffff !important; ring: none !important; outline: none !important; box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.5) !important; } /* Foco ciano */
-        
+        body,
+        html {
+            background-color: #000;
+        }
+
+        .main-gradient {
+            background: linear-gradient(135deg, #000000, #000000);
+        }
+
+        .button-gradient {
+            background: linear-gradient(to right, #000000, #000000);
+            border: 2px solid white;
+            position: relative;
+            overflow: hidden;
+            color: white !important;
+        }
+
+        /* Garante texto branco */
+        .button-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+
+        .button-gradient:hover::before {
+            transform: translateX(0);
+        }
+
+        .card-gradient {
+            background: linear-gradient(135deg, #000000, #000000);
+            border: 1px solid #4b5563;
+        }
+
+        /* Adiciona borda sutil */
+        .screen {
+            display: none;
+            background-color: #000;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .text-black,
+        .text-gray-800,
+        .text-gray-400,
+        .text-gray-300,
+        .text-gray-600,
+        .text-gray-700,
+        .text-gray-500,
+        .text-green-300,
+        .text-yellow-300 {
+            color: #ffffff !important;
+        }
+
+        .text-cyan-400 {
+            color: #00ffff !important;
+        }
+
+        h1,
+        h2,
+        h3,
+        p,
+        button,
+        label,
+        input::placeholder,
+        textarea::placeholder,
+        select,
+        option {
+            color: #ffffff !important;
+        }
+
+        input,
+        select,
+        textarea {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: white !important;
+            /* Garante texto branco */
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #00ffff !important;
+            ring: none !important;
+            outline: none !important;
+            box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.5) !important;
+        }
+
+        /* Foco ciano */
+
         /* --- MODIFICAÇÃO CHECKBOX --- */
         /* Garante que o checkbox use a cor ciano */
         input[type="checkbox"] {
             color: #00ffff !important;
             accent-color: #00ffff !important;
         }
+
         /* Garante que o input de endereço desabilitado fique legível */
-        input:disabled, textarea:disabled {
-             background-color: #4b5563 !important; /* Um pouco mais escuro/diferente */
-             color: #9ca3af !important; /* Texto cinza claro */
-             cursor: not-allowed;
+        input:disabled,
+        textarea:disabled {
+            background-color: #4b5563 !important;
+            /* Um pouco mais escuro/diferente */
+            color: #9ca3af !important;
+            /* Texto cinza claro */
+            cursor: not-allowed;
         }
+
         /* --- FIM MODIFICAÇÃO CHECKBOX --- */
 
-        #company-password-input { font-size: 14px; text-align: center; }
-        #company-password-input::placeholder { text-align: center; }
-        
+        #company-password-input {
+            font-size: 14px;
+            text-align: center;
+        }
+
+        #company-password-input::placeholder {
+            text-align: center;
+        }
+
         /* --- MODIFICAÇÃO: Layout tela cheia --- */
-        #app-container { 
+        #app-container {
             position: relative;
             width: 100%;
-            max-width: 100%; /* Remove a limitação de 'max-w-md' */
-            padding-left: 1rem; /* Adiciona padding lateral */
-            padding-right: 1rem; /* Adiciona padding lateral */
+            max-width: 100%;
+            /* Remove a limitação de 'max-w-md' */
+            padding-left: 1rem;
+            /* Adiciona padding lateral */
+            padding-right: 1rem;
+            /* Adiciona padding lateral */
             margin: 0 auto;
         }
+
         /* Ajusta o container do formulário de login para não ficar gigante */
-        #company-login-screen, #super-admin-login-screen {
-            max-width: 28rem; /* 448px (md) */
+        #company-login-screen,
+        #super-admin-login-screen {
+            max-width: 28rem;
+            /* 448px (md) */
             margin-left: auto;
             margin-right: auto;
         }
+
         /* Ajusta a tela de admin para não ficar colada nas bordas em telas menores */
         #admin-screen {
             max-width: 100%;
         }
 
         /* ESTILO PARA O AUTOCOMPLETE (CUSTOMIZADO, IGUAL AO 'mapa.html') */
-        .autocomplete-container { /* Container para posicionamento */
+        .autocomplete-container {
+            /* Container para posicionamento */
             position: relative;
         }
-        
+
         .autocomplete-list {
             position: absolute;
-            top: 100%; /* Posiciona abaixo do input */
+            top: 100%;
+            /* Posiciona abaixo do input */
             left: 0;
             right: 0;
-            background: #374151; /* Fundo escuro do admin */
-            border: 1px solid #4b5563; /* Borda do admin */
+            background: #374151;
+            /* Fundo escuro do admin */
+            border: 1px solid #4b5563;
+            /* Borda do admin */
             border-top: none;
-            border-radius: 0 0 0.5rem 0.5rem; /* rounded-lg */
-            max-height: 200px; /* Altura máxima */
+            border-radius: 0 0 0.5rem 0.5rem;
+            /* rounded-lg */
+            max-height: 200px;
+            /* Altura máxima */
             overflow-y: auto;
-            z-index: 1050; /* Sobrepor tudo */
+            z-index: 1050;
+            /* Sobrepor tudo */
             display: none;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
@@ -90,8 +201,10 @@
         .autocomplete-item {
             padding: 10px 12px;
             cursor: pointer;
-            border-bottom: 1px solid #4b5563; /* Separador escuro */
-            color: white !important; /* Texto branco */
+            border-bottom: 1px solid #4b5563;
+            /* Separador escuro */
+            color: white !important;
+            /* Texto branco */
             transition: background-color 0.2s ease;
         }
 
@@ -100,150 +213,237 @@
         }
 
         .autocomplete-item:hover {
-            background-color: #4b5563; /* Hover mais claro */
+            background-color: #4b5563;
+            /* Hover mais claro */
         }
 
         .autocomplete-item strong {
-            color: #00ffff; /* Cor ciano de destaque */
+            color: #00ffff;
+            /* Cor ciano de destaque */
         }
 
-        .loading, .no-results {
+        .loading,
+        .no-results {
             padding: 10px 12px;
             text-align: center;
-            color: #9ca3af; /* Cinza claro */
+            color: #9ca3af;
+            /* Cinza claro */
             font-style: italic;
         }
+
         /* FIM DO ESTILO CUSTOMIZADO */
 
         /* MODAIS */
-        #schedule-modal { display: none; }
-        #schedule-modal.flex { display: flex; }
-        #no-destination-modal { display: none; }
-        #no-destination-modal.flex { display: flex; }
-        
+        #schedule-modal {
+            display: none;
+        }
+
+        #schedule-modal.flex {
+            display: flex;
+        }
+
+        #no-destination-modal {
+            display: none;
+        }
+
+        #no-destination-modal.flex {
+            display: flex;
+        }
+
         /* ====================================================== */
         /* INÍCIO: ESTILOS DO NOVO MODAL */
         /* ====================================================== */
-        #multi-schedule-modal { display: none; }
-        #multi-schedule-modal.flex { display: flex; }
-        
+        #multi-schedule-modal {
+            display: none;
+        }
+
+        #multi-schedule-modal.flex {
+            display: flex;
+        }
+
         /* Container para os inputs de data com scroll */
         #multi-schedule-date-list {
-            max-height: 200px; /* Altura máxima antes de scrollar */
-            overflow-y: auto; /* Scroll vertical */
-            background-color: #1f2937; /* Fundo um pouco mais escuro */
+            max-height: 200px;
+            /* Altura máxima antes de scrollar */
+            overflow-y: auto;
+            /* Scroll vertical */
+            background-color: #1f2937;
+            /* Fundo um pouco mais escuro */
             border: 1px solid #4b5563;
             border-radius: 0.5rem;
             padding: 0.75rem;
             margin-bottom: 1rem;
         }
+
         /* Estilo para cada linha de data */
         .multi-schedule-date-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem; /* 8px */
-            margin-bottom: 0.5rem; /* 8px */
+            gap: 0.5rem;
+            /* 8px */
+            margin-bottom: 0.5rem;
+            /* 8px */
         }
+
         .multi-schedule-date-item:last-child {
             margin-bottom: 0;
         }
+
         /* Botão de remover data */
         .remove-date-btn {
-            background-color: #ef4444; /* bg-red-500 */
+            background-color: #ef4444;
+            /* bg-red-500 */
             color: white;
             border: none;
-            border-radius: 9999px; /* rounded-full */
-            width: 1.5rem; /* 24px */
-            height: 1.5rem; /* 24px */
+            border-radius: 9999px;
+            /* rounded-full */
+            width: 1.5rem;
+            /* 24px */
+            height: 1.5rem;
+            /* 24px */
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0; /* Impede que o botão encolha */
+            flex-shrink: 0;
+            /* Impede que o botão encolha */
         }
+
         .remove-date-btn:hover {
-            background-color: #dc2626; /* bg-red-600 */
+            background-color: #dc2626;
+            /* bg-red-600 */
         }
+
         /* ====================================================== */
         /* FIM: ESTILOS DO NOVO MODAL */
         /* ====================================================== */
 
 
         /* --- CSS PARA ABAS --- */
-        .tab-button { background-color: #374151; border: 1px solid #4b5563; padding: 10px 15px; cursor: pointer; transition: all 0.2s ease-in-out; border-radius: 8px; font-weight: 600; color: white !important; }
-        .tab-button.active { background-color: #00ffff; color: #000 !important; border-color: #00ffff; }
-        .admin-sub-screen { display: none; }
-        .admin-sub-screen.active { display: block; }
+        .tab-button {
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-radius: 8px;
+            font-weight: 600;
+            color: white !important;
+        }
+
+        .tab-button.active {
+            background-color: #00ffff;
+            color: #000 !important;
+            border-color: #00ffff;
+        }
+
+        .admin-sub-screen {
+            display: none;
+        }
+
+        .admin-sub-screen.active {
+            display: block;
+        }
 
         /* --- ESTILOS PARA A NOVA TABELA DE HISTÓRICO --- */
         #history-table {
-            border-collapse: collapse; /* Garante que bordas fiquem limpas */
+            border-collapse: collapse;
+            /* Garante que bordas fiquem limpas */
             width: 100%;
         }
 
         #history-table th,
         #history-table td {
-            border: 1px solid #4b5563; /* Borda cinza escura */
+            border: 1px solid #4b5563;
+            /* Borda cinza escura */
             padding: 8px 12px;
             text-align: left;
-            white-space: nowrap; /* Impede quebra de linha, exceto onde eu forçar */
-            font-size: 0.875rem; /* 14px */
+            white-space: nowrap;
+            /* Impede quebra de linha, exceto onde eu forçar */
+            font-size: 0.875rem;
+            /* 14px */
             color: white;
         }
 
         #history-table th {
-            background-color: #374151; /* Fundo cinza mais escuro para header */
-            color: #e5e7eb; /* Texto do header */
+            background-color: #374151;
+            /* Fundo cinza mais escuro para header */
+            color: #e5e7eb;
+            /* Texto do header */
             /* === MODIFICAÇÃO PARA CONGELAR O CABEÇALHO === */
-            position: sticky; /* Fixa o cabeçalho */
-            top: 0;          /* Fixa no topo da div de rolagem */
-            z-index: 10;     /* Garante que fique acima do conteúdo */
+            position: sticky;
+            /* Fixa o cabeçalho */
+            top: 0;
+            /* Fixa no topo da div de rolagem */
+            z-index: 10;
+            /* Garante que fique acima do conteúdo */
             /* === FIM DA MODIFICAÇÃO === */
         }
 
         /* Permite quebra de linha na coluna de destinos e observação */
-	    #history-table td:nth-child(9), /* Coluna Destinos */
-        #history-table td:nth-child(11) { /* Coluna Observação */
+        #history-table td:nth-child(9),
+        /* Coluna Destinos */
+        #history-table td:nth-child(11) {
+            /* Coluna Observação */
             white-space: normal;
-            min-width: 250px; /* Largura mínima */
-        }
-        
-        #history-table tbody tr:hover {
-             background-color: #1f2937; /* Cor de hover na linha */
+            min-width: 250px;
+            /* Largura mínima */
         }
 
+        #history-table tbody tr:hover {
+            background-color: #1f2937;
+            /* Cor de hover na linha */
+        }
     </style>
 </head>
+
 <body class="main-gradient text-white min-h-screen flex items-start justify-center p-4 pt-8">
 
     <div id="app-container" class="mx-auto">
 
         <div id="company-login-screen" class="screen active">
-            <div id="admin-access-icon" title="Acesso Super Admin" onclick="showSuperAdminLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <div id="admin-access-icon" title="Acesso Super Admin" onclick="showSuperAdminLogin()"
+                style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                 </svg>
             </div>
 
             <h2 class="text-3xl font-bold mb-6 text-center">Login da Empresa</h2>
-            <div class="mb-4"><label for="company-login-select" class="block mb-2 text-sm font-medium">Empresa</label><select id="company-login-select" class="w-full p-3 rounded-lg"></select></div>
-            <div class="mb-4"><label for="admin-username-input" class="block mb-2 text-sm font-medium">Usuário Admin</label><input type="text" id="admin-username-input" class="w-full p-3 rounded-lg" placeholder="Digite seu usuário"></div>
-            <div class="mb-4"><label for="admin-password-input" class="block mb-2 text-sm font-medium">Senha</label><input type="password" id="admin-password-input" class="w-full p-3 rounded-lg" placeholder="Digite sua senha"></div>
-            <button onclick="verifyCompanyAdminPassword()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
+            <div class="mb-4"><label for="company-login-select"
+                    class="block mb-2 text-sm font-medium">Empresa</label><select id="company-login-select"
+                    class="w-full p-3 rounded-lg"></select></div>
+            <div class="mb-4"><label for="admin-username-input" class="block mb-2 text-sm font-medium">Usuário
+                    Admin</label><input type="text" id="admin-username-input" class="w-full p-3 rounded-lg"
+                    placeholder="Digite seu usuário"></div>
+            <div class="mb-4"><label for="admin-password-input"
+                    class="block mb-2 text-sm font-medium">Senha</label><input type="password" id="admin-password-input"
+                    class="w-full p-3 rounded-lg" placeholder="Digite sua senha"></div>
+            <button onclick="verifyCompanyAdminPassword()"
+                class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
             <p id="company-login-error" class="text-red-500 text-center mt-4 hidden">Usuário ou senha incorretos!</p>
             <p class="text-xs text-center text-gray-400 mt-4">
                 Esqueceu a senha? Use o acesso Super Admin (ícone de escudo
-                <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 align-text-bottom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                 no canto superior direito) para gerenciar as empresas.
+                <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 align-text-bottom"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                no canto superior direito) para gerenciar as empresas.
             </p>
         </div>
 
         <div id="super-admin-login-screen" class="screen">
-            <button onclick="showScreen('company-login-screen')" class="mb-4 text-cyan-400 hover:text-cyan-200">← Voltar</button>
+            <button onclick="showScreen('company-login-screen')" class="mb-4 text-cyan-400 hover:text-cyan-200">←
+                Voltar</button>
             <h2 class="text-3xl font-bold mb-6 text-center">Acesso Super Admin</h2>
-            <div class="mb-4"><label for="super-admin-password-input" class="block mb-2 text-sm font-medium">Senha Mestra</label><input type="password" id="super-admin-password-input" class="w-full p-3 rounded-lg text-center" placeholder="Digite a senha mestra"></div>
-            <button onclick="verifySuperAdminPassword()" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
+            <div class="mb-4"><label for="super-admin-password-input" class="block mb-2 text-sm font-medium">Senha
+                    Mestra</label><input type="password" id="super-admin-password-input"
+                    class="w-full p-3 rounded-lg text-center" placeholder="Digite a senha mestra"></div>
+            <button onclick="verifySuperAdminPassword()"
+                class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
             <p id="super-admin-login-error" class="text-red-500 text-center mt-4 hidden">Senha mestra incorreta!</p>
         </div>
 
@@ -254,24 +454,31 @@
             </div>
 
             <div class="flex flex-wrap justify-center gap-2 mb-6">
-                <button id="tab-request-ride" class="tab-button active" onclick="showAdminSubScreen('request-ride-screen')">Solicitar Corrida</button>
-                <button id="tab-approve-ride" class="tab-button" onclick="showAdminSubScreen('approval-ride-screen')">Aprovar Solicitações</button>
-                <button id="tab-history" class="tab-button" onclick="showAdminSubScreen('history-screen')">Histórico</button>
-                <button id="tab-users" class="tab-button" onclick="showAdminSubScreen('user-management-screen')">Gerenciar Usuários</button>
-                <button id="tab-motivos" class="tab-button" onclick="showAdminSubScreen('motivos-management-screen')">Gerenciar Motivos</button>
+                <button id="tab-request-ride" class="tab-button active"
+                    onclick="showAdminSubScreen('request-ride-screen')">Solicitar Corrida</button>
+                <button id="tab-approve-ride" class="tab-button"
+                    onclick="showAdminSubScreen('approval-ride-screen')">Aprovar Solicitações</button>
+                <button id="tab-history" class="tab-button"
+                    onclick="showAdminSubScreen('history-screen')">Histórico</button>
+                <button id="tab-users" class="tab-button"
+                    onclick="showAdminSubScreen('user-management-screen')">Gerenciar Usuários</button>
+                <button id="tab-motivos" class="tab-button"
+                    onclick="showAdminSubScreen('motivos-management-screen')">Gerenciar Motivos</button>
             </div>
 
             <div id="request-ride-screen" class="admin-sub-screen active">
-                 <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
+                <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
                 <div id="admin-request-form" class="card-gradient p-6 rounded-lg max-w-2xl mx-auto">
                     <div class="mb-4">
-                        <label for="motivo-select" class="block mb-2 text-sm font-medium">SELECIONE O MOTIVO DA SOLICITAÇÃO</label>
+                        <label for="motivo-select" class="block mb-2 text-sm font-medium">SELECIONE O MOTIVO DA
+                            SOLICITAÇÃO</label>
                         <select id="motivo-select" class="w-full p-3 rounded-lg">
                             <option value="">-- Selecione o Motivo --</option>
                         </select>
                     </div>
                     <div class="mb-4">
-                        <label for="passenger-quantity-select" class="block mb-2 text-sm font-medium">SELECIONE A QUANTIDADE DE PASSAGEIROS</label>
+                        <label for="passenger-quantity-select" class="block mb-2 text-sm font-medium">SELECIONE A
+                            QUANTIDADE DE PASSAGEIROS</label>
                         <select id="passenger-quantity-select" class="w-full p-3 rounded-lg">
                             <option value="">-- Quantidade --</option>
                             <option value="1">1 Passageiro</option>
@@ -281,19 +488,25 @@
                         </select>
                     </div>
                     <div id="collaborators-container" class="space-y-4">
-                        </div>
+                    </div>
                     <div id="admin-ride-details" class="hidden">
                         <hr class="border-gray-600 my-6">
                         <h3 class="text-lg font-semibold mb-4 text-center">Detalhes da Viagem</h3>
                         <div class="mb-4">
                             <label for="admin-observation" class="block mb-2 text-sm font-medium">Observação</label>
-                            <textarea id="admin-observation" class="w-full p-3 rounded-lg" placeholder="Ex: Ponto de referência..." rows="2"></textarea>
+                            <textarea id="admin-observation" class="w-full p-3 rounded-lg"
+                                placeholder="Ex: Ponto de referência..." rows="2"></textarea>
                         </div>
                         <div class="mt-6 space-y-3">
-                            <button id="admin-request-immediate-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR AGORA</button>
-                            <button id="admin-request-scheduled-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">AGENDAR</button>
-                            <button id="admin-request-multi-schedule-btn" class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg border-2 border-cyan-400">AGENDAR VÁRIOS DIAS</button>
-                            </div>
+                            <button id="admin-request-immediate-btn"
+                                class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR
+                                AGORA</button>
+                            <button id="admin-request-scheduled-btn"
+                                class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">AGENDAR</button>
+                            <button id="admin-request-multi-schedule-btn"
+                                class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg border-2 border-cyan-400">AGENDAR
+                                VÁRIOS DIAS</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -301,21 +514,25 @@
             <div id="approval-ride-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Aprovar Solicitações Pendentes</h2>
                 <div id="pending-rides-container" class="space-y-4 max-w-2xl mx-auto">
-                    </div>
+                </div>
             </div>
 
             <div id="history-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Histórico de Corridas</h2>
-                
+
                 <div id="history-filters" class="card-gradient p-4 rounded-lg mb-4 space-y-3 max-w-4xl mx-auto">
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                            <label for="history-filter-start-date" class="block mb-1 text-xs font-medium">Data Inicial</label>
-                            <input type="date" id="history-filter-start-date" class="w-full p-2 rounded-lg" style="color-scheme: dark;">
+                            <label for="history-filter-start-date" class="block mb-1 text-xs font-medium">Data
+                                Inicial</label>
+                            <input type="date" id="history-filter-start-date" class="w-full p-2 rounded-lg"
+                                style="color-scheme: dark;">
                         </div>
                         <div>
-                            <label for="history-filter-end-date" class="block mb-1 text-xs font-medium">Data Final</label>
-                            <input type="date" id="history-filter-end-date" class="w-full p-2 rounded-lg" style="color-scheme: dark;">
+                            <label for="history-filter-end-date" class="block mb-1 text-xs font-medium">Data
+                                Final</label>
+                            <input type="date" id="history-filter-end-date" class="w-full p-2 rounded-lg"
+                                style="color-scheme: dark;">
                         </div>
                         <div>
                             <label for="history-filter-type" class="block mb-1 text-xs font-medium">Tipo</label>
@@ -330,41 +547,50 @@
                         <label for="history-filter-status" class="block mb-1 text-xs font-medium">Status</label>
                         <select id="history-filter-status" class="w-full p-2 rounded-lg">
                             <option value="">-- Todos os Status --</option>
-                            </select>
+                        </select>
                     </div>
                     <div class="flex flex-wrap gap-2 justify-center">
-                        <button onclick="applyHistoryFilter()" class="flex-grow py-2 px-4 font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700">Filtrar</button>
-                        <button onclick="clearHistoryFilter()" class="flex-grow py-2 px-4 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">Limpar</button>
+                        <button onclick="applyHistoryFilter()"
+                            class="flex-grow py-2 px-4 font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700">Filtrar</button>
+                        <button onclick="clearHistoryFilter()"
+                            class="flex-grow py-2 px-4 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">Limpar</button>
                     </div>
-                    <button onclick="exportHistoryToExcel('history-table', 'historico_corridas')" class="w-full py-2 px-4 font-semibold rounded-lg button-gradient mt-2">Exportar para Excel</button>
-                    
+                    <button onclick="exportCompanyDataToExcel()"
+                        class="w-full py-2 px-4 font-semibold rounded-lg button-gradient mt-2">Exportar para
+                        Excel</button>
+
                     <p id="history-filter-display" class="text-center text-xs text-gray-400 h-4"></p>
                 </div>
-                <div id="history-table-wrapper" class="overflow-x-auto rounded-lg border border-gray-700" style="max-height: 500px; overflow-y: auto;">
-                    <table id="history-table" class="w-full min-w-[1200px]" style="display: none;"> <thead class="bg-gray-800">
+                <div id="history-table-wrapper" class="overflow-x-auto rounded-lg border border-gray-700"
+                    style="max-height: 500px; overflow-y: auto;">
+                    <table id="history-table" class="w-full min-w-[1200px]" style="display: none;">
+                        <thead class="bg-gray-800">
                             <tr>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">ID</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Solicitante</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motivo</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Solicitação</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Agendada</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Solicitação
+                                </th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Agendada
+                                </th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Aceite</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Origem</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Destinos</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Passag.</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motorista</th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Observação</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Admin Solicitante</th>
+                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Admin Solicitante
+                                </th>
                                 <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Tipo</th>
                             </tr>
                         </thead>
                         <tbody id="history-table-body" class="bg-gray-900 divide-y divide-gray-700">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
                 <div id="history-rides-container">
-                    </div>
+                </div>
             </div>
             <div id="user-management-screen" class="admin-sub-screen">
                 <h2 class="text-2xl font-bold text-center mb-4">Gerenciar Usuários</h2>
@@ -373,24 +599,30 @@
                         <h3 id="user-form-title" class="text-lg font-semibold mb-2">Adicionar Usuário</h3>
                         <input type="hidden" id="editing-user-id">
                         <div class="space-y-2">
-                            <input type="text" id="new-user-matricula" placeholder="Matrícula" class="w-full p-2 rounded-lg">
-                            <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-2 rounded-lg">
-                            
+                            <input type="text" id="new-user-matricula" placeholder="Matrícula"
+                                class="w-full p-2 rounded-lg">
+                            <input type="text" id="new-user-name" placeholder="Nome Completo"
+                                class="w-full p-2 rounded-lg">
+
                             <div class="autocomplete-container">
-                                <input type="text" id="new-user-address" placeholder="Endereço" class="w-full p-2 rounded-lg"
-                                        oninput="handleAddressInput(event, 'new-user-addressList')">
+                                <input type="text" id="new-user-address" placeholder="Endereço"
+                                    class="w-full p-2 rounded-lg"
+                                    oninput="handleAddressInput(event, 'new-user-addressList')">
                                 <input type="hidden" id="new-user-address-validated">
                                 <div class="autocomplete-list" id="new-user-addressList"></div>
                             </div>
-                            
+
                             <input type="tel" id="new-user-phone" placeholder="Telefone" class="w-full p-2 rounded-lg">
                             <input type="text" id="new-user-password" placeholder="Senha" class="w-full p-2 rounded-lg">
                         </div>
-                        <button onclick="addOrUpdateUser()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
-                        <button id="cancel-user-edit-btn" onclick="cancelUserEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                        <button onclick="addOrUpdateUser()"
+                            class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
+                        <button id="cancel-user-edit-btn" onclick="cancelUserEdit()"
+                            class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar
+                            Edição</button>
                     </div>
                     <div id="user-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -401,10 +633,15 @@
                         <h3 id="motivo-form-title" class="text-lg font-semibold mb-2">Adicionar Motivo</h3>
                         <input type="hidden" id="editing-motivo-id">
                         <div class="space-y-2">
-                            <input type="text" id="new-motivo-name" placeholder="Nome do Motivo (Ex: Reunião, Entrega de Documentos)" class="w-full p-2 rounded-lg">
+                            <input type="text" id="new-motivo-name"
+                                placeholder="Nome do Motivo (Ex: Reunião, Entrega de Documentos)"
+                                class="w-full p-2 rounded-lg">
                         </div>
-                        <button onclick="addOrUpdateMotivo()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
-                        <button id="cancel-motivo-edit-btn" onclick="cancelMotivoEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                        <button onclick="addOrUpdateMotivo()"
+                            class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
+                        <button id="cancel-motivo-edit-btn" onclick="cancelMotivoEdit()"
+                            class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar
+                            Edição</button>
                     </div>
                     <div id="motivo-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                     </div>
@@ -422,71 +659,90 @@
                     <h3 id="company-form-title" class="text-lg font-semibold mb-2">Adicionar Empresa</h3>
                     <input type="hidden" id="editing-company-id">
                     <div class="flex gap-2 mb-2">
-                        <input type="text" id="new-company-name" placeholder="Nome da Empresa" class="w-full p-2 rounded-lg">
+                        <input type="text" id="new-company-name" placeholder="Nome da Empresa"
+                            class="w-full p-2 rounded-lg">
                     </div>
-                    <button onclick="addOrUpdateCompany()" class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar</button>
-                    <button id="cancel-edit-btn" onclick="cancelEdit()" class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar Edição</button>
+                    <button onclick="addOrUpdateCompany()"
+                        class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar</button>
+                    <button id="cancel-edit-btn" onclick="cancelEdit()"
+                        class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar
+                        Edição</button>
                 </div>
                 <div id="company-list-container" class="space-y-3">
-                    </div>
+                </div>
             </div>
         </div>
 
         <div id="admin-management-screen" class="screen">
-             </div>
         </div>
+    </div>
 
-    <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4"> <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
+    <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <h3 class="text-2xl font-bold mb-4">Agendar Corrida</h3>
             <div class="mb-4 text-left">
                 <label for="schedule-date" class="block mb-2 text-sm font-medium">Data</label>
-                <input type="date" id="schedule-date" class="w-full p-3 rounded-lg" style="color-scheme: dark;"> </div>
+                <input type="date" id="schedule-date" class="w-full p-3 rounded-lg" style="color-scheme: dark;">
+            </div>
             <div class="mb-6 text-left">
                 <label for="schedule-time" class="block mb-2 text-sm font-medium">Hora</label>
-                <input type="time" id="schedule-time" class="w-full p-3 rounded-lg" style="color-scheme: dark;"> </div>
+                <input type="time" id="schedule-time" class="w-full p-3 rounded-lg" style="color-scheme: dark;">
+            </div>
             <div class="flex justify-center gap-4">
-                <button onclick="closeScheduleModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
-                <button onclick="confirmAdminSchedule()" class="py-2 px-8 font-semibold rounded-lg button-gradient">AGENDAR</button>
+                <button onclick="closeScheduleModal()"
+                    class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
+                <button onclick="confirmAdminSchedule()"
+                    class="py-2 px-8 font-semibold rounded-lg button-gradient">AGENDAR</button>
             </div>
         </div>
     </div>
 
-    <div id="multi-schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+    <div id="multi-schedule-modal"
+        class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl w-full max-w-md">
             <h3 class="text-2xl font-bold mb-4 text-center">Agendar Vários Dias</h3>
-            
+
             <div class="mb-4 text-left">
-                <label for="multi-schedule-time" class="block mb-2 text-sm font-medium">Horário (para todos os dias)</label>
+                <label for="multi-schedule-time" class="block mb-2 text-sm font-medium">Horário (para todos os
+                    dias)</label>
                 <input type="time" id="multi-schedule-time" class="w-full p-3 rounded-lg" style="color-scheme: dark;">
             </div>
 
             <div class="mb-4 text-left">
                 <div class="flex justify-between items-center mb-2">
                     <label class="block text-sm font-medium">Datas</label>
-                    <button onclick="addDateToMultiSchedule()" class="py-1 px-3 text-sm font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white">+ Adicionar Data</button>
+                    <button onclick="addDateToMultiSchedule()"
+                        class="py-1 px-3 text-sm font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white">+
+                        Adicionar Data</button>
                 </div>
                 <div id="multi-schedule-date-list">
-                    <p id="multi-schedule-placeholder" class="text-center text-gray-400 p-4">Clique em "+ Adicionar Data" para começar.</p>
+                    <p id="multi-schedule-placeholder" class="text-center text-gray-400 p-4">Clique em "+ Adicionar
+                        Data" para começar.</p>
                 </div>
             </div>
 
             <div class="flex justify-center gap-4 mt-6">
-                <button onclick="closeMultiScheduleModal()" class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
-                <button onclick="confirmAdminMultiSchedule()" class="py-2 px-8 font-semibold rounded-lg button-gradient">AGENDAR TODOS</button>
+                <button onclick="closeMultiScheduleModal()"
+                    class="py-2 px-6 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">Cancelar</button>
+                <button onclick="confirmAdminMultiSchedule()"
+                    class="py-2 px-8 font-semibold rounded-lg button-gradient">AGENDAR TODOS</button>
             </div>
         </div>
     </div>
-    <div id="no-destination-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+    <div id="no-destination-modal"
+        class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
         <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <h3 class="text-xl font-bold mb-4">Confirmar Solicitação</h3>
             <p class="text-lg mb-6">NÃO TERÁ DESTINO FINAL?</p>
             <div class="flex justify-center gap-4">
-                <button id="no-destination-btn-no" class="py-2 px-8 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">NÃO</button>
-                <button id="no-destination-btn-yes" class="py-2 px-8 font-semibold rounded-lg button-gradient">SIM</button>
+                <button id="no-destination-btn-no"
+                    class="py-2 px-8 font-semibold rounded-lg bg-gray-500 hover:bg-gray-600">NÃO</button>
+                <button id="no-destination-btn-yes"
+                    class="py-2 px-8 font-semibold rounded-lg button-gradient">SIM</button>
             </div>
         </div>
     </div>
-    
+
 
     <script>
         // ========================================================================
@@ -504,7 +760,7 @@
         let companyUsersCache = [];
         let currentManagingCompany = { id: null, name: null };
         let debounceTimer; // Adicionado para o autocomplete manual
-        
+
         // ========================================================================
         // INÍCIO: NOVA VARIÁVEL GLOBAL
         // ========================================================================
@@ -517,7 +773,7 @@
         // ========================================================================
         // NOVAS FUNÇÕES (do mapa.html) - LÓGICA DE AUTOCOMPLETE MANUAL
         // ========================================================================
-        
+
         // ========================================================================
         // FUNÇÃO MODIFICADA - handleAddressInput
         // ========================================================================
@@ -562,9 +818,9 @@
                 // ========================================================================
                 // FIM DA CORREÇÃO
                 // ========================================================================
-                
+
                 const data = await response.json();
-                
+
                 if (data.features && data.features.length > 0) {
                     displayResults(data.features, listId);
                 } else {
@@ -584,16 +840,16 @@
             features.forEach(feature => {
                 const item = document.createElement('div');
                 item.className = 'autocomplete-item';
-                
+
                 const formatted = feature.properties.formatted;
                 const city = feature.properties.city || '';
                 const state = feature.properties.state || '';
-                
+
                 item.innerHTML = `
                     <strong>${formatted}</strong>
                     ${city || state ? `<br><small style="color: #999;">${city}${city && state ? ', ' : ''}${state}</small>` : ''}
                 `;
-                
+
                 // Modificado para chamar a nova 'selectAddress'
                 item.onclick = () => selectAddress(feature, listId);
                 list.appendChild(item);
@@ -609,7 +865,7 @@
             const inputId = listId.replace('List', ''); // Ex: 'address-input-0List' -> 'address-input-0'
             const input = document.getElementById(inputId);
             const formattedAddress = feature.properties.formatted; // Endereço formatado
-            
+
             if (input) {
                 input.value = formattedAddress; // Apenas preenche o input
             }
@@ -636,7 +892,7 @@
         }
 
         // Fechar listas ao clicar fora (copiado do mapa.html)
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             // Se o clique NÃO for dentro de um container de autocomplete
             if (!e.target.closest('.autocomplete-container')) {
                 // Esconde todas as listas de autocomplete
@@ -665,13 +921,13 @@
                     if (Array.isArray(parsed)) {
                         // Se for array de objetos {name, address}, retorna direto
                         if (parsed.length > 0 && typeof parsed[0] === 'object' && parsed[0] !== null && 'address' in parsed[0]) {
-                           return parsed.filter(d => d.address); // Retorna objetos válidos
+                            return parsed.filter(d => d.address); // Retorna objetos válidos
                         }
                         // Senão, trata como array de strings e converte para o formato {name, address}
-                         return parsed.map((addr, index) => ({
-                             name: index === parsed.length - 1 ? 'Destino Final' : `Parada ${index + 1}`,
-                             address: String(addr || '').trim()
-                         })).filter(d => d.address); // Filtra endereços vazios
+                        return parsed.map((addr, index) => ({
+                            name: index === parsed.length - 1 ? 'Destino Final' : `Parada ${index + 1}`,
+                            address: String(addr || '').trim()
+                        })).filter(d => d.address); // Filtra endereços vazios
                     }
                 } catch (e) {
                     console.warn('parseDestinations: Não foi possível interpretar como JSON, tentando extração manual.', str, e);
@@ -681,32 +937,32 @@
                     if (parts.length > 0) {
                         // Converte para o formato {name, address}
                         return parts.map((part, index) => ({
-                             name: index === parts.length - 1 ? 'Destino Final' : `Parada ${index + 1}`,
-                             address: part.replace(/^"|"$/g, '').trim()
+                            name: index === parts.length - 1 ? 'Destino Final' : `Parada ${index + 1}`,
+                            address: part.replace(/^"|"$/g, '').trim()
                         })).filter(d => d.address);
                     }
                 }
             }
 
             // 3. Fallback: Trata como um único destino e converte para o formato {name, address}
-             const cleanedAddr = str.replace(/^"|"$/g, '').trim();
-             if (cleanedAddr) {
-                 return [{ name: 'Destino', address: cleanedAddr }];
-             } else {
-                 return [];
-             }
+            const cleanedAddr = str.replace(/^"|"$/g, '').trim();
+            if (cleanedAddr) {
+                return [{ name: 'Destino', address: cleanedAddr }];
+            } else {
+                return [];
+            }
         }
 
 
         function resetAdminForm() {
             const passengerSelect = document.getElementById('passenger-quantity-select');
-             if (passengerSelect) passengerSelect.value = '';
+            if (passengerSelect) passengerSelect.value = '';
             const collaboratorsContainer = document.getElementById('collaborators-container');
-             if (collaboratorsContainer) collaboratorsContainer.innerHTML = '';
+            if (collaboratorsContainer) collaboratorsContainer.innerHTML = '';
             const rideDetails = document.getElementById('admin-ride-details');
-             if (rideDetails) rideDetails.classList.add('hidden');
+            if (rideDetails) rideDetails.classList.add('hidden');
             const observationInput = document.getElementById('admin-observation');
-             if (observationInput) observationInput.value = '';
+            if (observationInput) observationInput.value = '';
             // Reseta também o select de motivos
             const motivoSelect = document.getElementById('motivo-select');
             if (motivoSelect) motivoSelect.value = '';
@@ -788,7 +1044,7 @@
             if (adminError || !admin) {
                 errorEl.textContent = 'Usuário ou senha incorretos.';
                 errorEl.classList.remove('hidden');
-                 console.error("Login Error: Admin not found or credentials mismatch", adminError);
+                console.error("Login Error: Admin not found or credentials mismatch", adminError);
             } else {
                 // Login bem-sucedido
                 state.loggedInCompany = company;
@@ -814,7 +1070,7 @@
             }
             state.allUsers = users || []; // Garante que seja um array
         }
-        
+
         // ========================================================================
         // INÍCIO: FUNÇÃO (Carregar Motivos no Select) - CORRIGIDA
         // ========================================================================
@@ -841,7 +1097,7 @@
                 select.innerHTML = '<option value="">Erro ao carregar motivos</option>';
                 return;
             }
-            
+
             select.innerHTML = '<option value="">-- Selecione o Motivo --</option>'; // Reset
             if (data) {
                 data.forEach(motivo => {
@@ -867,11 +1123,11 @@
             passengerSelect.removeEventListener('change', handlePassengerQuantityChange);
             passengerSelect.addEventListener('change', handlePassengerQuantityChange);
 
-             // Define a aba inicial como ativa
-             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-             document.getElementById('tab-request-ride').classList.add('active');
-             document.querySelectorAll('.admin-sub-screen').forEach(scr => scr.classList.remove('active'));
-             document.getElementById('request-ride-screen').classList.add('active');
+            // Define a aba inicial como ativa
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('tab-request-ride').classList.add('active');
+            document.querySelectorAll('.admin-sub-screen').forEach(scr => scr.classList.remove('active'));
+            document.getElementById('request-ride-screen').classList.add('active');
         }
 
         // ========================================================================
@@ -965,12 +1221,12 @@
 
             // ---- MODIFICAÇÃO ----
             // Adiciona listener para autocompletar endereço ao selecionar colaborador
-             document.querySelectorAll('.collaborator-selector').forEach(select => {
+            document.querySelectorAll('.collaborator-selector').forEach(select => {
                 // Remove listener antigo para evitar duplicatas
                 select.removeEventListener('change', handleCollaboratorSelection);
                 select.addEventListener('change', handleCollaboratorSelection);
-             });
-             
+            });
+
             // ======================================================
             // INÍCIO: MODIFICAÇÃO SOLICITADA (LISTENER DO CHECKBOX)
             // ======================================================
@@ -999,11 +1255,11 @@
                 const selectedUser = state.allUsers.find(user => user.id == selectedUserId);
                 // Apenas busca o endereço, não o aplica ainda
                 selectedUserAddress = (selectedUser && selectedUser.address) ? selectedUser.address : '';
-                
+
                 // ======================================================
                 // INÍCIO DA MODIFICAÇÃO SOLICITADA
                 // ======================================================
-                
+
                 // Verifica se o checkbox JÁ ESTÁ MARCADO
                 if (checkbox && checkbox.checked) {
                     // Se sim, atualiza o campo com o endereço do NOVO colaborador
@@ -1048,7 +1304,7 @@
             // FIM DA MODIFICAÇÃO SOLICITADA
             // ======================================================
         }
-        
+
         // ========================================================================
         // INÍCIO: NOVA FUNÇÃO (Lógica do Checkbox)
         // ========================================================================
@@ -1111,18 +1367,18 @@
 
 
         // --- Funções openAdminScheduleModal, closeScheduleModal, confirmAdminSchedule --- (sem alterações)
-         function openAdminScheduleModal() {
+        function openAdminScheduleModal() {
             const modal = document.getElementById('schedule-modal');
             const today = new Date();
             const dateInput = document.getElementById('schedule-date');
             const timeInput = document.getElementById('schedule-time');
 
             // Define o mínimo como hoje
-             dateInput.min = today.toISOString().split('T')[0];
+            dateInput.min = today.toISOString().split('T')[0];
             // Define o valor padrão como hoje
-             dateInput.value = today.toISOString().split('T')[0];
+            dateInput.value = today.toISOString().split('T')[0];
             // Define a hora padrão como a hora atual
-             timeInput.value = today.toTimeString().slice(0, 5);
+            timeInput.value = today.toTimeString().slice(0, 5);
 
             modal.classList.add('flex'); // Mostra o modal
         }
@@ -1139,12 +1395,12 @@
             const scheduledDate = new Date(`${dateInput.value}T${timeInput.value}`);
 
             // Validação de data no passado
-             const now = new Date();
-             // Compara apenas a data e hora, ignorando segundos/milissegundos
-             const scheduledMinutes = Math.floor(scheduledDate.getTime() / 60000);
-             const nowMinutes = Math.floor(now.getTime() / 60000);
+            const now = new Date();
+            // Compara apenas a data e hora, ignorando segundos/milissegundos
+            const scheduledMinutes = Math.floor(scheduledDate.getTime() / 60000);
+            const nowMinutes = Math.floor(now.getTime() / 60000);
 
-             if (scheduledMinutes < nowMinutes) {
+            if (scheduledMinutes < nowMinutes) {
                 return alert("A data e hora do agendamento não podem ser no passado.");
             }
 
@@ -1156,28 +1412,28 @@
             // adminRequestRide(); // <-- Chamada antiga
             validateAndInitiateRide('scheduled'); // <-- NOVA CHAMADA
         }
-        
+
         // ========================================================================
         // INÍCIO: NOVAS FUNÇÕES (Agendamento Múltiplo)
         // ========================================================================
-        
+
         function openMultiScheduleModal() {
             const modal = document.getElementById('multi-schedule-modal');
             const timeInput = document.getElementById('multi-schedule-time');
             const dateList = document.getElementById('multi-schedule-date-list');
             const placeholder = document.getElementById('multi-schedule-placeholder');
-            
+
             // Limpa a lista de datas
             dateList.innerHTML = '';
             placeholder.style.display = 'block'; // Mostra o placeholder
             dateList.appendChild(placeholder);
-            
+
             // Define a hora padrão
             timeInput.value = new Date().toTimeString().slice(0, 5);
-            
+
             modal.classList.add('flex');
         }
-        
+
         function closeMultiScheduleModal() {
             document.getElementById('multi-schedule-modal').classList.remove('flex');
             tempMultiScheduleRideData = null; // Limpa os dados temporários ao fechar/cancelar
@@ -1186,12 +1442,12 @@
         function addDateToMultiSchedule() {
             const dateList = document.getElementById('multi-schedule-date-list');
             const placeholder = document.getElementById('multi-schedule-placeholder');
-            
+
             // Esconde o placeholder se ele existir
             if (placeholder) {
                 placeholder.style.display = 'none';
             }
-            
+
             const today = new Date().toISOString().split('T')[0];
 
             // Cria o wrapper
@@ -1215,22 +1471,22 @@
             // Adiciona na div
             itemDiv.appendChild(dateInput);
             itemDiv.appendChild(removeBtn);
-            
+
             // Adiciona a div na lista
             dateList.appendChild(itemDiv);
         }
-        
+
         function removeDateFromMultiSchedule(itemElement) {
             const dateList = document.getElementById('multi-schedule-date-list');
             dateList.removeChild(itemElement);
-            
+
             // Se a lista ficar vazia, mostra o placeholder novamente
             if (dateList.querySelectorAll('.multi-schedule-date-item').length === 0) {
-                 const placeholder = document.getElementById('multi-schedule-placeholder');
-                 if (placeholder) placeholder.style.display = 'block';
+                const placeholder = document.getElementById('multi-schedule-placeholder');
+                if (placeholder) placeholder.style.display = 'block';
             }
         }
-        
+
         // Esta é a função de validação (Etapa 1 do Multi-Schedule)
         function validateAndInitiateMultiSchedule() {
             // 1. Valida o formulário principal (passageiros, endereços, MOTIVO)
@@ -1255,7 +1511,7 @@
                     return alert(`Preencha o Colaborador e o Endereço para a Origem ${i + 1}.`);
                 }
             }
-            
+
             // NO AGENDAMENTO MÚLTIPLO, O DESTINO FINAL É OBRIGATÓRIO
             const destinationAddress = document.getElementById('address-input-destination').value.trim();
             if (!destinationAddress) {
@@ -1291,45 +1547,45 @@
                 requested_by_admin_name: state.loggedInAdmin.username,
                 motivo_id: motivoId // <<== ADICIONADO: Salva o ID do motivo
             };
-            
+
             // 4. Se tudo estiver OK, abre o modal de multi-agendamento
             openMultiScheduleModal();
         }
-        
+
         // Esta é a função de submissão (Etapa 2 do Multi-Schedule)
         async function confirmAdminMultiSchedule() {
             if (!tempMultiScheduleRideData) {
                 return alert('Erro: Dados da corrida não encontrados. Tente novamente.');
             }
-            
+
             const timeInput = document.getElementById('multi-schedule-time');
             const timeValue = timeInput.value;
             if (!timeValue) {
                 return alert('Por favor, defina um horário.');
             }
-            
+
             const dateInputs = document.querySelectorAll('.multi-schedule-date-input');
             if (dateInputs.length === 0) {
                 return alert('Adicione pelo menos uma data.');
             }
-            
+
             const now = new Date();
             const nowMinutes = Math.floor(now.getTime() / 60000);
             const ridesToInsert = [];
-            
+
             for (const dateInput of dateInputs) {
                 const dateValue = dateInput.value;
                 if (!dateValue) {
                     return alert('Todas as datas devem ser preenchidas.');
                 }
-                
+
                 const scheduledDate = new Date(`${dateValue}T${timeValue}`);
                 const scheduledMinutes = Math.floor(scheduledDate.getTime() / 60000);
-                
+
                 if (scheduledMinutes < nowMinutes) {
                     return alert(`A data ${dateValue} às ${timeValue} está no passado. Por favor, corrija.`);
                 }
-                
+
                 // Cria uma cópia dos dados base e adiciona as informações de agendamento
                 const newRideData = {
                     ...tempMultiScheduleRideData,
@@ -1337,14 +1593,14 @@
                     request_type: 'scheduled',
                     scheduled_datetime: scheduledDate.toISOString()
                 };
-                
+
                 ridesToInsert.push(newRideData);
             }
-            
+
             if (ridesToInsert.length === 0) {
                 return alert('Nenhuma data válida para agendar.');
             }
-            
+
             // Insere todas as corridas em lote
             const { data, error } = await supabaseClient
                 .from('rides')
@@ -1361,7 +1617,7 @@
                 // tempMultiScheduleRideData já é limpo pelo closeMultiScheduleModal()
             }
         }
-        
+
         // ========================================================================
         // FIM: NOVAS FUNÇÕES (Agendamento Múltiplo)
         // ========================================================================
@@ -1402,7 +1658,7 @@
                     return alert(`Preencha o Colaborador e o Endereço para a Origem ${i + 1}.`);
                 }
                 const additionalCollaborator = state.allUsers.find(u => u.id == collabId);
-                 if (!additionalCollaborator) return alert(`Colaborador da Origem ${i + 1} não encontrado.`);
+                if (!additionalCollaborator) return alert(`Colaborador da Origem ${i + 1} não encontrado.`);
             }
 
             // ======================================================
@@ -1477,11 +1733,11 @@
 
             // Define o status e tipo (variáveis globais setadas em validateAndInitiateRide)
             if (adminSelectedRequestType === 'scheduled' && adminScheduledDateTime) {
-                rideData.status = 'scheduled'; 
+                rideData.status = 'scheduled';
                 rideData.request_type = 'scheduled';
                 rideData.scheduled_datetime = adminScheduledDateTime;
             } else {
-                 rideData.status = 'approved'; // Aprovado direto, pois é o Admin solicitando
+                rideData.status = 'approved'; // Aprovado direto, pois é o Admin solicitando
                 rideData.request_type = 'immediate';
             }
 
@@ -1523,7 +1779,7 @@
             switch (subScreenId) {
                 case 'request-ride-screen':
                     tabToActivateId = 'tab-request-ride';
-                     handlePassengerQuantityChange({ target: document.getElementById('passenger-quantity-select') });
+                    handlePassengerQuantityChange({ target: document.getElementById('passenger-quantity-select') });
                     break;
                 case 'approval-ride-screen':
                     tabToActivateId = 'tab-approve-ride';
@@ -1558,8 +1814,8 @@
             container.innerHTML = '<p class="text-center">Carregando solicitações...</p>';
 
             if (!state.loggedInCompany || !state.loggedInCompany.name) {
-                 container.innerHTML = '<p class="text-center text-red-500">Erro: Empresa não identificada.</p>';
-                 return;
+                container.innerHTML = '<p class="text-center text-red-500">Erro: Empresa não identificada.</p>';
+                return;
             }
 
             // Busca corridas 'pending_approval' (status antigo) E 'approved' (novo status do admin)
@@ -1593,14 +1849,14 @@
                 const requestDate = new Date(ride.requestTime).toLocaleString('pt-BR');
                 const scheduledDate = ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : null;
                 const destinations = parseDestinations(ride.destination);
-                
+
                 // <<== ADICIONADO: Pega o nome do motivo
                 const motivoName = ride.motivos ? ride.motivos.nome : 'N/A'; // Usa 'nome'
 
-                 let destinationsHtml = destinations.map(destObj => `<p><strong>${destObj.name || 'Destino'}:</strong> ${destObj.address || 'N/A'}</p>`).join('');
+                let destinationsHtml = destinations.map(destObj => `<p><strong>${destObj.name || 'Destino'}:</strong> ${destObj.address || 'N/A'}</p>`).join('');
 
-                 const statusLabel = 'PENDENTE';
-                 const statusColor = 'bg-yellow-600';
+                const statusLabel = 'PENDENTE';
+                const statusColor = 'bg-yellow-600';
 
                 return `
                     <div id="ride-card-${ride.id}" class="card-gradient p-4 rounded-lg border border-gray-700">
@@ -1639,9 +1895,9 @@
             if (userName) {
                 names.add(userName);
             }
-            
+
             const destinations = parseDestinations(destinationString);
-            
+
             destinations.forEach(dest => {
                 // Heurística: Se o nome do destino começar com 'Origem ', assumimos que o restante é o nome de um passageiro adicional.
                 // Ex: "Origem Nome do Colaborador"
@@ -1665,7 +1921,7 @@
         // ========================================================================
         // INÍCIO: SEÇÃO DE HISTÓRICO (Unificada e corrigida)
         // ========================================================================
-        
+
         let allHistoryRidesCache = [];
         const statusMap = {
             'approved': { text: 'Aprovada', color: 'text-teal-400' },
@@ -1686,14 +1942,14 @@
             const container = document.getElementById('history-rides-container'); // Usado para mensagens
             const tableBody = document.getElementById('history-table-body');
             const tableElement = document.getElementById('history-table');
-            
+
             container.innerHTML = '<p class="text-center mt-4">Carregando histórico...</p>';
             if (tableBody) tableBody.innerHTML = ''; // Limpa a tabela
             if (tableElement) tableElement.style.display = 'none'; // Esconde a tabela enquanto carrega
 
             if (!state.loggedInCompany || !state.loggedInCompany.name) {
-                 container.innerHTML = '<p class="text-center text-red-500 mt-4">Erro: Empresa não identificada.</p>';
-                 return;
+                container.innerHTML = '<p class="text-center text-red-500 mt-4">Erro: Empresa não identificada.</p>';
+                return;
             }
 
             const { data: rides, error } = await supabaseClient
@@ -1723,7 +1979,7 @@
             allHistoryRidesCache = rides; // Salva os dados no cache
             populateStatusFilter();
             renderHistoryTable();
-            
+
             container.innerHTML = '';
             if (tableElement) tableElement.style.display = 'table'; // Mostra a tabela
         }
@@ -1767,7 +2023,7 @@
             const endDate = document.getElementById('history-filter-end-date').value;
             const status = document.getElementById('history-filter-status').value;
             const type = document.getElementById('history-filter-type').value;
-            
+
             renderHistoryTable({ startDate, endDate, status, type });
         }
 
@@ -1776,7 +2032,7 @@
             document.getElementById('history-filter-end-date').value = '';
             document.getElementById('history-filter-status').value = '';
             document.getElementById('history-filter-type').value = '';
-            
+
             renderHistoryTable(); // Renderiza sem filtros
             document.getElementById('history-filter-display').textContent = '';
         }
@@ -1786,7 +2042,7 @@
             const container = document.getElementById('history-rides-container'); // Para mensagens
             const tableElement = document.getElementById('history-table');
             const filterDisplay = document.getElementById('history-filter-display');
-            
+
             if (!tableBody || !container || !tableElement || !filterDisplay) return; // Segurança
 
             tableBody.innerHTML = ''; // Limpa a tabela
@@ -1813,17 +2069,17 @@
                         filteredRides = filteredRides.filter(ride => new Date(ride.requestTime) >= startDate);
                         filterText.push(`De: ${startDate.toLocaleDateString('pt-BR')}`);
                     }
-                } catch(e) { console.warn("Data inicial inválida"); }
+                } catch (e) { console.warn("Data inicial inválida"); }
             }
 
             if (filters.endDate) {
-                 try {
+                try {
                     const endDate = new Date(`${filters.endDate}T23:59:59`);
-                     if (!isNaN(endDate)) {
+                    if (!isNaN(endDate)) {
                         filteredRides = filteredRides.filter(ride => new Date(ride.requestTime) <= endDate);
                         filterText.push(`Até: ${endDate.toLocaleDateString('pt-BR')}`);
-                     }
-                 } catch(e) { console.warn("Data final inválida"); }
+                    }
+                } catch (e) { console.warn("Data final inválida"); }
             }
 
             if (filterText.length > 0) {
@@ -1837,20 +2093,20 @@
                 tableElement.style.display = 'none'; // Esconde a tabela
                 return;
             }
-            
+
             container.innerHTML = '';
             tableElement.style.display = 'table'; // Garante que a tabela está visível
 
             filteredRides.forEach(ride => {
                 const statusInfo = statusMap[ride.status] || { text: ride.status.toUpperCase(), color: 'text-gray-300' };
                 const destinations = parseDestinations(ride.destination);
-                
+
                 let destinationsHtml = destinations
                     .map(destObj => `<strong>${destObj.name || 'Destino'}:</strong> ${destObj.address || 'N/A'}`)
                     .join('<br>');
-                
+
                 const typeText = ride.request_type === 'immediate' ? 'Imediato' : (ride.request_type === 'scheduled' ? 'Agendado' : (ride.request_type || 'N/A'));
-                
+
                 // <<== MODIFICADO: Pega o nome do motivo e a lista de passageiros
                 const motivoName = ride.motivos ? ride.motivos.nome : 'N/A'; // Usa 'nome'
                 const allPassengersNames = extractAllPassengersNames(ride.userName, ride.destination); // Usa a nova função
@@ -1876,7 +2132,7 @@
                 tableBody.innerHTML += row;
             });
         }
-        
+
         // ========================================================================
         // FIM: SEÇÃO DE HISTÓRICO
         // ========================================================================
@@ -1885,31 +2141,31 @@
         // INÍCIO: BLOCO RESTAURADO (que foi cortado na resposta anterior)
         // ========================================================================
 
-        function exportHistoryToExcel(tableID, filename = ''){
+        function exportHistoryToExcel(tableID, filename = '') {
             const table = document.getElementById(tableID);
             if (!table) {
                 alert('Erro: Tabela não encontrada para exportação.');
                 return;
             }
-            
+
             const tableClone = table.cloneNode(true);
-            
+
             tableClone.querySelectorAll('td, th').forEach(cell => {
                 cell.className = '';
             });
 
             let tableHTML = tableClone.outerHTML
-                .replace(/<br\s*\/?>/gi, "; "); 
+                .replace(/<br\s*\/?>/gi, "; ");
 
             const dataType = 'application/vnd.ms-excel';
             filename = filename ? filename + '.xls' : 'export_excel.xls';
 
             const downloadLink = document.createElement("a");
             document.body.appendChild(downloadLink);
-            
-            if(navigator.msSaveOrOpenBlob){
+
+            if (navigator.msSaveOrOpenBlob) {
                 const blob = new Blob(['\ufeff', tableHTML], { type: dataType });
-                navigator.msSaveOrOpenBlob( blob, filename);
+                navigator.msSaveOrOpenBlob(blob, filename);
             } else {
                 downloadLink.href = 'data:' + dataType + ', ' + '\ufeff' + encodeURIComponent(tableHTML);
                 downloadLink.download = filename;
@@ -1918,23 +2174,70 @@
             document.body.removeChild(downloadLink);
         }
 
-         async function approveRide(rideId) {
+        function exportCompanyDataToExcel() {
+            if (!allHistoryRidesCache || allHistoryRidesCache.length === 0) {
+                alert('Nenhum dado encontrado para exportar. Carregue o histórico primeiro.');
+                return;
+            }
+
+            const dataToExport = allHistoryRidesCache.map(ride => {
+                const destinations = parseDestinations(ride.destination);
+                const destinationsText = destinations
+                    .map(d => `${d.name || 'Destino'}: ${d.address || 'N/A'}`)
+                    .join(' | ');
+
+                const statusInfo = statusMap[ride.status] || { text: ride.status.toUpperCase() };
+                const motivoName = ride.motivos ? ride.motivos.nome : 'N/A';
+                const allPassengersNames = extractAllPassengersNames(ride.userName, ride.destination);
+                const typeText = ride.request_type === 'immediate' ? 'Imediato' : (ride.request_type === 'scheduled' ? 'Agendado' : (ride.request_type || 'N/A'));
+
+                return {
+                    'ID': ride.id,
+                    'Data da Solicitação': formatDateTime(ride.requestTime),
+                    'Data Agendada': formatDateTime(ride.scheduled_datetime),
+                    'Data do Aceite': formatDateTime(ride.acceptTime),
+                    'Solicitante(s)': allPassengersNames,
+                    'Empresa': ride.userCompany || '-',
+                    'Motivo': motivoName,
+                    'Origem': ride.origin_address || 'N/A',
+                    'Destinos': destinationsText || 'N/A',
+                    'Quantidade de Passageiros': ride.passenger_count || 1,
+                    'Observação': ride.observation || '-',
+                    'Motorista': ride.driverName || 'N/A',
+                    'Status': statusInfo.text,
+                    'Tipo': typeText,
+                    'Admin Solicitante': ride.requested_by_admin_name || 'N/A',
+                    'Distância (km)': ride.km || 'N/A'
+                };
+            });
+
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const companyName = state.loggedInCompany ? state.loggedInCompany.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Empresa';
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Histórico de Corridas");
+            XLSX.writeFile(workbook, `Relatorio_${companyName}_${dateStr}.xlsx`);
+        }
+
+        async function approveRide(rideId) {
             if (!confirm('Tem certeza que deseja APROVAR esta solicitação de corrida?')) return;
 
-             const { data: ride, error: fetchError } = await supabaseClient
-                 .from('rides')
-                 .select('request_type')
-                 .eq('id', rideId)
-                 .single();
+            const { data: ride, error: fetchError } = await supabaseClient
+                .from('rides')
+                .select('request_type')
+                .eq('id', rideId)
+                .single();
 
-             if (fetchError || !ride) {
-                 alert('Erro ao buscar detalhes da corrida para aprovação.');
-                 console.error("Erro Supabase (approveRide fetch):", fetchError);
-                 return;
-             }
+            if (fetchError || !ride) {
+                alert('Erro ao buscar detalhes da corrida para aprovação.');
+                console.error("Erro Supabase (approveRide fetch):", fetchError);
+                return;
+            }
 
-             // Status 'approved' (Aprovado pelo Admin, pronto para motorista)
-             const nextStatus = 'approved';
+            // Status 'approved' (Aprovado pelo Admin, pronto para motorista)
+            const nextStatus = 'approved';
 
             const { error: updateError } = await supabaseClient
                 .from('rides')
@@ -1960,7 +2263,7 @@
 
             if (error) {
                 alert('Erro ao rejeitar a corrida: ' + error.message);
-                 console.error("Erro Supabase (rejectRide):", error);
+                console.error("Erro Supabase (rejectRide):", error);
             } else {
                 alert('Solicitação de corrida rejeitada.');
                 loadPendingRides();
@@ -1970,14 +2273,14 @@
         // --- FUNÇÃO PARA CARREGAR EMPRESAS NO SELECT DE LOGIN ---
         async function populateLoginCompanies() {
             const select = document.getElementById('company-login-select');
-            
+
             if (!select) {
                 console.error("Erro: Elemento 'company-login-select' não encontrado no DOM.");
                 return;
             }
-            
+
             select.innerHTML = '<option value="">Carregando...</option>';
-            
+
             const { data, error } = await supabaseClient
                 .from('companies')
                 .select('id, name')
@@ -1994,8 +2297,8 @@
                 return;
             }
 
-            select.innerHTML = '<option value="">-- Selecione a Empresa --</option>' + 
-                               data.map(company => `<option value="${company.name}">${company.name}</option>`).join('');
+            select.innerHTML = '<option value="">-- Selecione a Empresa --</option>' +
+                data.map(company => `<option value="${company.name}">${company.name}</option>`).join('');
         }
 
         // --- FUNÇÃO DE INICIALIZAÇÃO PRINCIPAL ---
@@ -2031,7 +2334,7 @@
                 };
             }
 
-             supabaseClient
+            supabaseClient
                 .channel('public:rides')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, async (payload) => {
                     const activeScreen = document.querySelector('.screen.active');
@@ -2048,71 +2351,71 @@
                             } else if (activeSubScreen.id === 'history-screen') {
                                 await loadHistoryRides();
                             }
-                             else if (activeSubScreen.id === 'request-ride-screen') {
+                            else if (activeSubScreen.id === 'request-ride-screen') {
                                 const passengerSelect = document.getElementById('passenger-quantity-select');
                                 if (passengerSelect.value) {
                                     await refreshAllUsers();
                                     handlePassengerQuantityChange({ target: passengerSelect });
                                 }
-                             }
+                            }
                         }
                     }
                 })
                 .subscribe((status, err) => {
-                     if (status === 'SUBSCRIBED') { console.log('Admin Empresa: Conectado ao canal RIDES'); }
-                     if (err) { console.error('Admin Empresa: Erro RIDES subscription', err); }
+                    if (status === 'SUBSCRIBED') { console.log('Admin Empresa: Conectado ao canal RIDES'); }
+                    if (err) { console.error('Admin Empresa: Erro RIDES subscription', err); }
                 });
 
 
-             supabaseClient
+            supabaseClient
                 .channel('public:users')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async (payload) => {
-                     const activeScreen = document.querySelector('.screen.active');
-                     if (!activeScreen || !state.loggedInCompany) return;
+                    const activeScreen = document.querySelector('.screen.active');
+                    if (!activeScreen || !state.loggedInCompany) return;
 
-                     await refreshAllUsers();
+                    await refreshAllUsers();
 
-                     const companyName = state.loggedInCompany.name;
-                     const userCompany = payload.new?.company || payload.old?.company;
+                    const companyName = state.loggedInCompany.name;
+                    const userCompany = payload.new?.company || payload.old?.company;
 
-                     if (userCompany === companyName) {
+                    if (userCompany === companyName) {
                         const activeSubScreen = activeScreen.querySelector('.admin-sub-screen.active');
                         if (activeSubScreen && activeSubScreen.id === 'user-management-screen') {
-                           await loadCompanyUsers();
+                            await loadCompanyUsers();
                         }
-                         else if (activeSubScreen && activeSubScreen.id === 'request-ride-screen') {
-                             const passengerSelect = document.getElementById('passenger-quantity-select');
-                             if (passengerSelect.value) {
-                                 handlePassengerQuantityChange({ target: passengerSelect });
-                             }
-                         }
-                     }
+                        else if (activeSubScreen && activeSubScreen.id === 'request-ride-screen') {
+                            const passengerSelect = document.getElementById('passenger-quantity-select');
+                            if (passengerSelect.value) {
+                                handlePassengerQuantityChange({ target: passengerSelect });
+                            }
+                        }
+                    }
                 })
                 .subscribe((status, err) => {
-                     if (status === 'SUBSCRIBED') { console.log('Admin Empresa: Conectado ao canal USERS'); }
-                     if (err) { console.error('Admin Empresa: Erro USERS subscription', err); }
+                    if (status === 'SUBSCRIBED') { console.log('Admin Empresa: Conectado ao canal USERS'); }
+                    if (err) { console.error('Admin Empresa: Erro USERS subscription', err); }
                 });
 
-                  supabaseClient
-                    .channel('public:companies')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, async (payload) => {
-                        console.log("Mudança na tabela de empresas detectada.");
-                        await populateLoginCompanies();
+            supabaseClient
+                .channel('public:companies')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, async (payload) => {
+                    console.log("Mudança na tabela de empresas detectada.");
+                    await populateLoginCompanies();
 
-                        const activeScreenId = document.querySelector('.screen.active')?.id;
-                        if (state.loggedInAdmin?.username === "Super Admin" && activeScreenId === 'company-management-screen') {
-                            await loadCompanyManagement();
-                        }
-                    })
-                    .subscribe((status, err) => {
-                         if (status === 'SUBSCRIBED') { console.log('Admin Empresa: Conectado ao canal COMPANIES'); }
-                         if (err) { console.error('Admin Empresa: Erro COMPANIES subscription', err); }
-                    });
+                    const activeScreenId = document.querySelector('.screen.active')?.id;
+                    if (state.loggedInAdmin?.username === "Super Admin" && activeScreenId === 'company-management-screen') {
+                        await loadCompanyManagement();
+                    }
+                })
+                .subscribe((status, err) => {
+                    if (status === 'SUBSCRIBED') { console.log('Admin Empresa: Conectado ao canal COMPANIES'); }
+                    if (err) { console.error('Admin Empresa: Erro COMPANIES subscription', err); }
+                });
 
             // ========================================================================
             // INÍCIO: NOVA SUBSCRIPTION (Motivos) - CORRIGIDA
             // ========================================================================
-             supabaseClient
+            supabaseClient
                 .channel('public:motivos')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'motivos' }, async (payload) => {
                     const activeScreen = document.querySelector('.screen.active');
@@ -2125,13 +2428,13 @@
                     const motivoCompanyId = payload.new?.empresa_id || payload.old?.empresa_id; // Usa 'empresa_id'
 
                     if (motivoCompanyId === companyId) { // Compara IDs
-                    // ======================================================
-                    // FIM DA CORREÇÃO
-                    // ======================================================
-                    
+                        // ======================================================
+                        // FIM DA CORREÇÃO
+                        // ======================================================
+
                         // Atualiza o select de motivos em 'Solicitar Corrida'
-                        await populateMotivosSelect(); 
-                        
+                        await populateMotivosSelect();
+
                         const activeSubScreen = activeScreen.querySelector('.admin-sub-screen.active');
                         // Se a aba de gerenciar motivos estiver ativa
                         if (activeSubScreen && activeSubScreen.id === 'motivos-management-screen') {
@@ -2140,8 +2443,8 @@
                     }
                 })
                 .subscribe((status, err) => {
-                     if (status === 'SUBSCRIBED') { console.log('Admin Empresa: Conectado ao canal MOTIVOS'); }
-                     if (err) { console.error('Admin Empresa: Erro MOTIVOS subscription', err); }
+                    if (status === 'SUBSCRIBED') { console.log('Admin Empresa: Conectado ao canal MOTIVOS'); }
+                    if (err) { console.error('Admin Empresa: Erro MOTIVOS subscription', err); }
                 });
             // ========================================================================
             // FIM: NOVA SUBSCRIPTION
@@ -2162,10 +2465,10 @@
                 console.error(error);
                 return;
             }
-             if (!data || data.length === 0) {
-                 container.innerHTML = '<p class="text-gray-400 text-center">Nenhuma empresa cadastrada.</p>';
-                 return;
-             }
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center">Nenhuma empresa cadastrada.</p>';
+                return;
+            }
             container.innerHTML = data.map(c => `
                 <div class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
                     <div>
@@ -2273,7 +2576,7 @@
 
             if (error) {
                 adminListContainer.innerHTML = '<p class="text-red-500 text-center">Erro ao carregar admins.</p>';
-                 console.error("Erro Supabase (Load Admins):", error);
+                console.error("Erro Supabase (Load Admins):", error);
                 return;
             }
             if (!data || data.length === 0) {
@@ -2331,9 +2634,9 @@
 
             if (error) {
                 alert('Erro ao salvar admin: ' + error.message);
-                 console.error("Erro Supabase (Admin Save):", error);
+                console.error("Erro Supabase (Admin Save):", error);
             } else {
-                 alert(`Admin "${data[0].username}" ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
+                alert(`Admin "${data[0].username}" ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
                 cancelCompanyAdminEdit();
                 await loadCompanyAdmins();
             }
@@ -2346,7 +2649,7 @@
                 alert('Erro ao excluir admin: ' + error.message);
                 console.error("Erro Supabase (Admin Delete):", error);
             } else {
-                 alert(`Admin "${username}" excluído com sucesso.`);
+                alert(`Admin "${username}" excluído com sucesso.`);
                 await loadCompanyAdmins();
             }
         }
@@ -2373,7 +2676,7 @@
                 console.error("Erro Supabase (Load Users):", error);
                 return;
             }
-             companyUsersCache = data || [];
+            companyUsersCache = data || [];
 
             if (companyUsersCache.length === 0) {
                 container.innerHTML = '<p class="text-gray-400 text-center">Nenhum usuário cadastrado para esta empresa.</p>';
@@ -2404,7 +2707,7 @@
             document.getElementById('new-user-matricula').value = user.matricula || '';
             document.getElementById('new-user-name').value = user.name || '';
             document.getElementById('new-user-address').value = user.address || '';
-            document.getElementById('new-user-address-validated').value = user.address || ''; 
+            document.getElementById('new-user-address-validated').value = user.address || '';
             document.getElementById('new-user-phone').value = user.phone || '';
             document.getElementById('new-user-password').value = '';
             document.getElementById('new-user-password').placeholder = 'Nova Senha (deixe em branco para manter)';
@@ -2433,11 +2736,11 @@
             const id = document.getElementById('editing-user-id').value;
             const matricula = document.getElementById('new-user-matricula').value.trim();
             const name = document.getElementById('new-user-name').value.trim();
-            
+
             const addressInput = document.getElementById('new-user-address');
             const address = addressInput.value.trim();
             const validatedAddressInput = document.getElementById('new-user-address-validated');
-            const validatedAddress = validatedAddressInput ? validatedAddressInput.value.trim() : address; 
+            const validatedAddress = validatedAddressInput ? validatedAddressInput.value.trim() : address;
 
             if (address && address !== validatedAddress) {
                 return alert('Endereço inválido! Por favor, selecione um endereço da lista de sugestões. Se o endereço não for obrigatório, pode deixar o campo em branco.');
@@ -2449,7 +2752,7 @@
             if (!matricula || !name) {
                 return alert('Matrícula e Nome são obrigatórios.');
             }
-             if (!id && !password) {
+            if (!id && !password) {
                 return alert('Senha é obrigatória para novos usuários.');
             }
 
@@ -2496,7 +2799,7 @@
                 alert(`Usuário "${name}" excluído com sucesso.`);
             }
         }
-        
+
         // ========================================================================
         // INÍCIO: NOVO BLOCO (CRUD de Motivos) - CORRIGIDO
         // ========================================================================
@@ -2512,7 +2815,7 @@
                 container.innerHTML = '<p class="text-red-500 text-center">Erro: Empresa não identificada.</p>';
                 return;
             }
-            
+
             const { data, error } = await supabaseClient
                 .from('motivos')
                 .select('*')
