@@ -445,236 +445,225 @@
             <button onclick="verifySuperAdminPassword()"
                 class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTRAR</button>
             <p id="super-admin-login-error" class="text-red-500 text-center mt-4 hidden">Senha mestra incorreta!</p>
+            <button id="tab-approve-ride" class="tab-button"
+                onclick="showAdminSubScreen('approval-ride-screen')">Aprovar Solicitações</button>
+            <button id="tab-history" class="tab-button"
+                onclick="showAdminSubScreen('history-screen')">Histórico</button>
+            <button id="tab-users" class="tab-button" onclick="showAdminSubScreen('user-management-screen')">Gerenciar
+                Usuários</button>
+            <button id="tab-motivos" class="tab-button"
+                onclick="showAdminSubScreen('motivos-management-screen')">Gerenciar Motivos</button>
         </div>
 
-        <div id="admin-screen" class="screen">
-            <div class="flex justify-between items-center mb-6">
-                <p id="admin-welcome-message" class="text-lg text-gray-300"></p>
-                <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
-            </div>
-
-            <div class="flex flex-wrap justify-center gap-2 mb-6">
-                <button id="tab-request-ride" class="tab-button active"
-                    onclick="showAdminSubScreen('request-ride-screen')">Solicitar Corrida</button>
-                <button id="tab-approve-ride" class="tab-button"
-                    onclick="showAdminSubScreen('approval-ride-screen')">Aprovar Solicitações</button>
-                <button id="tab-history" class="tab-button"
-                    onclick="showAdminSubScreen('history-screen')">Histórico</button>
-                <button id="tab-users" class="tab-button"
-                    onclick="showAdminSubScreen('user-management-screen')">Gerenciar Usuários</button>
-                <button id="tab-motivos" class="tab-button"
-                    onclick="showAdminSubScreen('motivos-management-screen')">Gerenciar Motivos</button>
-            </div>
-
-            <div id="request-ride-screen" class="admin-sub-screen active">
-                <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
-                <div id="admin-request-form" class="card-gradient p-6 rounded-lg max-w-2xl mx-auto">
+        <div id="request-ride-screen" class="admin-sub-screen active">
+            <h2 class="text-2xl font-bold text-center mb-4">Solicitar Corrida</h2>
+            <div id="admin-request-form" class="card-gradient p-6 rounded-lg max-w-2xl mx-auto">
+                <div class="mb-4">
+                    <label for="motivo-select" class="block mb-2 text-sm font-medium">SELECIONE O MOTIVO DA
+                        SOLICITAÇÃO</label>
+                    <select id="motivo-select" class="w-full p-3 rounded-lg">
+                        <option value="">-- Selecione o Motivo --</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="passenger-quantity-select" class="block mb-2 text-sm font-medium">SELECIONE A
+                        QUANTIDADE DE PASSAGEIROS</label>
+                    <select id="passenger-quantity-select" class="w-full p-3 rounded-lg">
+                        <option value="">-- Quantidade --</option>
+                        <option value="1">1 Passageiro</option>
+                        <option value="2">2 Passageiros</option>
+                        <option value="3">3 Passageiros</option>
+                        <option value="4">4 Passageiros</option>
+                    </select>
+                </div>
+                <div id="collaborators-container" class="space-y-4">
+                </div>
+                <div id="admin-ride-details" class="hidden">
+                    <hr class="border-gray-600 my-6">
+                    <h3 class="text-lg font-semibold mb-4 text-center">Detalhes da Viagem</h3>
                     <div class="mb-4">
-                        <label for="motivo-select" class="block mb-2 text-sm font-medium">SELECIONE O MOTIVO DA
-                            SOLICITAÇÃO</label>
-                        <select id="motivo-select" class="w-full p-3 rounded-lg">
-                            <option value="">-- Selecione o Motivo --</option>
-                        </select>
+                        <label for="admin-observation" class="block mb-2 text-sm font-medium">Observação</label>
+                        <textarea id="admin-observation" class="w-full p-3 rounded-lg"
+                            placeholder="Ex: Ponto de referência..." rows="2"></textarea>
                     </div>
-                    <div class="mb-4">
-                        <label for="passenger-quantity-select" class="block mb-2 text-sm font-medium">SELECIONE A
-                            QUANTIDADE DE PASSAGEIROS</label>
-                        <select id="passenger-quantity-select" class="w-full p-3 rounded-lg">
-                            <option value="">-- Quantidade --</option>
-                            <option value="1">1 Passageiro</option>
-                            <option value="2">2 Passageiros</option>
-                            <option value="3">3 Passageiros</option>
-                            <option value="4">4 Passageiros</option>
-                        </select>
-                    </div>
-                    <div id="collaborators-container" class="space-y-4">
-                    </div>
-                    <div id="admin-ride-details" class="hidden">
-                        <hr class="border-gray-600 my-6">
-                        <h3 class="text-lg font-semibold mb-4 text-center">Detalhes da Viagem</h3>
-                        <div class="mb-4">
-                            <label for="admin-observation" class="block mb-2 text-sm font-medium">Observação</label>
-                            <textarea id="admin-observation" class="w-full p-3 rounded-lg"
-                                placeholder="Ex: Ponto de referência..." rows="2"></textarea>
-                        </div>
-                        <div class="mt-6 space-y-3">
-                            <button id="admin-request-immediate-btn"
-                                class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR
-                                AGORA</button>
-                            <button id="admin-request-scheduled-btn"
-                                class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">AGENDAR</button>
-                            <button id="admin-request-multi-schedule-btn"
-                                class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg border-2 border-cyan-400">AGENDAR
-                                VÁRIOS DIAS</button>
-                        </div>
+                    <div class="mt-6 space-y-3">
+                        <button id="admin-request-immediate-btn"
+                            class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">SOLICITAR
+                            AGORA</button>
+                        <button id="admin-request-scheduled-btn"
+                            class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">AGENDAR</button>
+                        <button id="admin-request-multi-schedule-btn"
+                            class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg border-2 border-cyan-400">AGENDAR
+                            VÁRIOS DIAS</button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div id="approval-ride-screen" class="admin-sub-screen">
-                <h2 class="text-2xl font-bold text-center mb-4">Aprovar Solicitações Pendentes</h2>
-                <div id="pending-rides-container" class="space-y-4 max-w-2xl mx-auto">
-                </div>
+        <div id="approval-ride-screen" class="admin-sub-screen">
+            <h2 class="text-2xl font-bold text-center mb-4">Aprovar Solicitações Pendentes</h2>
+            <div id="pending-rides-container" class="space-y-4 max-w-2xl mx-auto">
             </div>
+        </div>
 
-            <div id="history-screen" class="admin-sub-screen">
-                <h2 class="text-2xl font-bold text-center mb-4">Histórico de Corridas</h2>
+        <div id="history-screen" class="admin-sub-screen">
+            <h2 class="text-2xl font-bold text-center mb-4">Histórico de Corridas</h2>
 
-                <div id="history-filters" class="card-gradient p-4 rounded-lg mb-4 space-y-3 max-w-4xl mx-auto">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                            <label for="history-filter-start-date" class="block mb-1 text-xs font-medium">Data
-                                Inicial</label>
-                            <input type="date" id="history-filter-start-date" class="w-full p-2 rounded-lg"
-                                style="color-scheme: dark;">
-                        </div>
-                        <div>
-                            <label for="history-filter-end-date" class="block mb-1 text-xs font-medium">Data
-                                Final</label>
-                            <input type="date" id="history-filter-end-date" class="w-full p-2 rounded-lg"
-                                style="color-scheme: dark;">
-                        </div>
-                        <div>
-                            <label for="history-filter-type" class="block mb-1 text-xs font-medium">Tipo</label>
-                            <select id="history-filter-type" class="w-full p-2 rounded-lg">
-                                <option value="">-- Todos os Tipos --</option>
-                                <option value="immediate">Imediato</option>
-                                <option value="scheduled">Agendado</option>
-                            </select>
-                        </div>
+            <div id="history-filters" class="card-gradient p-4 rounded-lg mb-4 space-y-3 max-w-4xl mx-auto">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label for="history-filter-start-date" class="block mb-1 text-xs font-medium">Data
+                            Inicial</label>
+                        <input type="date" id="history-filter-start-date" class="w-full p-2 rounded-lg"
+                            style="color-scheme: dark;">
                     </div>
                     <div>
-                        <label for="history-filter-status" class="block mb-1 text-xs font-medium">Status</label>
-                        <select id="history-filter-status" class="w-full p-2 rounded-lg">
-                            <option value="">-- Todos os Status --</option>
+                        <label for="history-filter-end-date" class="block mb-1 text-xs font-medium">Data
+                            Final</label>
+                        <input type="date" id="history-filter-end-date" class="w-full p-2 rounded-lg"
+                            style="color-scheme: dark;">
+                    </div>
+                    <div>
+                        <label for="history-filter-type" class="block mb-1 text-xs font-medium">Tipo</label>
+                        <select id="history-filter-type" class="w-full p-2 rounded-lg">
+                            <option value="">-- Todos os Tipos --</option>
+                            <option value="immediate">Imediato</option>
+                            <option value="scheduled">Agendado</option>
                         </select>
                     </div>
-                    <div class="flex flex-wrap gap-2 justify-center">
-                        <button onclick="applyHistoryFilter()"
-                            class="flex-grow py-2 px-4 font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700">Filtrar</button>
-                        <button onclick="clearHistoryFilter()"
-                            class="flex-grow py-2 px-4 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">Limpar</button>
-                    </div>
-                    <button onclick="exportCompanyDataToExcel()"
-                        class="w-full py-2 px-4 font-semibold rounded-lg button-gradient mt-2">Exportar para
-                        Excel</button>
+                </div>
+                <div>
+                    <label for="history-filter-status" class="block mb-1 text-xs font-medium">Status</label>
+                    <select id="history-filter-status" class="w-full p-2 rounded-lg">
+                        <option value="">-- Todos os Status --</option>
+                    </select>
+                </div>
+                <div class="flex flex-wrap gap-2 justify-center">
+                    <button onclick="applyHistoryFilter()"
+                        class="flex-grow py-2 px-4 font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700">Filtrar</button>
+                    <button onclick="clearHistoryFilter()"
+                        class="flex-grow py-2 px-4 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">Limpar</button>
+                </div>
+                <button onclick="exportCompanyDataToExcel()"
+                    class="w-full py-2 px-4 font-semibold rounded-lg button-gradient mt-2">Exportar para
+                    Excel</button>
 
-                    <p id="history-filter-display" class="text-center text-xs text-gray-400 h-4"></p>
-                </div>
-                <div id="history-table-wrapper" class="overflow-x-auto rounded-lg border border-gray-700"
-                    style="max-height: 500px; overflow-y: auto;">
-                    <table id="history-table" class="w-full min-w-[1200px]" style="display: none;">
-                        <thead class="bg-gray-800">
-                            <tr>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">ID</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Solicitante</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motivo</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Solicitação
-                                </th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Agendada
-                                </th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Aceite</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Origem</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Destinos</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Passag.</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motorista</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Observação</th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Admin Solicitante
-                                </th>
-                                <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Tipo</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body" class="bg-gray-900 divide-y divide-gray-700">
-                        </tbody>
-                    </table>
-                </div>
-                <div id="history-rides-container">
-                </div>
+                <p id="history-filter-display" class="text-center text-xs text-gray-400 h-4"></p>
             </div>
-            <div id="user-management-screen" class="admin-sub-screen">
-                <h2 class="text-2xl font-bold text-center mb-4">Gerenciar Usuários</h2>
-                <div class="max-w-2xl mx-auto">
-                    <div class="card-gradient p-4 rounded-lg mb-6">
-                        <h3 id="user-form-title" class="text-lg font-semibold mb-2">Adicionar Usuário</h3>
-                        <input type="hidden" id="editing-user-id">
-                        <div class="space-y-2">
-                            <input type="text" id="new-user-matricula" placeholder="Matrícula"
-                                class="w-full p-2 rounded-lg">
-                            <input type="text" id="new-user-name" placeholder="Nome Completo"
-                                class="w-full p-2 rounded-lg">
-
-                            <div class="autocomplete-container">
-                                <input type="text" id="new-user-address" placeholder="Endereço"
-                                    class="w-full p-2 rounded-lg"
-                                    oninput="handleAddressInput(event, 'new-user-addressList')">
-                                <input type="hidden" id="new-user-address-validated">
-                                <div class="autocomplete-list" id="new-user-addressList"></div>
-                            </div>
-
-                            <input type="tel" id="new-user-phone" placeholder="Telefone" class="w-full p-2 rounded-lg">
-                            <input type="text" id="new-user-password" placeholder="Senha" class="w-full p-2 rounded-lg">
-                        </div>
-                        <button onclick="addOrUpdateUser()"
-                            class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
-                        <button id="cancel-user-edit-btn" onclick="cancelUserEdit()"
-                            class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar
-                            Edição</button>
-                    </div>
-                    <div id="user-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                    </div>
-                </div>
+            <div id="history-table-wrapper" class="overflow-x-auto rounded-lg border border-gray-700"
+                style="max-height: 500px; overflow-y: auto;">
+                <table id="history-table" class="w-full min-w-[1200px]" style="display: none;">
+                    <thead class="bg-gray-800">
+                        <tr>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">ID</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Solicitante</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motivo</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Solicitação
+                            </th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Agendada
+                            </th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Data Aceite</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Origem</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Destinos</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Passag.</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Motorista</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Observação</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Admin Solicitante
+                            </th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Tipo</th>
+                            <th class="p-3 text-left text-xs font-medium uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="bg-gray-900 divide-y divide-gray-700">
+                    </tbody>
+                </table>
             </div>
-
-            <div id="motivos-management-screen" class="admin-sub-screen">
-                <h2 class="text-2xl font-bold text-center mb-4">Gerenciar Motivos</h2>
-                <div class="max-w-2xl mx-auto">
-                    <div class="card-gradient p-4 rounded-lg mb-6">
-                        <h3 id="motivo-form-title" class="text-lg font-semibold mb-2">Adicionar Motivo</h3>
-                        <input type="hidden" id="editing-motivo-id">
-                        <div class="space-y-2">
-                            <input type="text" id="new-motivo-name"
-                                placeholder="Nome do Motivo (Ex: Reunião, Entrega de Documentos)"
-                                class="w-full p-2 rounded-lg">
-                        </div>
-                        <button onclick="addOrUpdateMotivo()"
-                            class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
-                        <button id="cancel-motivo-edit-btn" onclick="cancelMotivoEdit()"
-                            class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar
-                            Edição</button>
-                    </div>
-                    <div id="motivo-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                    </div>
-                </div>
+            <div id="history-rides-container">
             </div>
         </div>
-
-        <div id="company-management-screen" class="screen">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">Gerenciar Empresas</h2>
-                <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
-            </div>
+        <div id="user-management-screen" class="admin-sub-screen">
+            <h2 class="text-2xl font-bold text-center mb-4">Gerenciar Usuários</h2>
             <div class="max-w-2xl mx-auto">
                 <div class="card-gradient p-4 rounded-lg mb-6">
-                    <h3 id="company-form-title" class="text-lg font-semibold mb-2">Adicionar Empresa</h3>
-                    <input type="hidden" id="editing-company-id">
-                    <div class="flex gap-2 mb-2">
-                        <input type="text" id="new-company-name" placeholder="Nome da Empresa"
+                    <h3 id="user-form-title" class="text-lg font-semibold mb-2">Adicionar Usuário</h3>
+                    <input type="hidden" id="editing-user-id">
+                    <div class="space-y-2">
+                        <input type="text" id="new-user-matricula" placeholder="Matrícula"
                             class="w-full p-2 rounded-lg">
+                        <input type="text" id="new-user-name" placeholder="Nome Completo" class="w-full p-2 rounded-lg">
+
+                        <div class="autocomplete-container">
+                            <input type="text" id="new-user-address" placeholder="Endereço"
+                                class="w-full p-2 rounded-lg"
+                                oninput="handleAddressInput(event, 'new-user-addressList')">
+                            <input type="hidden" id="new-user-address-validated">
+                            <div class="autocomplete-list" id="new-user-addressList"></div>
+                        </div>
+
+                        <input type="tel" id="new-user-phone" placeholder="Telefone" class="w-full p-2 rounded-lg">
+                        <input type="text" id="new-user-password" placeholder="Senha" class="w-full p-2 rounded-lg">
                     </div>
-                    <button onclick="addOrUpdateCompany()"
-                        class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar</button>
-                    <button id="cancel-edit-btn" onclick="cancelEdit()"
+                    <button onclick="addOrUpdateUser()"
+                        class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
+                    <button id="cancel-user-edit-btn" onclick="cancelUserEdit()"
                         class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar
                         Edição</button>
                 </div>
-                <div id="company-list-container" class="space-y-3">
+                <div id="user-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                 </div>
             </div>
         </div>
 
-        <div id="admin-management-screen" class="screen">
+        <div id="motivos-management-screen" class="admin-sub-screen">
+            <h2 class="text-2xl font-bold text-center mb-4">Gerenciar Motivos</h2>
+            <div class="max-w-2xl mx-auto">
+                <div class="card-gradient p-4 rounded-lg mb-6">
+                    <h3 id="motivo-form-title" class="text-lg font-semibold mb-2">Adicionar Motivo</h3>
+                    <input type="hidden" id="editing-motivo-id">
+                    <div class="space-y-2">
+                        <input type="text" id="new-motivo-name"
+                            placeholder="Nome do Motivo (Ex: Reunião, Entrega de Documentos)"
+                            class="w-full p-2 rounded-lg">
+                    </div>
+                    <button onclick="addOrUpdateMotivo()"
+                        class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700 mt-3">Salvar</button>
+                    <button id="cancel-motivo-edit-btn" onclick="cancelMotivoEdit()"
+                        class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar
+                        Edição</button>
+                </div>
+                <div id="motivo-list-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                </div>
+            </div>
         </div>
+    </div>
+
+    <div id="company-management-screen" class="screen">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Gerenciar Empresas</h2>
+            <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 p-2 rounded-lg">Sair</button>
+        </div>
+        <div class="max-w-2xl mx-auto">
+            <div class="card-gradient p-4 rounded-lg mb-6">
+                <h3 id="company-form-title" class="text-lg font-semibold mb-2">Adicionar Empresa</h3>
+                <input type="hidden" id="editing-company-id">
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="new-company-name" placeholder="Nome da Empresa"
+                        class="w-full p-2 rounded-lg">
+                </div>
+                <button onclick="addOrUpdateCompany()"
+                    class="w-full py-2 font-semibold rounded-lg bg-green-600 hover:bg-green-700">Salvar</button>
+                <button id="cancel-edit-btn" onclick="cancelEdit()"
+                    class="w-full py-2 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700 mt-2 hidden">Cancelar
+                    Edição</button>
+            </div>
+            <div id="company-list-container" class="space-y-3">
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-management-screen" class="screen">
+    </div>
     </div>
 
     <div id="schedule-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
@@ -740,6 +729,27 @@
                 <button id="no-destination-btn-yes"
                     class="py-2 px-8 font-semibold rounded-lg button-gradient">SIM</button>
             </div>
+        </div>
+    </div>
+
+
+    <!-- Modal Informativo sobre Cancelamento -->
+    <div id="cancel-info-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4"
+        style="z-index: 9999 !important;">
+        <div class="card-gradient p-6 rounded-lg shadow-xl text-center w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-4 text-cyan-400">⚠️ INFORMAÇÃO IMPORTANTE</h3>
+            <div class="text-left mb-6 space-y-3">
+                <p class="text-base leading-relaxed">
+                    <strong class="text-cyan-400">VOCÊ SÓ PODERÁ CANCELAR ESSA SOLICITAÇÃO CASO O ADMINISTRADOR NÃO
+                        DESTINE A SOLICITAÇÃO AO MOTORISTA.</strong>
+                </p>
+                <p class="text-sm text-gray-300">
+                    Caso queira cancelar, vá até <strong class="text-white">HISTÓRICO</strong> e no final da tabela
+                    clique em <strong class="text-red-400">CANCELAR</strong>.
+                </p>
+            </div>
+            <button onclick="closeCancelInfoModal()"
+                class="w-full py-3 px-6 text-lg font-semibold rounded-lg button-gradient shadow-lg">ENTENDI</button>
         </div>
     </div>
 
@@ -1365,6 +1375,36 @@
         // FIM: NOVAS FUNÇÕES
         // ========================================================================
 
+        // ========================================================================
+        // INÍCIO: FUNÇÕES DO MODAL DE INFORMAÇÃO DE CANCELAMENTO
+        // ========================================================================
+        function openCancelInfoModal() {
+            console.log('Abrindo modal de cancelamento...');
+            const modal = document.getElementById('cancel-info-modal');
+            console.log('Modal encontrado:', modal);
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                modal.style.display = 'flex';
+                console.log('Classe flex adicionada e hidden removida');
+                console.log('Classes atuais:', modal.className);
+                console.log('Display style:', modal.style.display);
+            } else {
+                console.error('Modal cancel-info-modal não encontrado!');
+            }
+        }
+        function closeCancelInfoModal() {
+            const modal = document.getElementById('cancel-info-modal');
+            if (modal) {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }
+        // ========================================================================
+        // FIM: FUNÇÕES DO MODAL DE INFORMAÇÃO DE CANCELAMENTO
+        // ========================================================================
+
 
         // --- Funções openAdminScheduleModal, closeScheduleModal, confirmAdminSchedule --- (sem alterações)
         function openAdminScheduleModal() {
@@ -1615,6 +1655,10 @@
                 resetAdminForm(); // Limpa o formulário principal
                 closeMultiScheduleModal(); // Fecha o modal
                 // tempMultiScheduleRideData já é limpo pelo closeMultiScheduleModal()
+                // Exibe o modal informativo sobre cancelamento após um pequeno delay
+                setTimeout(() => {
+                    openCancelInfoModal();
+                }, 100);
             }
         }
 
@@ -1756,6 +1800,10 @@
             } else {
                 alert(`Corrida para ${collaborator.name} ${passengerCount > 1 ? `e mais ${passengerCount - 1}` : ''} solicitada com sucesso! Status: ${rideData.status}.`);
                 resetAdminForm(); // Limpa o formulário
+                // Exibe o modal informativo sobre cancelamento após um pequeno delay para garantir que o alert seja fechado
+                setTimeout(() => {
+                    openCancelInfoModal();
+                }, 100);
             }
 
             // Reseta as variáveis de controle
@@ -1876,6 +1924,7 @@
                             <p class="text-xs text-gray-500 mt-1">Passageiros: ${ride.passenger_count || 1}</p>
                         </div>
                         <div class="flex justify-end gap-3 mt-4">
+                             <button onclick="cancelRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-gray-600 hover:bg-gray-700">CANCELAR</button>
                              <button onclick="rejectRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-red-600 hover:bg-red-700">REJEITAR</button>
                              <button onclick="approveRide(${ride.id})" class="py-2 px-5 font-semibold rounded-lg bg-green-600 hover:bg-green-700">APROVAR</button>
                         </div>
@@ -2111,6 +2160,12 @@
                 const motivoName = ride.motivos ? ride.motivos.nome : 'N/A'; // Usa 'nome'
                 const allPassengersNames = extractAllPassengersNames(ride.userName, ride.destination); // Usa a nova função
 
+                // Verifica se a solicitação pode ser cancelada (status: pending_approval, approved, scheduled)
+                const canCancel = ['pending_approval', 'approved', 'scheduled'].includes(ride.status);
+                const cancelButton = canCancel ?
+                    `<button onclick="cancelRide(${ride.id})" class="py-1 px-3 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white">Cancelar</button>` :
+                    '<span class="text-xs text-gray-500">-</span>';
+
                 const row = `
                     <tr class="hover:bg-gray-800">
                         <td class="p-3 text-sm">${ride.id}</td>
@@ -2127,6 +2182,7 @@
                         <td class="p-3 text-sm">${ride.observation || 'N/A'}</td>
                         <td class="p-3 text-sm">${ride.requested_by_admin_name || 'N/A'}</td>
                         <td class="p-3 text-sm">${typeText}</td>
+                        <td class="p-3 text-sm">${cancelButton}</td>
                     </tr>
                 `;
                 tableBody.innerHTML += row;
@@ -2267,6 +2323,31 @@
             } else {
                 alert('Solicitação de corrida rejeitada.');
                 loadPendingRides();
+            }
+        }
+
+        async function cancelRide(rideId) {
+            if (!confirm('Tem certeza que deseja CANCELAR esta solicitação de corrida?')) return;
+
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ status: 'canceled' })
+                .eq('id', rideId);
+
+            if (error) {
+                alert('Erro ao cancelar a corrida: ' + error.message);
+                console.error("Erro Supabase (cancelRide):", error);
+            } else {
+                alert('Solicitação de corrida cancelada com sucesso.');
+                // Recarrega a tela ativa
+                const activeSubScreen = document.querySelector('.admin-sub-screen.active');
+                if (activeSubScreen) {
+                    if (activeSubScreen.id === 'approval-ride-screen') {
+                        loadPendingRides();
+                    } else if (activeSubScreen.id === 'history-screen') {
+                        loadHistoryRides();
+                    }
+                }
             }
         }
 
