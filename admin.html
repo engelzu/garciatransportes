@@ -1178,6 +1178,19 @@
                         class="py-2 px-4 font-semibold rounded-lg bg-green-600 hover:bg-green-700 h-fit text-white">Exportar
                         Excel</button>
                 </div>
+                
+                <div class="w-full flex justify-center mt-4 pt-4 border-t border-gray-700">
+                    <div class="flex items-end gap-2">
+                        <div>
+                            <label for="records-month-filter" class="block mb-2 text-sm font-medium">Exportar Mês Fechado</label>
+                            <input type="month" id="records-month-filter" 
+                                class="p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-white h-[40px]"
+                                style="color-scheme: dark;">
+                        </div>
+                        <button onclick="exportReportByMonth()"
+                            class="py-2 px-4 font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 h-[40px] text-white">Baixar Mês Selecionado</button>
+                    </div>
+                </div>
             </div>
             <div class="card-gradient p-4 rounded-lg overflow-x-auto">
                 <table id="all-records-table" class="w-full text-sm text-left">
@@ -2859,7 +2872,7 @@
             if (driversError) console.error('Error fetching drivers:', driversError); else state.drivers = drivers;
             const { data: users, error: usersError } = await supabaseClient.from('users').select('*');
             if (usersError) console.error('Error fetching users:', usersError); else state.users = users;
-            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*');
+            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*, motivos(nome)');
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
         async function sendNewRideEmailNotification(ride) {
@@ -3086,15 +3099,24 @@
 
             const dataToExport = state.rides.map(ride => ({
                 'ID da Corrida': ride.id,
+                'ID do Usuário': ride.userId || 'N/A',
+                'ID do Motorista': ride.driverId || 'N/A',
+                'Motivo': ride.motivos ? ride.motivos.nome : '-',
+                'Tipo de Solicitação': ride.request_type === 'scheduled' ? 'Agendada' : 'Imediata',
                 'Data da Solicitação': new Date(ride.requestTime).toLocaleString('pt-BR'),
                 'Data Agendada': ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : 'N/A',
                 'Data do Aceite': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : 'N/A',
-                'Usuário': ride.userName,
+                'Usuário': ride.userName || 'N/A',
                 'Empresa': ride.userCompany || '-',
+                'Telefone Usuário': ride.userPhone || 'N/A',
                 'Origem': cleanAddressString(ride.origin_address) || '-',
                 'Destino': formatDestination(ride.destination),
                 'Observação': ride.observation || '-',
                 'Motorista': ride.driverName || '-',
+                'Carro Modelo': ride.car_model || '-',
+                'Carro Cor': ride.car_color || '-',
+                'Carro Placa': ride.plate || '-',
+                'Telefone Motorista': ride.driverPhone || '-',
                 'Status': translateStatus(ride.status).text,
                 'Distância (km)': ride.km || 'N/A'
             }));
@@ -3217,7 +3239,7 @@
             const tableBody = document.getElementById('all-records-body');
             tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4"><div class="loader mx-auto"></div></td></tr>'; // Colspan atualizado para 11
 
-            const { data, error } = await supabaseClient.from('rides').select('*').order('requestTime', { ascending: false });
+            const { data, error } = await supabaseClient.from('rides').select('*, motivos(nome)').order('requestTime', { ascending: false });
             if (error) {
                 tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-red-500">Erro ao carregar registros.</td></tr>'; // Colspan atualizado
                 return;
@@ -3313,54 +3335,118 @@
         }
 
         function exportRecordsToExcel() {
-            const table = document.getElementById('all-records-table');
-            const rows = table.querySelectorAll('tbody tr');
-            const dataToExport = [];
+            const startDate = document.getElementById('records-start-date').value;
+            const endDate = document.getElementById('records-end-date').value;
+            const selectedCompany = document.getElementById('records-company-filter').value;
+            
+            const start = startDate ? new Date(startDate).getTime() : null;
+            const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
 
-            // Pega os cabeçalhos da tabela HTML
-            const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
-            dataToExport.push(headers);
+            // Filtra os registros no STATE baseado nos mesmos filtros visíveis da tela
+            const filteredRides = state.rides.filter(ride => {
+                const recordDate = ride.requestTime ? new Date(ride.requestTime).getTime() : 0;
+                let dateMatch = true;
+                if (start && recordDate < start) dateMatch = false;
+                if (end && recordDate > end) dateMatch = false;
 
-            let visibleRows = 0;
-            rows.forEach(row => {
-                if (row.style.display !== 'none') { // Exporta apenas linhas visíveis
-                    const cells = Array.from(row.querySelectorAll('td')).map(td => {
-                        // Trata a célula de status para pegar só o texto
-                        if (td.querySelector('.status-badge')) {
-                            return td.querySelector('.status-badge').textContent.trim();
-                        }
-                        return td.textContent.trim();
-                    });
-                    dataToExport.push(cells);
-                    visibleRows++;
-                }
+                const rowCompany = ride.userCompany || '-';
+                let companyMatch = (selectedCompany === "" || rowCompany === selectedCompany || (selectedCompany === '-' && rowCompany === '-'));
+                
+                return dateMatch && companyMatch;
             });
 
-            if (visibleRows === 0) {
-                showModal("Nenhum registro (visível) encontrado para exportar. Verifique seus filtros.");
+            if (filteredRides.length === 0) {
+                showModal("Nenhum registro encontrado com os filtros atuais para exportar.");
                 return;
             }
 
-            const worksheet = XLSX.utils.aoa_to_sheet(dataToExport);
+            // Exportar *todas* as colunas do banco
+            const dataToExport = filteredRides.map(ride => ({
+                'ID da Corrida': ride.id || '-',
+                'ID do Usuário': ride.userId || '-',
+                'ID do Motorista': ride.driverId || '-',
+                'Motivo': ride.motivos ? ride.motivos.nome : '-',
+                'Nome do Motorista': ride.driverName || '-',
+                'Telefone Motorista': ride.driverPhone || '-',
+                'Carro Modelo': ride.car_model || '-',
+                'Carro Cor': ride.car_color || '-',
+                'Carro Placa': ride.plate || '-',
+                'Nome do Usuário': ride.userName || '-',
+                'Empresa': ride.userCompany || '-',
+                'Telefone Usuário': ride.userPhone || '-',
+                'Origem (Endereço Completo)': ride.origin_address || '-',
+                'Destino (Endereço Formatado)': formatDestination(ride.destination),
+                'Destino (Raw JSON)': ride.destination || '-',
+                'Tipo de Solicitação': ride.request_type === 'scheduled' ? 'Agendada' : 'Imediata',
+                'Status Atual': translateStatus(ride.status).text,
+                'Distância (km)': ride.km || '0',
+                'Data da Solicitação Timestamp': ride.requestTime ? new Date(ride.requestTime).toLocaleString('pt-BR') : '-',
+                'Data Agendada Timestamp': ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : '-',
+                'Data do Aceite Timestamp': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : '-',
+                'Localização do Usuário (Lat/Lon)': ride.userLocation ? `${ride.userLocation.lat}, ${ride.userLocation.lon}` : '-',
+                'Observação do Usuário': ride.observation || '-'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Todos os Registros");
 
-            // Ajusta a largura das colunas (adiciona larguras para as novas colunas)
-            worksheet['!cols'] = [
-                { wch: 20 }, // Data Solicitação
-                { wch: 20 }, // Data Agendada (NOVO)
-                { wch: 20 }, // Data Aceite (NOVO)
-                { wch: 25 }, // Usuário
-                { wch: 20 }, // Empresa
-                { wch: 40 }, // Origem
-                { wch: 40 }, // Destino
-                { wch: 30 }, // Observação
-                { wch: 25 }, // Motorista
-                { wch: 15 }, // Status
-                { wch: 15 }  // Distância (km)
-            ];
+            XLSX.writeFile(workbook, "relatorio_de_registros_completo.xlsx");
+        }
 
-            XLSX.writeFile(workbook, "relatorio_de_registros.xlsx");
+        function exportReportByMonth() {
+            const monthInput = document.getElementById('records-month-filter').value; // 'YYYY-MM'
+            if (!monthInput) {
+                showModal("Por favor, selecione um mês para exportar.");
+                return;
+            }
+
+            const [yearStr, monthStr] = monthInput.split('-');
+            const targetYear = parseInt(yearStr);
+            const targetMonth = parseInt(monthStr) - 1; // getMonth() é 0-indexed
+
+            // Filtra as corridas do mês/ano alvo
+            const filteredRides = state.rides.filter(ride => {
+                if (!ride.requestTime) return false;
+                const d = new Date(ride.requestTime);
+                return d.getFullYear() === targetYear && d.getMonth() === targetMonth;
+            });
+
+            if (filteredRides.length === 0) {
+                showModal(`Nenhum registro encontrado em ${monthStr}/${yearStr}.`);
+                return;
+            }
+
+            const dataToExport = filteredRides.map(ride => ({
+                'ID da Corrida': ride.id || '-',
+                'ID do Usuário': ride.userId || '-',
+                'ID do Motorista': ride.driverId || '-',
+                'Motivo': ride.motivos ? ride.motivos.nome : '-',
+                'Nome do Motorista': ride.driverName || '-',
+                'Telefone Motorista': ride.driverPhone || '-',
+                'Carro Modelo': ride.car_model || '-',
+                'Carro Cor': ride.car_color || '-',
+                'Carro Placa': ride.plate || '-',
+                'Nome do Usuário': ride.userName || '-',
+                'Empresa': ride.userCompany || '-',
+                'Telefone Usuário': ride.userPhone || '-',
+                'Origem (Endereço Completo)': ride.origin_address || '-',
+                'Destino (Endereço Formatado)': formatDestination(ride.destination),
+                'Destino (Raw JSON)': ride.destination || '-',
+                'Tipo de Solicitação': ride.request_type === 'scheduled' ? 'Agendada' : 'Imediata',
+                'Status Atual': translateStatus(ride.status).text,
+                'Distância (km)': ride.km || '0',
+                'Data da Solicitação Timestamp': ride.requestTime ? new Date(ride.requestTime).toLocaleString('pt-BR') : '-',
+                'Data Agendada Timestamp': ride.scheduled_datetime ? new Date(ride.scheduled_datetime).toLocaleString('pt-BR') : '-',
+                'Data do Aceite Timestamp': ride.acceptTime ? new Date(ride.acceptTime).toLocaleString('pt-BR') : '-',
+                'Localização do Usuário (Lat/Lon)': ride.userLocation ? `${ride.userLocation.lat}, ${ride.userLocation.lon}` : '-',
+                'Observação do Usuário': ride.observation || '-'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, `Registros ${monthStr}-${yearStr}`);
+            XLSX.writeFile(workbook, `relatorio_${monthStr}_${yearStr}_completo.xlsx`);
         }
 
         function clearRecordsFilter() {
