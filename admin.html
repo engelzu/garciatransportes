@@ -1275,6 +1275,8 @@
     </div>
 
     <script>
+        let adminRefreshInterval = null;
+
         // // [MOVING showScreen DEFINITION TO TOP TO PREVENT ReferenceError]
         window.showScreen = function (screenId) {
             const body = document.body;
@@ -1309,6 +1311,8 @@
                 body.classList.remove('justify-start');
             }
 
+            if (adminRefreshInterval) clearInterval(adminRefreshInterval);
+
             // Atualizações específicas da tela
             if (screenId === 'admin-screen') {
                 const timestampEl = document.getElementById('admin-timestamp');
@@ -1317,9 +1321,22 @@
                 }
             }
             if (screenId === 'admin-requests-screen') {
-                loadAdminRequests();
-                renderOngoingRidesTable();
+                // Força busca de dados ao entrar na tela
+                fetchAllData().then(() => {
+                    loadAdminRequests();
+                    renderOngoingRidesTable();
+                });
                 startDigitalClock('digital-clock');
+
+                // Polling de segurança (atualiza a cada 30s se o tempo real falhar)
+                adminRefreshInterval = setInterval(() => {
+                    if (document.querySelector('.screen.active')?.id === 'admin-requests-screen') {
+                        fetchAllData().then(() => {
+                            loadAdminRequests();
+                            renderOngoingRidesTable();
+                        });
+                    }
+                }, 30000);
             }
             if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
             if (screenId === 'admin-user-crud-screen') renderUserCrudList();
@@ -2872,7 +2889,7 @@
             if (driversError) console.error('Error fetching drivers:', driversError); else state.drivers = drivers;
             const { data: users, error: usersError } = await supabaseClient.from('users').select('*');
             if (usersError) console.error('Error fetching users:', usersError); else state.users = users;
-            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*, motivos(nome)');
+            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*, motivos(nome)').order('requestTime', { ascending: false });
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
         async function sendNewRideEmailNotification(ride) {
