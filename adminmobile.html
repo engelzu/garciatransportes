@@ -809,6 +809,8 @@
     </div>
 
     <script>
+        let adminRefreshInterval = null;
+
         // --- INÍCIO DA FUNÇÃO initApp (Movida para o topo) ---
         async function initApp() {
             // Garante que o supabaseClient está inicializado antes de prosseguir
@@ -875,6 +877,8 @@
                 body.classList.remove('justify-start');
             }
 
+            if (adminRefreshInterval) clearInterval(adminRefreshInterval);
+
             // Atualizações específicas da tela
             if (screenId === 'admin-screen') {
                  // Redireciona imediatamente para a tela de solicitações, pois o painel foi removido
@@ -882,9 +886,22 @@
                  return;
             }
             if (screenId === 'admin-requests-screen') {
-                loadAdminRequests();
-                renderOngoingRidesCards(); // Chamada para a nova função de cards
+                // Força busca de dados ao entrar na tela
+                fetchAllData().then(() => {
+                    loadAdminRequests();
+                    renderOngoingRidesCards(); // Chamada para a nova função de cards
+                });
                 startDigitalClock('digital-clock');
+
+                // Polling de segurança (atualiza a cada 30s se o tempo real falhar)
+                adminRefreshInterval = setInterval(() => {
+                    if (document.querySelector('.screen.active')?.id === 'admin-requests-screen') {
+                        fetchAllData().then(() => {
+                            loadAdminRequests();
+                            renderOngoingRidesCards();
+                        });
+                    }
+                }, 30000);
             }
             // Funções de renderização das telas removidas (mantidas apenas para compatibilidade de chamadas)
             if (screenId === 'admin-driver-crud-screen') { /* renderDriverCrudList(); */ }
@@ -2010,9 +2027,20 @@
             if (driversError) console.error('Error fetching drivers:', driversError); else state.drivers = drivers;
             const { data: users, error: usersError } = await supabaseClient.from('users').select('*');
             if (usersError) console.error('Error fetching users:', usersError); else state.users = users;
-            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*');
+            const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*, motivos(nome)').order('requestTime', { ascending: false });
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
+
+        // Atualiza os dados quando a aba do navegador volta a ter foco
+        window.addEventListener('focus', () => {
+            const activeScreen = document.querySelector('.screen.active')?.id;
+            if (activeScreen === 'admin-requests-screen') {
+                fetchAllData().then(() => {
+                    loadAdminRequests();
+                    renderOngoingRidesCards();
+                });
+            }
+        });
 
         // --- FIM DA CORREÇÃO ---
         async function geocodeAddress(address) { /* ... */ return null; }
