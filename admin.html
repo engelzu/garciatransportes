@@ -2892,6 +2892,9 @@
             const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*, motivos(nome)').order('requestTime', { ascending: false });
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
+        function getNotificationEmail() {
+            return 'jonatantaxi24horas@gmail.com';
+        }
         async function sendNewRideEmailNotification(ride) {
             console.log('Tentando enviar e-mail para a nova corrida:', ride);
 
