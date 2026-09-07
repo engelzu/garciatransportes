@@ -33,8 +33,8 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Garcia Transportes <onboarding@resend.dev>',
-        to: [to],
+        from: 'onboarding@resend.dev',
+        to: Array.isArray(to) ? to : [to],
         subject: subject,
         html: html
       })
