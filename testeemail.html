@@ -103,7 +103,8 @@
                     status.className = 'success';
                     status.innerHTML = `✅ <strong>Sucesso!</strong><br>ID: ${result.data?.id}<br>Verifique engelmobile2020@gmail.com`;
                 } else {
-                    throw new Error(result.error || 'Erro desconhecido');
+                    const errDetail = result.message || result.error || JSON.stringify(result);
+                    throw new Error(`[Status ${response.status}] ${errDetail}`);
                 }
             } catch (error) {
                 status.className = 'error';
