@@ -2533,14 +2533,13 @@
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
         }
 
+	        function getNotificationEmail() {
+	            return 'engelmobile2020@gmail.com';
+	        }
+
 	        async function sendNewRideEmailNotification(ride) {
 	            console.log('Tentando enviar e-mail para a nova corrida:', ride);
 	            
-	            // 1. Usa a chave API fornecida pelo usuário e inicializa o cliente Resend
-	            const RESEND_API_KEY = 're_Zz22Tx4D_E9SBeJHkQ94R8V18uk7nWidg';
-	            const resend = new Resend(RESEND_API_KEY);
-	
-	            // 2. Obtém o e-mail de destino configurado (ou o padrão)
 	            const destinationEmail = getNotificationEmail();
 	
 	            try {
@@ -2558,17 +2557,21 @@
 	                    <p>Acesse o painel administrativo para designar um motorista.</p>
 	                `;
 	                
-	                const { data, error } = await resend.emails.send({
-	                    from: 'Sistema de Notificação <onboarding@resend.dev>', // Use um e-mail verificado no Resend
-	                    to: destinationEmail,
-	                    subject: subject,
-	                    html: htmlBody,
+	                const response = await fetch('/api/send-email', {
+	                    method: 'POST',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    body: JSON.stringify({
+	                        to: destinationEmail,
+	                        subject: subject,
+	                        html: htmlBody
+	                    })
 	                });
-	
-	                if (error) {
-	                    console.error('Erro ao enviar e-mail pelo Resend:', error);
+
+	                const result = await response.json();
+	                if (response.ok) {
+	                    console.log('✅ E-mail enviado com sucesso:', result);
 	                } else {
-	                    console.log('E-mail de notificação enviado com sucesso:', data);
+	                    console.error('❌ Erro ao enviar e-mail:', result);
 	                }
 	
 	            } catch (error) {

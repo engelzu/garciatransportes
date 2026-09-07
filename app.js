@@ -1406,41 +1406,43 @@ async function fetchAllData() {
 async function sendNewRideEmailNotification(ride) {
     console.log('Tentando enviar e-mail para a nova corrida:', ride);
 
-    const RESEND_API_KEY = 're_Zz22Tx4D_E9SBeJHkQ94R8V18uk7nWidg';
-    const resend = new Resend(RESEND_API_KEY);
-
-    const destinationEmail = 'contato@garciatransportes.com.br';
+    const destinationEmail = 'engelmobile2020@gmail.com';
 
     try {
-        const subject = `Nova Solicitação de Corrida: ${ride.userName}`;
+        const subject = `Nova Solicitação de Corrida: ${ride.userName || ride.user_name || 'Passageiro'}`;
         const htmlBody = `
+            <h2>Nova Solicitação de Corrida</h2>
             <p>Uma nova solicitação de corrida foi registrada no sistema:</p>
             <ul>
-                <li><strong>Usuário:</strong> ${ride.userName} (${ride.userCompany || 'N/A'})</li>
-                <li><strong>Origem:</strong> ${ride.origin_address}</li>
-                <li><strong>Destino:</strong> ${formatDestination(ride.destination)}</li>
+                <li><strong>Usuário:</strong> ${ride.userName || ride.user_name || 'N/A'} (${ride.userCompany || ride.user_company || 'N/A'})</li>
+                <li><strong>Origem:</strong> ${ride.origin_address || ride.origin || 'Não informada'}</li>
+                <li><strong>Destino:</strong> ${typeof formatDestination === 'function' ? formatDestination(ride.destination) : (ride.destination || 'Não informado')}</li>
                 <li><strong>Tipo:</strong> ${ride.request_type === 'scheduled' ? 'Agendada' : 'Imediata'}</li>
                 ${ride.scheduled_datetime ? `<li><strong>Data/Hora Agendada:</strong> ${new Date(ride.scheduled_datetime).toLocaleString('pt-BR')}</li>` : ''}
                 <li><strong>Observação:</strong> ${ride.observation || 'Nenhuma'}</li>
             </ul>
-            <p>Acesse o painel administrativo para designar um motorista.</p>
+            <p>Acesse o painel administrativo para mais detalhes.</p>
         `;
 
-        const { data, error } = await resend.emails.send({
-            from: 'Sistema de Notificação <onboarding@resend.dev>',
-            to: destinationEmail,
-            subject: subject,
-            html: htmlBody,
+        const response = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                to: destinationEmail,
+                subject: subject,
+                html: htmlBody
+            })
         });
 
-        if (error) {
-            console.error('Erro ao enviar e-mail pelo Resend:', error);
-        } else {
-            console.log('E-mail de notificação enviado com sucesso:', data);
-        }
+        const result = await response.json();
 
+        if (response.ok) {
+            console.log('✅ E-mail enviado com sucesso:', result);
+        } else {
+            console.error('❌ Erro ao enviar e-mail:', result);
+        }
     } catch (error) {
-        console.error('Erro ao tentar enviar e-mail:', error);
+        console.error('❌ Erro ao tentar enviar e-mail:', error);
     }
 }
 
