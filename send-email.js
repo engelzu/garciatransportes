@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = process.env.RESEND_API_KEY;
-    
+
     if (!apiKey) {
       return res.status(500).json({ error: 'RESEND_API_KEY não configurada' });
     }
@@ -44,7 +44,8 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       console.error('Erro Resend:', data);
-      return res.status(response.status).json(data);
+      const errorMessage = data.message || data.error || (typeof data === 'string' ? data : JSON.stringify(data));
+      return res.status(response.status).json({ error: errorMessage, resendDetails: data });
     }
 
     console.log('✅ Email enviado!');
