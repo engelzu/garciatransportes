@@ -379,6 +379,9 @@ async function requestRide() {
         const { data: newRide, error } = await supabaseClient.from('rides').insert(rideData).select().single();
         if (error) throw error;
         
+        // Trigger email notification immediately
+        sendNewRideEmailNotification(newRide);
+
         // Update state and UI immediately
         state.currentRide = newRide;
         showRideStatus();
@@ -611,6 +614,41 @@ window.handleSignOut = handleSignOut;
 window.addCredits = addCredits;
 window.useCurrentLocation = useCurrentLocation;
 window.calculatePriceEstimate = calculatePriceEstimate;
+
+async function sendNewRideEmailNotification(ride) {
+    if (!ride) return;
+    console.log('Tentando enviar e-mail para a nova corrida:', ride);
+    const destinationEmail = 'engelmobile2020@gmail.com';
+    try {
+        const userName = ride.userName || ride.user_name || state.user?.full_name || 'Passageiro';
+        const userCompany = ride.userCompany || ride.user_company || 'N/A';
+        const origin = ride.origin_address || ride.origin || 'Não informada';
+        let destinationStr = ride.destination || ride.destinations;
+        if (Array.isArray(destinationStr)) destinationStr = destinationStr.join(', ');
+        const subject = `Nova Solicitação de Corrida: ${userName}`;
+        const htmlBody = `
+            <h2>Nova Solicitação de Corrida</h2>
+            <p>Uma nova solicitação de corrida foi registrada no sistema:</p>
+            <ul>
+                <li><strong>Usuário:</strong> ${userName} (${userCompany})</li>
+                <li><strong>Origem:</strong> ${origin}</li>
+                <li><strong>Destino:</strong> ${destinationStr || 'Não informado'}</li>
+                <li><strong>Tipo:</strong> ${ride.request_type === 'scheduled' ? 'Agendada' : 'Imediata'}</li>
+                ${ride.scheduled_datetime ? `<li><strong>Data/Hora Agendada:</strong> ${new Date(ride.scheduled_datetime).toLocaleString('pt-BR')}</li>` : ''}
+                <li><strong>Observação:</strong> ${ride.observation || 'Nenhuma'}</li>
+            </ul>
+            <p>Acesse o painel administrativo para mais detalhes.</p>
+        `;
+        const response = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to: destinationEmail, subject: subject, html: htmlBody })
+        });
+        const result = await response.json();
+        if (response.ok) console.log('✅ E-mail enviado com sucesso:', result);
+        else console.error('❌ Erro ao enviar e-mail:', result);
+    } catch (error) { console.error('❌ Erro ao tentar enviar e-mail:', error); }
+}
 window.requestRide = requestRide;
 window.cancelRide = cancelRide;
 window.handleSignInWithProvider = handleSignInWithProvider; // Make sure this is exposed

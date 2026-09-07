@@ -562,6 +562,7 @@ async function requestRide() {
         }
 
         state.currentUserRideId = data.id;
+        sendNewRideEmailNotification(data);
         document.getElementById('user-status-message').textContent = 'Aguardando um motorista aceitar...';
         startUserStatusCheck();
 
