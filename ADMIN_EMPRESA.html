@@ -8,8 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Substitui API Geoapify pela do Google -->
-    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyADSCUHjzyFUwjfcui_lk6vDSQ3PU0bu7g&libraries=places"></script>
+    <!-- Busca de endereço via Photon (gratuito, sem chave) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -820,8 +819,6 @@
             }, 300); // 300ms de debounce
         }
 
-        let autocompleteService;
-
         async function searchAddress(query, listId) {
             if (query.length < 3) {
                 hideList(listId);
@@ -834,42 +831,35 @@
             list.classList.add('show');
 
             try {
-                // Remove the manual REST fetch and use Google Maps JS SDK Instead
-                if (!autocompleteService) {
-                    if (!window.google || !window.google.maps || !window.google.maps.places) {
-                        console.warn("Google Maps SDK Library not fully loaded yet.");
-                        list.innerHTML = '<div class="no-results">Aguarde o carregamento do mapa</div>';
-                        return;
-                    }
-                    autocompleteService = new google.maps.places.AutocompleteService();
-                }
+                // Photon (OpenStreetMap) - gratuito e sem chave de API
+                // lat/lon priorizam resultados próximos (centro do Brasil/SP); ajuste se necessário
+                const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&lang=en&lat=-23.55&lon=-46.63`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const json = await response.json();
 
-                autocompleteService.getPlacePredictions({
-                    input: query,
-                    componentRestrictions: { country: "br" }, // Opcional, restringe as sugestões ao Brasil
-                }, (predictions, status) => {
-                    if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
-                        list.innerHTML = '<div class="no-results">Nenhum resultado encontrado</div>';
-                        return;
-                    }
-
-                    // Transforma os resultados do Google no formato esperado pelas funções existentes de renderização
-                    const data = {
-                        features: predictions.map(item => ({
+                // Mantém apenas resultados do Brasil
+                const features = (json.features || [])
+                    .filter(f => !f.properties.countrycode || f.properties.countrycode === 'BR')
+                    .map(f => {
+                        const p = f.properties;
+                        const rua = [p.street || p.name, p.housenumber].filter(Boolean).join(', ');
+                        const bairro = p.district || p.locality || '';
+                        return {
                             properties: {
-                                formatted: item.description, // O Google junta todo o endereço aqui
-                                city: item.structured_formatting?.secondary_text || '', // Complemento para quebrar a linha estilo Maps
+                                formatted: [rua, bairro, p.city, p.state].filter(Boolean).join(' - '),
+                                city: [p.city, p.state].filter(Boolean).join(', '),
                                 state: ''
                             }
-                        }))
-                    };
+                        };
+                    })
+                    .filter(f => f.properties.formatted);
 
-                    if (data.features && data.features.length > 0) {
-                        displayResults(data.features, listId);
-                    } else {
-                        list.innerHTML = '<div class="no-results">Nenhum resultado encontrado</div>';
-                    }
-                });
+                if (features.length > 0) {
+                    displayResults(features, listId);
+                } else {
+                    list.innerHTML = '<div class="no-results">Nenhum resultado encontrado</div>';
+                }
             } catch (error) {
                 console.error('Erro ao buscar endereços:', error);
                 list.innerHTML = '<div class="no-results">Erro ao buscar endereços</div>';

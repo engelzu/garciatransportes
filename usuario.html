@@ -789,25 +789,65 @@
             }
         });
 
-        // Chamar initApp() quando a API do Google Maps estiver pronta
-        function initAppWhenMapsLoaded() {
-            if (typeof google !== 'undefined' && google.maps && google.maps.places) {
-                initApp();
-            } else {
-                setTimeout(initAppWhenMapsLoaded, 100);
-            }
-        }
-        // Inicia o carregamento do app, que por sua vez espera o Google Maps
-        initAppWhenMapsLoaded();
+        // Inicia o app (não depende mais do Google Maps); adiado para o fim do script
+        setTimeout(initApp, 0);
 
 
+        // Autocomplete de endereço via Photon (OpenStreetMap) - gratuito e sem chave
         function initAutocomplete() {
             const destinationInput = document.getElementById('destination');
-            if (destinationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-                new google.maps.places.Autocomplete(destinationInput, { types: ['address'], componentRestrictions: { 'country': 'br' } });
-            } else {
-                console.warn('Google Maps Places API not loaded or destination input not found.');
-            }
+            if (!destinationInput || destinationInput.dataset.photon) return;
+            destinationInput.dataset.photon = '1';
+            destinationInput.setAttribute('autocomplete', 'off');
+
+            const wrapper = destinationInput.parentElement;
+            wrapper.style.position = 'relative';
+            const list = document.createElement('div');
+            list.style.cssText = 'position:absolute;left:0;right:0;top:100%;z-index:50;background:#1f2937;border:1px solid #4b5563;border-radius:0.5rem;max-height:240px;overflow-y:auto;display:none;';
+            wrapper.appendChild(list);
+
+            let timer;
+            destinationInput.addEventListener('input', () => {
+                clearTimeout(timer);
+                const q = destinationInput.value.trim();
+                if (q.length < 3) { list.style.display = 'none'; return; }
+                timer = setTimeout(async () => {
+                    try {
+                        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=8&lang=en&lat=-23.55&lon=-46.63`;
+                        const resp = await fetch(url);
+                        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                        const json = await resp.json();
+                        const items = (json.features || [])
+                            .filter(f => !f.properties.countrycode || f.properties.countrycode === 'BR')
+                            .map(f => {
+                                const p = f.properties;
+                                const rua = [p.street || p.name, p.housenumber].filter(Boolean).join(', ');
+                                return [rua, p.district || p.locality, p.city, p.state].filter(Boolean).join(' - ');
+                            })
+                            .filter(Boolean);
+                        list.innerHTML = '';
+                        if (!items.length) { list.style.display = 'none'; return; }
+                        items.forEach(text => {
+                            const el = document.createElement('div');
+                            el.textContent = text;
+                            el.style.cssText = 'padding:10px 12px;cursor:pointer;font-size:0.9rem;border-bottom:1px solid #374151;';
+                            el.onmouseenter = () => el.style.background = '#374151';
+                            el.onmouseleave = () => el.style.background = 'transparent';
+                            el.onmousedown = (e) => {
+                                e.preventDefault();
+                                destinationInput.value = text;
+                                list.style.display = 'none';
+                            };
+                            list.appendChild(el);
+                        });
+                        list.style.display = 'block';
+                    } catch (err) {
+                        console.error('Erro ao buscar endereços:', err);
+                        list.style.display = 'none';
+                    }
+                }, 400);
+            });
+            destinationInput.addEventListener('blur', () => setTimeout(() => list.style.display = 'none', 150));
         }
         
         function updateAvailableDriversCount() {
@@ -964,6 +1004,5 @@
         }
 
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyADSCUHjzyFUwjfcui_lk6vDSQ3PU0bu7g&libraries=places&callback=initAppWhenMapsLoaded" async defer></script>
 </body>
 </html>
