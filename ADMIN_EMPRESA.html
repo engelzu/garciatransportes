@@ -607,7 +607,7 @@
                                 class="w-full p-2 rounded-lg">
 
                             <div class="autocomplete-container">
-                                <input type="text" id="new-user-address" placeholder="Endereço"
+                                <input type="text" id="new-user-address" placeholder="Endereço (selecione da lista)"
                                     class="w-full p-2 rounded-lg"
                                     oninput="handleAddressInput(event, 'new-user-addressList')">
                                 <input type="hidden" id="new-user-address-validated">
@@ -832,9 +832,13 @@
 
             try {
                 // Photon (OpenStreetMap) - gratuito e sem chave de API
-                // lat/lon priorizam resultados próximos (centro do Brasil/SP); ajuste se necessário
-                const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&lang=en&lat=-23.55&lon=-46.63`;
-                const response = await fetch(url);
+                // lat/lon priorizam resultados próximos (Guaíba/RS e Brasil)
+                const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&lang=en&lat=-30.11&lon=-51.32`;
+                let response = await fetch(url);
+                if (!response.ok) {
+                    await new Promise(r => setTimeout(r, 200));
+                    response = await fetch(url);
+                }
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 const json = await response.json();
 
@@ -845,11 +849,15 @@
                         const p = f.properties;
                         const rua = [p.street || p.name, p.housenumber].filter(Boolean).join(', ');
                         const bairro = p.district || p.locality || '';
+                        const coords = f.geometry && f.geometry.coordinates ? f.geometry.coordinates : [0, 0];
                         return {
+                            geometry: f.geometry,
                             properties: {
                                 formatted: [rua, bairro, p.city, p.state].filter(Boolean).join(' - '),
                                 city: [p.city, p.state].filter(Boolean).join(', '),
-                                state: ''
+                                state: p.state || '',
+                                lat: coords[1],
+                                lon: coords[0]
                             }
                         };
                     })

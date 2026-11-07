@@ -126,19 +126,19 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: #374151;
+            background: #1f2937;
             border: 1px solid #4b5563;
             border-top: none;
             border-radius: 0 0 0.5rem 0.5rem;
-            max-height: 200px;
+            max-height: 220px;
             overflow-y: auto;
-            z-index: 1050;
+            z-index: 9999 !important;
             display: none;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
 
         .autocomplete-list.show {
-            display: block;
+            display: block !important;
         }
 
         .autocomplete-item {
@@ -1061,15 +1061,18 @@
                     <input type="password" id="new-user-password"
                         class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white"
                         placeholder="Senha">
-                    <input type="text" id="new-user-company"
-                        class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white"
-                        placeholder="Empresa">
+                    <select id="new-user-company"
+                        class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white">
+                        <option value="">-- Selecione a Empresa --</option>
+                    </select>
 
                     <div class="autocomplete-container mb-2">
                         <input type="text" id="new-user-address"
                             class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none text-white"
                             placeholder="Endereço (selecione da lista)"
-                            oninput="handleAddressInput(event, 'new-user-addressList')">
+                            autocomplete="off"
+                            oninput="handleAddressInput(event, 'new-user-addressList')"
+                            onfocus="if (this.value.trim().length >= 2) searchAddress(this.value.trim(), 'new-user-addressList')">
                         <div class="autocomplete-list" id="new-user-addressList"></div>
                     </div>
 
@@ -1249,14 +1252,17 @@
                     <option value="active">Ativo</option>
                     <option value="inactive">Inativo</option>
                 </select>
-                <input type="text" id="modal-input-company"
-                    class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none"
-                    placeholder="Empresa">
+                <select id="modal-input-company"
+                    class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none mb-2 text-white">
+                    <option value="">-- Selecione a Empresa --</option>
+                </select>
                 <div class="autocomplete-container">
                     <input type="text" id="modal-input-address"
                         class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none"
                         placeholder="Endereço (selecione da lista)"
-                        oninput="handleAddressInput(event, 'modal-input-addressList')">
+                        autocomplete="off"
+                        oninput="handleAddressInput(event, 'modal-input-addressList')"
+                        onfocus="if (this.value.trim().length >= 2) searchAddress(this.value.trim(), 'modal-input-addressList')">
                     <div class="autocomplete-list" id="modal-input-addressList"></div>
                 </div>
                 <input type="password" id="modal-input-driver-password"
@@ -1339,7 +1345,10 @@
                 }, 30000);
             }
             if (screenId === 'admin-driver-crud-screen') renderDriverCrudList();
-            if (screenId === 'admin-user-crud-screen') renderUserCrudList();
+            if (screenId === 'admin-user-crud-screen') {
+                populateCompanySelects();
+                renderUserCrudList();
+            }
             if (screenId === 'admin-heatmap-screen') initHeatmap();
             if (screenId === 'driver-selection-screen') populateDriverSelection();
             if (screenId === 'driver-screen') {
@@ -1496,6 +1505,7 @@
             rides: [],
             drivers: [],
             users: [],
+            companies: [],
             appIcon: localStorage.getItem('appIcon') || null,
             currentDriverId: null,
             currentUserRideId: null,
@@ -1693,9 +1703,19 @@
                     document.querySelector('#modal-input-address').parentElement.style.display = 'block';
                     document.getElementById('modal-input-phone').style.display = 'block';
 
+                    populateCompanySelects();
                     document.getElementById('modal-input-matricula').value = content.matricula;
                     document.getElementById('modal-input-name').value = content.name;
-                    document.getElementById('modal-input-company').value = content.company;
+                    const modalCompanySelect = document.getElementById('modal-input-company');
+                    if (modalCompanySelect) {
+                        if (content.company && ![...modalCompanySelect.options].some(o => o.value.toLowerCase() === content.company.toLowerCase())) {
+                            const opt = document.createElement('option');
+                            opt.value = content.company;
+                            opt.textContent = content.company;
+                            modalCompanySelect.appendChild(opt);
+                        }
+                        modalCompanySelect.value = content.company || '';
+                    }
                     const modalAddressInput = document.getElementById('modal-input-address');
                     modalAddressInput.value = content.address;
                     if (content.address) {
@@ -2891,6 +2911,33 @@
             if (usersError) console.error('Error fetching users:', usersError); else state.users = users;
             const { data: rides, error: ridesError } = await supabaseClient.from('rides').select('*, motivos(nome)').order('requestTime', { ascending: false });
             if (ridesError) console.error('Error fetching rides:', ridesError); else state.rides = rides;
+            const { data: companies, error: companiesError } = await supabaseClient.from('companies').select('*').order('name');
+            if (companiesError) console.error('Error fetching companies:', companiesError); else state.companies = companies || [];
+            populateCompanySelects();
+        }
+
+        function populateCompanySelects() {
+            const newSelect = document.getElementById('new-user-company');
+            const modalSelect = document.getElementById('modal-input-company');
+
+            const dbCompanies = (state.companies || []).map(c => (c.name || '').trim()).filter(Boolean);
+            const userCompanies = (state.users || []).map(u => (u.company || '').trim()).filter(Boolean);
+            const allCompanies = [...new Set([...dbCompanies, ...userCompanies])].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+
+            const optionsHtml = '<option value="">-- Selecione a Empresa --</option>' +
+                allCompanies.map(comp => `<option value="${comp}">${comp}</option>`).join('');
+
+            if (newSelect) {
+                const currentVal = newSelect.value;
+                newSelect.innerHTML = optionsHtml;
+                if (currentVal) newSelect.value = currentVal;
+            }
+
+            if (modalSelect) {
+                const currentModalVal = modalSelect.value;
+                modalSelect.innerHTML = optionsHtml;
+                if (currentModalVal) modalSelect.value = currentModalVal;
+            }
         }
         function getNotificationEmail() {
             return 'engelmobile2020@gmail.com';
@@ -2954,6 +3001,10 @@
                 fetchAllData().then(() => {
                     if (document.querySelector('.screen.active')?.id === 'admin-user-crud-screen') renderUserCrudList();
                 });
+            }).subscribe();
+
+            supabaseClient.channel('public:companies').on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => {
+                fetchAllData();
             }).subscribe();
 
             supabaseClient.channel('public:rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, payload => {
@@ -3575,44 +3626,47 @@
         }
         // --- FIM DAS FUNÇÕES RESTAURADAS ---
 
-        // Incluindo a função geocodeAddress modificada
+        // Incluindo a função geocodeAddress modificada (usando Photon / OpenStreetMap)
         async function geocodeAddress(address) {
             if (!address || typeof address !== 'string' || address.trim().length < 3) {
                 console.warn(`Tentativa de geocodificar endereço inválido ou vazio: '${address}'`);
                 return null;
             }
 
-            // 🚨 USANDO GEOAPIFY_API_KEY
-            const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
+            try {
+                // Photon (OpenStreetMap) - gratuito e sem chave de API
+                const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1&lang=en&lat=-30.11&lon=-51.32`;
+                let response = await fetch(url);
+                if (!response.ok) {
+                    await new Promise(r => setTimeout(r, 200));
+                    response = await fetch(url);
+                }
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.features && data.features.length > 0) {
+                        const coords = data.features[0].geometry.coordinates;
+                        return { lat: coords[1], lon: coords[0] };
+                    }
+                }
+            } catch (error) {
+                console.warn(`Tentativa Photon falhou para '${address}', tentando fallback...`, error);
+            }
 
             try {
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.features && data.features.length > 0) {
-                    const coords = data.features[0].geometry.coordinates;
-                    return { lat: coords[1], lon: coords[0] };
-                } else {
-                    const newAddress = `${address}, Guaíba, RS`;
-                    console.log(`Primeira tentativa falhou para '${address}', tentando com '${newAddress}'`);
-                    // 🚨 USANDO GEOAPIFY_API_KEY
-                    const fallbackUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(newAddress)}&filter=countrycode:br&lang=pt&apiKey=${GEOAPIFY_API_KEY}`;
-
-                    const fallbackResponse = await fetch(fallbackUrl);
+                const newAddress = `${address}, Guaíba, RS`;
+                const fallbackUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(newAddress)}&limit=1&lang=en&lat=-30.11&lon=-51.32`;
+                const fallbackResponse = await fetch(fallbackUrl);
+                if (fallbackResponse.ok) {
                     const fallbackData = await fallbackResponse.json();
-
                     if (fallbackData.features && fallbackData.features.length > 0) {
                         const coords = fallbackData.features[0].geometry.coordinates;
                         return { lat: coords[1], lon: coords[0] };
-                    } else {
-                        console.warn(`A segunda geocodificação (fallback) também falhou para: '${newAddress}'. Endereço original: '${address}'`);
-                        return null;
                     }
                 }
             } catch (error) {
                 console.error(`Erro na chamada da API de geocodificação para: '${address}'`, error);
-                return null;
             }
+            return null;
         }
 
         // Incluindo a função initHeatmap modificada
@@ -3831,13 +3885,19 @@
         }
 
         async function searchAddress(query, listId) {
-            if (query.length < 3) {
-                hideList(listId);
-                return;
-            }
-
             const list = document.getElementById(listId);
             if (!list) return;
+
+            const trimmed = (query || '').trim();
+            if (trimmed.length < 2) {
+                if (trimmed.length === 1) {
+                    list.innerHTML = '<div class="no-results" style="padding:10px 12px; color:#9ca3af; font-size:0.875rem;">Digite mais 1 letra para buscar...</div>';
+                    list.classList.add('show');
+                } else {
+                    hideList(listId);
+                }
+                return;
+            }
 
             const inputId = listId.replace('List', '');
             const input = document.getElementById(inputId);
@@ -3852,29 +3912,78 @@
                 state.currentUserDestination = null;
             }
 
-            list.innerHTML = '<div class="loading">Buscando...</div>';
+            list.innerHTML = '<div class="loading" style="padding:10px 12px; color:#9ca3af; font-size:0.875rem;">Buscando endereços...</div>';
             list.classList.add('show');
 
             try {
-                // 🚨 USANDO GEOAPIFY_API_KEY
-                const response = await fetch(
-                    `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&lang=pt&limit=5&apiKey=${GEOAPIFY_API_KEY}`
-                );
+                // Photon (OpenStreetMap) - gratuito e sem chave de API
+                // lat/lon priorizam resultados próximos (Guaíba/RS e Brasil)
+                const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&limit=8&lang=en&lat=-30.11&lon=-51.32`;
+                let response = await fetch(url);
+                if (!response.ok) {
+                    await new Promise(r => setTimeout(r, 200));
+                    response = await fetch(url);
+                }
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const json = await response.json();
 
-                const data = await response.json();
+                // Mantém apenas resultados do Brasil
+                const features = (json.features || [])
+                    .filter(f => !f.properties.countrycode || f.properties.countrycode === 'BR')
+                    .map(f => {
+                        const p = f.properties;
+                        const rua = [p.street || p.name, p.housenumber].filter(Boolean).join(', ');
+                        const bairro = p.district || p.locality || '';
+                        const coords = f.geometry && f.geometry.coordinates ? f.geometry.coordinates : [0, 0];
+                        return {
+                            geometry: f.geometry,
+                            properties: {
+                                formatted: [rua, bairro, p.city, p.state].filter(Boolean).join(' - '),
+                                city: [p.city, p.state].filter(Boolean).join(', '),
+                                state: p.state || '',
+                                lat: coords[1],
+                                lon: coords[0]
+                            }
+                        };
+                    })
+                    .filter(f => f.properties.formatted);
 
-                if (data.features && data.features.length > 0) {
-                    displayResults(data.features, listId);
+                if (features.length > 0) {
+                    displayResults(features, listId, trimmed);
                 } else {
-                    list.innerHTML = '<div class="no-results">Nenhum resultado encontrado</div>';
+                    list.innerHTML = `
+                        <div class="no-results" style="padding:10px 12px; color:#9ca3af; font-size:0.875rem;">Nenhum endereço encontrado</div>
+                        <div class="autocomplete-item" id="${listId}-custom-fallback" style="border-top:1px solid #4b5563; font-size:0.85rem; color:#fde047; padding:10px 12px; cursor:pointer;">
+                            ✓ Usar endereço digitado: "<strong>${trimmed}</strong>"
+                        </div>
+                    `;
+                    const customEl = document.getElementById(`${listId}-custom-fallback`);
+                    if (customEl) {
+                        const customFeature = { properties: { formatted: trimmed, city: '', state: '' } };
+                        customEl.onmousedown = (e) => { e.preventDefault(); selectAddress(customFeature, listId); };
+                        customEl.onclick = () => selectAddress(customFeature, listId);
+                    }
+                    list.classList.add('show');
                 }
             } catch (error) {
                 console.error('Erro ao buscar endereços:', error);
-                list.innerHTML = '<div class="no-results">Erro ao buscar endereços</div>';
+                list.innerHTML = `
+                    <div class="no-results" style="padding:10px 12px; color:#9ca3af; font-size:0.875rem;">Erro ao buscar endereços na API</div>
+                    <div class="autocomplete-item" id="${listId}-custom-error" style="border-top:1px solid #4b5563; font-size:0.85rem; color:#fde047; padding:10px 12px; cursor:pointer;">
+                        ✓ Usar endereço digitado: "<strong>${trimmed}</strong>"
+                    </div>
+                `;
+                const customEl = document.getElementById(`${listId}-custom-error`);
+                if (customEl) {
+                    const customFeature = { properties: { formatted: trimmed, city: '', state: '' } };
+                    customEl.onmousedown = (e) => { e.preventDefault(); selectAddress(customFeature, listId); };
+                    customEl.onclick = () => selectAddress(customFeature, listId);
+                }
+                list.classList.add('show');
             }
         }
 
-        function displayResults(features, listId) {
+        function displayResults(features, listId, currentQuery) {
             const list = document.getElementById(listId);
             if (!list) return;
             list.innerHTML = '';
@@ -3892,9 +4001,30 @@
                     ${city || state ? `<br><small style="color: #999;">${city}${city && state ? ', ' : ''}${state}</small>` : ''}
                 `;
 
+                item.onmousedown = (e) => {
+                    e.preventDefault();
+                    selectAddress(feature, listId);
+                };
                 item.onclick = () => selectAddress(feature, listId);
                 list.appendChild(item);
             });
+
+            // Opção extra: Usar exatamente o texto digitado
+            if (currentQuery && currentQuery.trim().length >= 2) {
+                const customItem = document.createElement('div');
+                customItem.className = 'autocomplete-item';
+                customItem.style.borderTop = '1px solid #4b5563';
+                customItem.style.fontSize = '0.85rem';
+                customItem.style.color = '#fde047';
+                customItem.innerHTML = `✓ Usar endereço digitado: "<strong>${currentQuery.trim()}</strong>"`;
+                const customFeature = { properties: { formatted: currentQuery.trim(), city: '', state: '' } };
+                customItem.onmousedown = (e) => {
+                    e.preventDefault();
+                    selectAddress(customFeature, listId);
+                };
+                customItem.onclick = () => selectAddress(customFeature, listId);
+                list.appendChild(customItem);
+            }
 
             list.classList.add('show');
         }
